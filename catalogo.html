@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Catálogo & Precios</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--gold:#F4B942;--gold-dim:rgba(244,185,66,.1);--red:#FF5C5C;--red-dim:rgba(255,92,92,.1);--blue:#4A9EFF;--blue-dim:rgba(74,158,255,.1);--text:#E8F0F8;--text-muted:rgba(232,240,248,.45);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;--r:12px;--r-lg:20px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:10px}
+.logo-icon{width:38px;height:38px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-text{font-family:var(--font-display);font-size:1.3rem;color:var(--text)}.logo-text span{color:var(--teal)}
+.logo-sub{font-size:.7rem;color:var(--text-muted);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
+.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.nav-section{font-size:.65rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);padding:12px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text-muted);font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s;border:1px solid transparent}
+.nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
+.nav-item.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.2)}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.clinic-info{font-size:.75rem;color:var(--text-muted)}.clinic-name{font-weight:600;color:var(--text);font-size:.875rem;margin-bottom:2px}
+.main{margin-left:240px;min-height:100vh;position:relative;z-index:1}
+.topbar{position:sticky;top:0;background:rgba(6,13,20,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;z-index:50}
+.topbar-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic}
+.btn{padding:9px 20px;border-radius:8px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;font-family:var(--font-body);transition:all .2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn-primary{background:var(--teal);color:var(--bg)}.btn-primary:hover{background:#00d4b8}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text)}
+.btn-sm{padding:6px 12px;font-size:.75rem}
+.content{padding:32px}
+/* CAT TABLE */
+.search-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.search-input{flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--teal)}
+.search-input::placeholder{color:var(--text-dim)}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.cat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;transition:all .2s;position:relative;overflow:hidden}
+.cat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));opacity:0;transition:opacity .2s}
+.cat-card:hover{border-color:rgba(0,194,168,.3);transform:translateY(-2px)}.cat-card:hover::before{opacity:1}
+.cat-treat{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.cat-desc{font-size:.78rem;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
+.price-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.price-label{font-size:.7rem;color:var(--text-dim);letter-spacing:.05em}
+.price-val{font-family:var(--font-mono);font-size:.85rem;color:var(--text-muted)}
+.price-suggested{font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--teal)}
+.cat-actions{display:flex;gap:6px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.modal-header{padding:22px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:var(--font-display);font-size:1.2rem;font-style:italic;color:var(--text)}
+.modal-close{background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:all .2s}
+.modal-close:hover{background:var(--surface2);color:var(--text)}
+.modal-body{padding:24px 26px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:.7rem;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase}
+.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-family:var(--font-body);font-size:.875rem;outline:none;transition:border-color .2s;width:100%}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--teal)}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--text-dim)}
+.form-select option{background:var(--surface2)}
+.form-textarea{resize:vertical;min-height:60px}
+.modal-footer{padding:18px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">🦷</div><div><div class="logo-text">Dental<span>OS</span></div><div class="logo-sub">Sistema integral</div></div></div></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Principal</div>
+    <a href="index.html" class="nav-item">📊 Dashboard</a>
+    <a href="agenda.html" class="nav-item">📅 Agenda de Citas</a>
+    <a href="pacientes.html" class="nav-item">👤 Expedientes</a>
+    <div class="nav-section">Clínica</div>
+    <a href="tratamientos.html" class="nav-item">🦷 Tratamientos</a>
+    <a href="abonos.html" class="nav-item">💰 Abonos & Pagos</a>
+    <a href="catalogo.html" class="nav-item active">📚 Catálogo & Precios</a>
+    <a href="cotizacion.html" class="nav-item">📝 Cotizaciones</a>
+    <div class="nav-section">Más</div>
+    <a href="ofertas.html" class="nav-item">🎁 Ofertas & Promos</a>
+    <a href="metricas.html" class="nav-item">📈 Métricas</a>
+    <a href="busqueda.html" class="nav-item">🔍 Búsqueda</a>
+  </nav>
+  <div class="sidebar-footer"><div class="clinic-name">Consultorio Dental</div><div class="clinic-info">Dr. Administrador · v2026</div></div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📚 Catálogo & Precios</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="openModal()">+ Agregar Tratamiento</button>
+      <a href="cotizacion.html" class="btn btn-ghost">📝 Generar Cotización</a>
+    </div>
+  </div>
+  <div class="content">
+    <div class="search-bar">
+      <input class="search-input" id="searchInput" placeholder="🔍 Buscar tratamiento..." oninput="renderCatalog()">
+    </div>
+    <div class="cat-grid" id="catGrid"></div>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Nuevo Tratamiento</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Nombre del tratamiento *</label><input class="form-input" id="f-treat" placeholder="Ej: Endodoncia"></div>
+        <div class="form-group full"><label class="form-label">Descripción</label><textarea class="form-textarea" id="f-desc" placeholder="Detalle del servicio..."></textarea></div>
+        <div class="form-group"><label class="form-label">Precio mínimo (MXN)</label><input type="number" class="form-input" id="f-min" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Precio máximo (MXN)</label><input type="number" class="form-input" id="f-max" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Precio sugerido (MXN)</label><input type="number" class="form-input" id="f-sug" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Vigente</label><select class="form-select" id="f-vig"><option>Sí</option><option>No</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCat()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+let catalog=[...DB.catalogo];
+let editIdx=null;
+
+function renderCatalog(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const filtered=catalog.filter(c=>c.tratamiento.toLowerCase().includes(q)||(c.desc&&c.desc.toLowerCase().includes(q)));
+  const grid=document.getElementById('catGrid');
+  if(!filtered.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--text-muted)">Sin resultados</div>`;return;}
+  grid.innerHTML=filtered.map((c,i)=>`
+    <div class="cat-card">
+      <div class="cat-treat">${c.tratamiento}</div>
+      <div class="cat-desc">${c.desc||'—'}</div>
+      <div class="price-row"><span class="price-label">Precio mínimo</span><span class="price-val">${fmtMXN(c.min)}</span></div>
+      <div class="price-row"><span class="price-label">Precio máximo</span><span class="price-val">${fmtMXN(c.max)}</span></div>
+      <div class="price-row"><span class="price-label">Precio sugerido</span><span class="price-suggested">${fmtMXN(c.sugerido)}</span></div>
+      <div class="cat-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editCat(${catalog.indexOf(c)})">✏️ Editar</button>
+        <a href="cotizacion.html?t=${encodeURIComponent(c.tratamiento)}" class="btn btn-ghost btn-sm">📝 Cotizar</a>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red)" onclick="deleteCat(${catalog.indexOf(c)})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function openModal(idx=null){
+  editIdx=idx;
+  if(idx!==null){
+    const c=catalog[idx];
+    document.getElementById('modalTitle').textContent='Editar Tratamiento';
+    document.getElementById('f-treat').value=c.tratamiento;
+    document.getElementById('f-desc').value=c.desc||'';
+    document.getElementById('f-min').value=c.min||'';
+    document.getElementById('f-max').value=c.max||'';
+    document.getElementById('f-sug').value=c.sugerido||'';
+    document.getElementById('f-vig').value=c.vigente||'Sí';
+  } else {
+    document.getElementById('modalTitle').textContent='Nuevo Tratamiento';
+    document.querySelectorAll('#modal .form-input,#modal .form-textarea').forEach(el=>el.value='');
+  }
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');editIdx=null;}
+function editCat(i){openModal(i);}
+
+function saveCat(){
+  const treat=document.getElementById('f-treat').value.trim();
+  if(!treat){alert('El nombre del tratamiento es obligatorio');return;}
+  const c={tratamiento:treat,desc:document.getElementById('f-desc').value,min:parseFloat(document.getElementById('f-min').value)||0,max:parseFloat(document.getElementById('f-max').value)||0,sugerido:parseFloat(document.getElementById('f-sug').value)||0,vigente:document.getElementById('f-vig').value};
+  if(editIdx!==null){DB.catalogo[editIdx]=c;}
+  else{DB.catalogo.push(c);}
+  catalog=[...DB.catalogo];renderCatalog();closeModal();
+}
+
+function deleteCat(i){
+  if(!confirm('¿Eliminar este tratamiento del catálogo?'))return;
+  DB.catalogo.splice(i,1);catalog=[...DB.catalogo];renderCatalog();
+}
+
+renderCatalog();
+</script>
+</body>
+</html>

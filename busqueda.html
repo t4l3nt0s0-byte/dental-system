@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Búsqueda Global</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--gold:#F4B942;--gold-dim:rgba(244,185,66,.1);--red:#FF5C5C;--red-dim:rgba(255,92,92,.1);--blue:#4A9EFF;--blue-dim:rgba(74,158,255,.1);--text:#E8F0F8;--text-muted:rgba(232,240,248,.45);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;--r:12px;--r-lg:20px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:10px}
+.logo-icon{width:38px;height:38px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-text{font-family:var(--font-display);font-size:1.3rem;color:var(--text)}.logo-text span{color:var(--teal)}
+.logo-sub{font-size:.7rem;color:var(--text-muted);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
+.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.nav-section{font-size:.65rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);padding:12px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text-muted);font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s;border:1px solid transparent}
+.nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
+.nav-item.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.2)}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.clinic-info{font-size:.75rem;color:var(--text-muted)}.clinic-name{font-weight:600;color:var(--text);font-size:.875rem;margin-bottom:2px}
+.main{margin-left:240px;min-height:100vh;position:relative;z-index:1}
+.topbar{position:sticky;top:0;background:rgba(6,13,20,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;z-index:50}
+.topbar-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic}
+.btn{padding:9px 20px;border-radius:8px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;font-family:var(--font-body);transition:all .2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text)}
+.content{padding:32px}
+/* SEARCH HERO */
+.search-hero{text-align:center;padding:48px 20px 36px}
+.search-hero-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.8rem);font-style:italic;color:var(--text);margin-bottom:8px}
+.search-hero-sub{font-size:.9rem;color:var(--text-muted);margin-bottom:28px}
+.search-giant-wrap{position:relative;max-width:640px;margin:0 auto}
+.search-giant{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px 18px 52px;color:var(--text);font-family:var(--font-body);font-size:1.1rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.search-giant:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,194,168,.12)}
+.search-giant::placeholder{color:var(--text-dim)}
+.search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:1.2rem;opacity:.5;pointer-events:none}
+.search-clear{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;opacity:.5;transition:opacity .2s;display:none}
+.search-clear.show{display:block}.search-clear:hover{opacity:1}
+/* FILTERS */
+.filter-tabs{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.filter-tab{padding:7px 18px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.filter-tab:hover{border-color:rgba(255,255,255,.2);color:var(--text)}
+.filter-tab.active{background:var(--teal-dim);border-color:rgba(0,194,168,.35);color:var(--teal)}
+/* RESULTS */
+.results-wrap{max-width:860px;margin:0 auto}
+.results-count{font-size:.8rem;color:var(--text-muted);margin-bottom:20px;font-family:var(--font-mono)}
+.result-section{margin-bottom:28px}
+.result-section-title{font-size:.7rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.result-section-title::after{content:'';flex:1;height:1px;background:rgba(0,194,168,.2)}
+.result-list{display:flex;flex-direction:column;gap:8px}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .2s;text-decoration:none;cursor:pointer}
+.result-card:hover{border-color:rgba(0,194,168,.3);transform:translateX(4px)}
+.result-icon-wrap{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.ic-pac{background:var(--blue-dim)}
+.ic-trat{background:var(--teal-dim)}
+.ic-abono{background:var(--gold-dim)}
+.ic-cita{background:rgba(200,100,255,.12)}
+.result-main{flex:1;min-width:0}
+.result-title{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result-sub{font-size:.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result-meta{font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);flex-shrink:0;text-align:right}
+.result-link{font-size:.75rem;color:var(--teal);flex-shrink:0;opacity:.7}
+/* EMPTY / IDLE */
+.idle-state{text-align:center;padding:48px 20px;color:var(--text-muted)}
+.idle-icon{font-size:3rem;margin-bottom:12px;opacity:.4}
+.idle-text{font-size:.9rem;line-height:1.7}
+.shortcut-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;max-width:640px;margin:24px auto 0}
+.shortcut-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;text-align:center;text-decoration:none;transition:all .2s}
+.shortcut-card:hover{border-color:rgba(0,194,168,.3);transform:translateY(-2px)}
+.shortcut-icon{font-size:1.6rem;margin-bottom:6px}
+.shortcut-label{font-size:.78rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.shortcut-sub{font-size:.68rem;color:var(--text-muted)}
+/* HIGHLIGHT */
+.hl{background:rgba(0,194,168,.2);color:var(--teal);border-radius:2px;padding:0 2px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">🦷</div><div><div class="logo-text">Dental<span>OS</span></div><div class="logo-sub">Sistema integral</div></div></div></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Principal</div>
+    <a href="index.html" class="nav-item">📊 Dashboard</a>
+    <a href="agenda.html" class="nav-item">📅 Agenda de Citas</a>
+    <a href="pacientes.html" class="nav-item">👤 Expedientes</a>
+    <div class="nav-section">Clínica</div>
+    <a href="tratamientos.html" class="nav-item">🦷 Tratamientos</a>
+    <a href="abonos.html" class="nav-item">💰 Abonos & Pagos</a>
+    <a href="catalogo.html" class="nav-item">📚 Catálogo & Precios</a>
+    <a href="cotizacion.html" class="nav-item">📝 Cotizaciones</a>
+    <div class="nav-section">Más</div>
+    <a href="ofertas.html" class="nav-item">🎁 Ofertas & Promos</a>
+    <a href="metricas.html" class="nav-item">📈 Métricas</a>
+    <a href="busqueda.html" class="nav-item active">🔍 Búsqueda</a>
+  </nav>
+  <div class="sidebar-footer"><div class="clinic-name">Consultorio Dental</div><div class="clinic-info">Dr. Administrador · v2026</div></div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🔍 Búsqueda Global</div>
+    <a href="index.html" class="btn btn-ghost">← Dashboard</a>
+  </div>
+  <div class="content">
+    <div class="search-hero">
+      <div class="search-hero-title">Encuentra todo en segundos</div>
+      <div class="search-hero-sub">Busca pacientes, tratamientos, abonos o citas desde un solo lugar</div>
+      <div class="search-giant-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-giant" id="searchInput" placeholder="Nombre, expediente, tratamiento, monto..." oninput="doSearch()" autocomplete="off">
+        <button class="search-clear" id="clearBtn" onclick="clearSearch()">✕</button>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all" onclick="setFilter('all',this)">Todo</button>
+        <button class="filter-tab" data-filter="pac" onclick="setFilter('pac',this)">👤 Pacientes</button>
+        <button class="filter-tab" data-filter="trat" onclick="setFilter('trat',this)">🦷 Tratamientos</button>
+        <button class="filter-tab" data-filter="abono" onclick="setFilter('abono',this)">💰 Abonos</button>
+        <button class="filter-tab" data-filter="cita" onclick="setFilter('cita',this)">📅 Citas</button>
+      </div>
+    </div>
+    <div class="results-wrap" id="resultsWrap">
+      <!-- IDLE -->
+      <div class="idle-state">
+        <div class="idle-icon">🔎</div>
+        <div class="idle-text">Escribe para buscar en toda la base de datos<br>del consultorio en tiempo real.</div>
+        <div class="shortcut-grid">
+          <a href="pacientes.html" class="shortcut-card"><div class="shortcut-icon">👤</div><div class="shortcut-label">Expedientes</div><div class="shortcut-sub">Ver todos</div></a>
+          <a href="agenda.html" class="shortcut-card"><div class="shortcut-icon">📅</div><div class="shortcut-label">Agenda</div><div class="shortcut-sub">Citas del día</div></a>
+          <a href="tratamientos.html" class="shortcut-card"><div class="shortcut-icon">🦷</div><div class="shortcut-label">Tratamientos</div><div class="shortcut-sub">Ver control</div></a>
+          <a href="abonos.html" class="shortcut-card"><div class="shortcut-icon">💰</div><div class="shortcut-label">Abonos</div><div class="shortcut-sub">Historial pagos</div></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shared.js"></script>
+<script>
+let activeFilter='all';
+
+function setFilter(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  doSearch();
+}
+
+function hl(text,q){
+  if(!q)return text;
+  const re=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return String(text).replace(re,'<span class="hl">$1</span>');
+}
+
+function doSearch(){
+  const raw=document.getElementById('searchInput').value.trim();
+  const q=raw.toLowerCase();
+  const clearBtn=document.getElementById('clearBtn');
+  clearBtn.classList.toggle('show',raw.length>0);
+  const wrap=document.getElementById('resultsWrap');
+  if(!q){
+    wrap.innerHTML=`<div class="idle-state"><div class="idle-icon">🔎</div><div class="idle-text">Escribe para buscar en toda la base de datos del consultorio en tiempo real.</div><div class="shortcut-grid"><a href="pacientes.html" class="shortcut-card"><div class="shortcut-icon">👤</div><div class="shortcut-label">Expedientes</div><div class="shortcut-sub">Ver todos</div></a><a href="agenda.html" class="shortcut-card"><div class="shortcut-icon">📅</div><div class="shortcut-label">Agenda</div><div class="shortcut-sub">Citas del día</div></a><a href="tratamientos.html" class="shortcut-card"><div class="shortcut-icon">🦷</div><div class="shortcut-label">Tratamientos</div><div class="shortcut-sub">Ver control</div></a><a href="abonos.html" class="shortcut-card"><div class="shortcut-icon">💰</div><div class="shortcut-label">Abonos</div><div class="shortcut-sub">Historial pagos</div></a></div></div>`;
+    return;
+  }
+
+  let sections=[];
+  let totalCount=0;
+
+  // PACIENTES
+  if(activeFilter==='all'||activeFilter==='pac'){
+    const pacs=DB.pacientes.filter(p=>
+      p.nombre.toLowerCase().includes(q)||p.exp.toLowerCase().includes(q)||(p.tel&&p.tel.includes(q))||(p.email&&p.email.toLowerCase().includes(q))
+    );
+    if(pacs.length){
+      totalCount+=pacs.length;
+      sections.push(`<div class="result-section">
+        <div class="result-section-title">👤 Pacientes (${pacs.length})</div>
+        <div class="result-list">${pacs.map(p=>`
+          <a class="result-card" href="tratamientos.html?exp=${p.exp}">
+            <div class="result-icon-wrap ic-pac">👤</div>
+            <div class="result-main">
+              <div class="result-title">${hl(p.nombre,raw)}</div>
+              <div class="result-sub">${hl(p.exp,raw)} · ${p.genero||'—'} · ${p.edad||'—'} años · ${p.tel||'—'}</div>
+            </div>
+            <div class="result-meta">${p.alta||''}</div>
+            <div class="result-link">→</div>
+          </a>`).join('')}
+        </div>
+      </div>`);
+    }
+  }
+
+  // TRATAMIENTOS
+  if(activeFilter==='all'||activeFilter==='trat'){
+    const trats=DB.tratamientos.filter(t=>
+      t.paciente.toLowerCase().includes(q)||t.exp.toLowerCase().includes(q)||t.tratamiento.toLowerCase().includes(q)||t.id.toLowerCase().includes(q)||(t.desc&&t.desc.toLowerCase().includes(q))
+    );
+    if(trats.length){
+      totalCount+=trats.length;
+      sections.push(`<div class="result-section">
+        <div class="result-section-title">🦷 Tratamientos (${trats.length})</div>
+        <div class="result-list">${trats.map(t=>`
+          <a class="result-card" href="tratamientos.html">
+            <div class="result-icon-wrap ic-trat">🦷</div>
+            <div class="result-main">
+              <div class="result-title">${hl(t.paciente,raw)}</div>
+              <div class="result-sub">${hl(t.id,raw)} · ${hl(t.tratamiento,raw)}${t.desc?' · '+hl(t.desc,raw):''}</div>
+            </div>
+            <div class="result-meta" style="color:${t.saldo>0?'var(--red)':'var(--teal)'}">${fmtMXN(t.saldo>0?t.saldo:t.costo)}</div>
+            <div class="result-link">→</div>
+          </a>`).join('')}
+        </div>
+      </div>`);
+    }
+  }
+
+  // ABONOS
+  if(activeFilter==='all'||activeFilter==='abono'){
+    const abonos=DB.abonos.filter(a=>
+      a.paciente.toLowerCase().includes(q)||a.exp.toLowerCase().includes(q)||(a.recibo&&a.recibo.toLowerCase().includes(q))||(a.idTrat&&a.idTrat.toLowerCase().includes(q))||String(a.monto).includes(q)
+    );
+    if(abonos.length){
+      totalCount+=abonos.length;
+      sections.push(`<div class="result-section">
+        <div class="result-section-title">💰 Abonos (${abonos.length})</div>
+        <div class="result-list">${abonos.map(a=>`
+          <a class="result-card" href="abonos.html">
+            <div class="result-icon-wrap ic-abono">💰</div>
+            <div class="result-main">
+              <div class="result-title">${hl(a.paciente,raw)}</div>
+              <div class="result-sub">${hl(a.id,raw)} · ${hl(a.idTrat||'',raw)} · ${a.forma} · ${a.fecha}</div>
+            </div>
+            <div class="result-meta" style="color:var(--teal)">${fmtMXN(a.monto)}</div>
+            <div class="result-link">→</div>
+          </a>`).join('')}
+        </div>
+      </div>`);
+    }
+  }
+
+  // CITAS
+  if(activeFilter==='all'||activeFilter==='cita'){
+    const citas=DB.citas.filter(c=>
+      c.paciente.toLowerCase().includes(q)||c.exp.toLowerCase().includes(q)||c.tratamiento.toLowerCase().includes(q)||(c.tel&&c.tel.includes(q))
+    );
+    if(citas.length){
+      totalCount+=citas.length;
+      sections.push(`<div class="result-section">
+        <div class="result-section-title">📅 Citas (${citas.length})</div>
+        <div class="result-list">${citas.map(c=>`
+          <a class="result-card" href="agenda.html">
+            <div class="result-icon-wrap ic-cita">📅</div>
+            <div class="result-main">
+              <div class="result-title">${hl(c.paciente,raw)}</div>
+              <div class="result-sub">${hl(c.exp,raw)} · ${hl(c.tratamiento,raw)} · ${c.fecha} ${c.hora}</div>
+            </div>
+            <div class="result-meta" style="color:${c.estado==='Asistió'?'var(--teal)':c.estado==='No Asistió'?'var(--red)':'var(--gold)'}">${c.estado}</div>
+            <div class="result-link">→</div>
+          </a>`).join('')}
+        </div>
+      </div>`);
+    }
+  }
+
+  if(!sections.length){
+    wrap.innerHTML=`<div class="idle-state"><div class="idle-icon">😶</div><div class="idle-text">Sin resultados para "<strong>${raw}</strong>"<br>Intenta con un nombre, expediente o número de teléfono.</div></div>`;
+    return;
+  }
+  wrap.innerHTML=`<div class="results-count">${totalCount} resultado${totalCount!==1?'s':''} para "<strong>${raw}</strong>"</div>${sections.join('')}`;
+}
+
+function clearSearch(){
+  document.getElementById('searchInput').value='';
+  doSearch();
+  document.getElementById('searchInput').focus();
+}
+
+// Auto-focus on load
+document.getElementById('searchInput').focus();
+// Keyboard shortcut: / focuses search from anywhere
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();document.getElementById('searchInput').focus();}});
+</script>
+</body>
+</html>
