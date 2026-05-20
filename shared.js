@@ -1,4 +1,6 @@
 /* shared.js — navegación y utilidades compartidas */
+import { db } from "./firebase.js";
+console.log("Firebase conectado");
 const NAV_HTML = `
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
