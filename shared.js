@@ -1,5 +1,11 @@
 /* shared.js — navegación y utilidades compartidas */
 import { db } from "./firebase.js";
+import {
+  collection,
+  addDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
 console.log("Firebase conectado");
 const NAV_HTML = `
 <aside class="sidebar" id="sidebar">
@@ -87,3 +93,30 @@ const DB = {
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
 function today(){return new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
 function setActive(page){document.querySelectorAll('.nav-item').forEach(a=>{a.classList.toggle('active',a.dataset.page===page);});}
+
+
+
+
+async function pruebaFirestore() {
+
+  try {
+
+    const docRef = await addDoc(
+      collection(db, "pruebas"),
+      {
+        mensaje: "Hola Firebase",
+        fecha: new Date()
+      }
+    );
+
+    console.log("Documento creado:", docRef.id);
+
+  } catch (error) {
+
+    console.error("Error Firestore:", error);
+
+  }
+
+}
+
+pruebaFirestore();
