@@ -98,29 +98,6 @@ function setActive(page){document.querySelectorAll('.nav-item').forEach(a=>{a.cl
 
 
 
-async function pruebaFirestore() {
-
-  try {
-
-    const docRef = await addDoc(
-      collection(db, "pruebas"),
-      {
-        mensaje: "Hola Firebase",
-        fecha: new Date()
-      }
-    );
-
-    console.log("Documento creado:", docRef.id);
-
-  } catch (error) {
-
-    console.error("Error Firestore:", error);
-
-  }
-
-}
-
-pruebaFirestore();
 
 
 
