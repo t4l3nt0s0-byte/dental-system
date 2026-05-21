@@ -184,7 +184,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 <script type="module" src="shared.js"></script>
 <script>
-let patients = [...DB.pacientes];
+let patients = [];
 
 function renderTable(){
   const q=document.getElementById('searchInput').value.toLowerCase();
@@ -236,7 +236,18 @@ function deletePatient(exp){
 
 function editPatient(idx){alert('Para editar, haga clic en el expediente y modifique los datos directamente.');}
 
-renderTable();
+
+  async function cargarPacientes(){
+
+  patients = await window.firebaseDB.obtenerPacientes();
+
+  console.log("PACIENTES CARGADOS:", patients);
+
+  renderTable();
+
+}
+
+cargarPacientes();
 </script>
 </body>
 </html>
