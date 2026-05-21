@@ -182,7 +182,26 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
-<script type="module" src="shared.js"></script>
+
+
+
+
+
+  <script type="module">
+
+import { leerPacientes } from "./shared.js";
+
+window.cargarPacientes = async function() {
+
+  patients = await leerPacientes();
+
+  renderTable();
+
+}
+
+cargarPacientes();
+
+</script>
 <script>
 let patients = [];
 
