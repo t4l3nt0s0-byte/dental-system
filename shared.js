@@ -116,7 +116,7 @@ export async function leerPacientes() {
 
     });
 
-    console.log("LISTA PACIENTES:", lista);
+    console.log("PACIENTES FIREBASE:", lista);
 
     return lista;
 
@@ -130,6 +130,30 @@ export async function leerPacientes() {
 
 }
 
+
+
+export async function guardarPaciente(data) {
+
+  try {
+
+    const docRef = await addDoc(
+      collection(db, "pacientes"),
+      data
+    );
+
+    console.log("Paciente guardado:", docRef.id);
+
+    return true;
+
+  } catch (error) {
+
+    console.error("Error guardando:", error);
+
+    return false;
+
+  }
+
+}
 
 
 
