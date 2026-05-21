@@ -2,7 +2,8 @@
 import { db } from "./firebase.js";
 import {
   collection,
-  addDoc
+  addDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
@@ -122,28 +123,7 @@ async function pruebaFirestore() {
 pruebaFirestore();
 
 
-async function guardarPacientePrueba() {
 
-  try {
-
-    const docRef = await addDoc(
-      collection(db, "pacientes"),
-      {
-        nombre: "Paciente prueba",
-        telefono: "5512345678",
-        fecha: new Date()
-      }
-    );
-
-    console.log("Paciente guardado:", docRef.id);
-
-  } catch (error) {
-
-    console.error("Error guardando paciente:", error);
-
-  }
-
-}
 
 
 
