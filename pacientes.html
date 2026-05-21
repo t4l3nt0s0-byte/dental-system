@@ -258,7 +258,18 @@ function savePatient(){
   if(!nombre||!exp){alert('Nombre y expediente son obligatorios');return;}
   const p={exp,nombre,fnac:document.getElementById('f-fnac').value,edad:'',genero:document.getElementById('f-genero').value,tel:document.getElementById('f-tel').value,email:document.getElementById('f-email').value,alergias:document.getElementById('f-alergias').value||'Ninguna',padecimientos:document.getElementById('f-padec').value||'Ninguna',alta:new Date().toLocaleDateString('es-MX'),visitas:0};
   if(p.fnac){const d=new Date(p.fnac),hoy=new Date();p.edad=Math.floor((hoy-d)/31557600000);}
-  DB.pacientes.push(p);DB.save();patients=[...DB.pacientes];renderTable();closeModal();
+
+
+
+
+  window.guardarPacienteFirebase(p);
+
+patients.push(p);
+
+renderTable();
+
+closeModal();
+  
   document.querySelectorAll('.form-input,.form-textarea').forEach(el=>el.value='');
 }
 
