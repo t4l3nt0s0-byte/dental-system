@@ -437,9 +437,12 @@ let patients = [];
 
 
 
-  function renderTable(){
+function renderTable(){
 
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q = document
+    .getElementById('searchInput')
+    .value
+    .toLowerCase();
 
   let filtered = patients.filter(p => {
 
