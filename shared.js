@@ -128,7 +128,7 @@ export async function leerPacientes() {
 
   }
 
-}
+} // ← ESTA FALTABA
 
 
 
@@ -154,6 +154,10 @@ export async function guardarPaciente(data) {
   }
 
 }
+
+
+
+
 
 
 
