@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBbuZGYBxZIAFwNESRoQMVlr8KlIcCdWEI",
+  apiKey: "AIzaSyCoGi5t-xiObCW52h0lV_Y6nJ1B3oRIr1Q",
   authDomain: "dental-add.firebaseapp.com",
   projectId: "dental-add",
   storageBucket: "dental-add.firebasestorage.app",
