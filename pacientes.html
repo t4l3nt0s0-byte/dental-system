@@ -427,7 +427,219 @@ Guardar
 <!-- FIREBASE -->
 <script type="module">
 
-console.log("MODULO FUNCIONANDO");
+import {
+  leerPacientes,
+  guardarPaciente
+} from "./shared.js";
+
+let patients = [];
+
+function renderTable(){
+
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const g = document.getElementById('filterGenero').value;
+  const a = document.getElementById('filterAlergia').value;
+
+  let filtered = patients.filter(p => {
+
+    const match =
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.exp || '').toLowerCase().includes(q) ||
+      (p.tel || '').includes(q);
+
+    const gMatch = !g || p.genero === g;
+
+    const aMatch = !a ||
+      (a === 'si'
+        ? p.alergias && p.alergias !== 'Ninguna'
+        : p.alergias === 'Ninguna' || !p.alergias);
+
+    return match && gMatch && aMatch;
+
+  });
+
+  document.getElementById('countLabel').textContent =
+    `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`;
+
+  const body = document.getElementById('tableBody');
+
+  if(!filtered.length){
+
+    body.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">
+          No se encontraron pacientes
+        </div>
+      </div>
+    `;
+
+    return;
+  }
+
+  body.innerHTML = filtered.map((p,i)=>`
+
+    <div class="patient-row">
+
+      <div>
+        <span class="exp-badge">${p.exp || '—'}</span>
+      </div>
+
+      <div class="patient-info">
+        <div class="name">${p.nombre || '—'}</div>
+        <div class="sub">${p.email || '—'}</div>
+      </div>
+
+      <div class="cell mono">${p.edad || '—'}</div>
+
+      <div>
+        <span class="gender-badge">
+          ${p.genero || '—'}
+        </span>
+      </div>
+
+      <div class="cell mono">
+        ${p.tel || '—'}
+      </div>
+
+      <div>
+        <span class="alergia-badge">
+          ${p.alergias || 'Ninguna'}
+        </span>
+      </div>
+
+      <div class="cell">
+        ${p.alta || '—'}
+      </div>
+
+      <div class="actions">
+
+        <button class="icon-btn">
+          🦷
+        </button>
+
+      </div>
+
+    </div>
+
+  `).join('');
+
+}
+
+window.openModal = function(){
+
+  document
+    .getElementById('modal')
+    .classList.add('open');
+
+}
+
+window.closeModal = function(){
+
+  document
+    .getElementById('modal')
+    .classList.remove('open');
+
+}
+
+window.savePatient = async function(){
+
+  const nombre =
+    document.getElementById('f-nombre')
+    .value
+    .toUpperCase()
+    .trim();
+
+  const exp =
+    document.getElementById('f-exp')
+    .value
+    .trim();
+
+  if(!nombre || !exp){
+
+    alert('Nombre y expediente obligatorios');
+
+    return;
+  }
+
+  const p = {
+
+    exp,
+    nombre,
+
+    fnac:
+      document.getElementById('f-fnac').value,
+
+    edad:'',
+
+    genero:
+      document.getElementById('f-genero').value,
+
+    tel:
+      document.getElementById('f-tel').value,
+
+    email:
+      document.getElementById('f-email').value,
+
+    alergias:
+      document.getElementById('f-alergias').value || 'Ninguna',
+
+    padecimientos:
+      document.getElementById('f-padec').value || 'Ninguna',
+
+    alta:
+      new Date().toLocaleDateString('es-MX'),
+
+    visitas:0
+  };
+
+  if(p.fnac){
+
+    const d = new Date(p.fnac);
+
+    const hoy = new Date();
+
+    p.edad = Math.floor(
+      (hoy - d) / 31557600000
+    );
+
+  }
+
+  console.log("GUARDANDO:", p);
+
+  const ok = await guardarPaciente(p);
+
+  if(ok){
+
+    alert("Paciente guardado");
+
+    patients.push(p);
+
+    renderTable();
+
+    closeModal();
+
+  }else{
+
+    alert("Error guardando");
+
+  }
+
+}
+
+async function cargarPacientes(){
+
+  console.log("CARGANDO PACIENTES...");
+
+  patients = await leerPacientes();
+
+  console.log("PACIENTES:", patients);
+
+  renderTable();
+
+}
+
+cargarPacientes();
 
 </script>
 
