@@ -41,7 +41,7 @@ const NAV_HTML = `
 </aside>`;
 
 // Shared data (localStorage simulation)
-/*const DB = {
+const DB = {
   pacientes: JSON.parse(localStorage.getItem('dental_pacientes') || 'null') || [
     {exp:'P-001',nombre:'GARCÍA LÓPEZ MARÍA ELENA',fnac:'15/03/1985',edad:41,genero:'Femenino',tel:'5512345678',email:'maria@mail.com',alergias:'Ninguna',padecimientos:'Ninguna',alta:'01/01/2024',visitas:0},
     {exp:'P-002',nombre:'LÓPEZ VEGA CARLOS ALBERTO',fnac:'22/07/1990',edad:35,genero:'Masculino',tel:'5598765432',email:'carlos@mail.com',alergias:'Penicilina',padecimientos:'Hipertensión',alta:'15/03/2024',visitas:0},
@@ -90,7 +90,7 @@ const NAV_HTML = `
     localStorage.setItem('dental_citas',JSON.stringify(this.citas));
   }
 };
-*/
+
 console.log("DB COMENTADA OK");
 
 function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
