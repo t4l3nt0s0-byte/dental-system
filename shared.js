@@ -145,5 +145,31 @@ async function guardarPacientePrueba() {
 
 }
 
-guardarPacientePrueba();
+
+
+async function leerPacientes() {
+
+  try {
+
+    const querySnapshot = await getDocs(
+      collection(db, "pacientes")
+    );
+
+    console.log("LISTA PACIENTES:");
+
+    querySnapshot.forEach((doc) => {
+
+      console.log(doc.id, "=>", doc.data());
+
+    });
+
+  } catch (error) {
+
+    console.error("Error leyendo pacientes:", error);
+
+  }
+
+}
+
+leerPacientes();
 
