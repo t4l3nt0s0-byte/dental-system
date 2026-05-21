@@ -434,11 +434,12 @@ import {
 
 let patients = [];
 
-function renderTable(){
+
+
+
+  function renderTable(){
 
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const g = document.getElementById('filterGenero').value;
-  const a = document.getElementById('filterAlergia').value;
 
   let filtered = patients.filter(p => {
 
@@ -447,19 +448,9 @@ function renderTable(){
       (p.exp || '').toLowerCase().includes(q) ||
       (p.tel || '').includes(q);
 
-    const gMatch = !g || p.genero === g;
-
-    const aMatch = !a ||
-      (a === 'si'
-        ? p.alergias && p.alergias !== 'Ninguna'
-        : p.alergias === 'Ninguna' || !p.alergias);
-
-    return match && gMatch && aMatch;
+    return match;
 
   });
-
-  document.getElementById('countLabel').textContent =
-    `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`;
 
   const body = document.getElementById('tableBody');
 
@@ -467,61 +458,23 @@ function renderTable(){
 
     body.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-text">
-          No se encontraron pacientes
-        </div>
+        No se encontraron pacientes
       </div>
     `;
 
     return;
   }
 
-  body.innerHTML = filtered.map((p,i)=>`
-
+  body.innerHTML = filtered.map(p => `
     <div class="patient-row">
-
-      <div>
-        <span class="exp-badge">${p.exp || '—'}</span>
-      </div>
-
-      <div class="patient-info">
-        <div class="name">${p.nombre || '—'}</div>
-        <div class="sub">${p.email || '—'}</div>
-      </div>
-
-      <div class="cell mono">${p.edad || '—'}</div>
-
-      <div>
-        <span class="gender-badge">
-          ${p.genero || '—'}
-        </span>
-      </div>
-
-      <div class="cell mono">
-        ${p.tel || '—'}
-      </div>
-
-      <div>
-        <span class="alergia-badge">
-          ${p.alergias || 'Ninguna'}
-        </span>
-      </div>
-
-      <div class="cell">
-        ${p.alta || '—'}
-      </div>
-
-      <div class="actions">
-
-        <button class="icon-btn">
-          🦷
-        </button>
-
-      </div>
-
+      <div>${p.exp || '-'}</div>
+      <div>${p.nombre || '-'}</div>
+      <div>${p.edad || '-'}</div>
+      <div>${p.genero || '-'}</div>
+      <div>${p.tel || '-'}</div>
+      <div>${p.alergias || '-'}</div>
+      <div>${p.alta || '-'}</div>
     </div>
-
   `).join('');
 
 }
