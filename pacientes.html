@@ -187,13 +187,20 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 
 
-  <script type="module">
+<script type="module">
 
-import { leerPacientes } from "./shared.js";
+import {
+  leerPacientes,
+  guardarPaciente
+} from "./shared.js";
 
-window.cargarPacientes = async function() {
+window.guardarPacienteFirebase = guardarPaciente;
+
+window.cargarPacientes = async function () {
 
   patients = await leerPacientes();
+
+  console.log("PACIENTES CARGADOS:", patients);
 
   renderTable();
 
@@ -202,6 +209,8 @@ window.cargarPacientes = async function() {
 cargarPacientes();
 
 </script>
+
+  
 <script>
 let patients = [];
 
@@ -261,17 +270,7 @@ function deletePatient(exp){
 function editPatient(idx){alert('Para editar, haga clic en el expediente y modifique los datos directamente.');}
 
 
-  async function cargarPacientes(){
 
-  patients = await window.firebaseDB.obtenerPacientes();
-
-  console.log("PACIENTES CARGADOS:", patients);
-
-  renderTable();
-
-}
-
-cargarPacientes();
 </script>
 </body>
 </html>
