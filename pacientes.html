@@ -196,23 +196,27 @@ import {
 
 window.guardarPacienteFirebase = guardarPaciente;
 
-window.cargarPacientes = async function () {
+async function iniciar() {
 
-  patients = await leerPacientes();
+  console.log("SCRIPT MODULE FUNCIONANDO");
 
-  console.log("PACIENTES CARGADOS:", patients);
+  let datos = await leerPacientes();
+
+  console.log("DATOS:", datos);
+
+  window.patients = datos;
 
   renderTable();
 
 }
 
-cargarPacientes();
+iniciar();
 
 </script>
 
   
 <script>
-let patients = [];
+window.patients = [];
 
 function renderTable(){
   const q=document.getElementById('searchInput').value.toLowerCase();
