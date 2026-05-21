@@ -97,14 +97,7 @@ function setActive(page){document.querySelectorAll('.nav-item').forEach(a=>{a.cl
 
 
 
-
-
-
-
-
-
-
-async function leerPacientes() {
+export async function leerPacientes() {
 
   try {
 
@@ -112,21 +105,34 @@ async function leerPacientes() {
       collection(db, "pacientes")
     );
 
-    console.log("LISTA PACIENTES:");
+    let lista = [];
 
     querySnapshot.forEach((doc) => {
 
-      console.log(doc.id, "=>", doc.data());
+      lista.push({
+        id: doc.id,
+        ...doc.data()
+      });
 
     });
+
+    console.log("LISTA PACIENTES:", lista);
+
+    return lista;
 
   } catch (error) {
 
     console.error("Error leyendo pacientes:", error);
 
+    return [];
+
   }
 
 }
 
-leerPacientes();
+
+
+
+
+
 
