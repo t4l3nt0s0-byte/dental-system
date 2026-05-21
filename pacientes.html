@@ -191,7 +191,12 @@ function renderTable(){
   const g=document.getElementById('filterGenero').value;
   const a=document.getElementById('filterAlergia').value;
   let filtered=patients.filter(p=>{
-    const match=p.nombre.toLowerCase().includes(q)||p.exp.toLowerCase().includes(q)||(p.tel&&p.tel.includes(q));
+
+    const match =
+  (p.nombre || '').toLowerCase().includes(q) ||
+  (p.exp || '').toLowerCase().includes(q) ||
+  (p.tel || '').includes(q);
+    
     const gMatch=!g||p.genero===g;
     const aMatch=!a||(a==='si'?p.alergias&&p.alergias!=='Ninguna':p.alergias==='Ninguna'||!p.alergias);
     return match&&gMatch&&aMatch;
