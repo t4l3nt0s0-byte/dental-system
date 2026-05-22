@@ -182,7 +182,295 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
+<script type="module">
 
+import {
+  leerPacientes,
+  guardarPaciente
+} from "./shared.js";
+
+let patients = [];
+
+/* =========================
+   RENDER TABLA
+========================= */
+function renderTable(){
+
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const g = document.getElementById('filterGenero').value;
+  const a = document.getElementById('filterAlergia').value;
+
+  let filtered = patients.filter(p => {
+
+    const match =
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.exp || '').toLowerCase().includes(q) ||
+      (p.tel || '').includes(q);
+
+    const gMatch = !g || p.genero === g;
+
+    const aMatch = !a ||
+      (
+        a === 'si'
+          ? p.alergias && p.alergias !== 'Ninguna'
+          : p.alergias === 'Ninguna' || !p.alergias
+      );
+
+    return match && gMatch && aMatch;
+
+  });
+
+  document.getElementById('countLabel').textContent =
+    `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`;
+
+  const body = document.getElementById('tableBody');
+
+  if(!filtered.length){
+
+    body.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">
+          No se encontraron pacientes
+        </div>
+      </div>
+    `;
+
+    return;
+  }
+
+  body.innerHTML = filtered.map((p,i)=>`
+
+    <div class="patient-row">
+
+      <div>
+        <span class="exp-badge">${p.exp}</span>
+      </div>
+
+      <div class="patient-info">
+        <div class="name">${p.nombre}</div>
+        <div class="sub">${p.email || '—'}</div>
+      </div>
+
+      <div class="cell mono">${p.edad || '—'}</div>
+
+      <div>
+        <span class="gender-badge ${p.genero==='Femenino'?'gender-f':'gender-m'}">
+          ${p.genero || '—'}
+        </span>
+      </div>
+
+      <div class="cell mono">${p.tel || '—'}</div>
+
+      <div>
+        <span class="alergia-badge ${p.alergias && p.alergias !== 'Ninguna' ? 'alergia-yes':'alergia-none'}">
+          ${p.alergias || 'Ninguna'}
+        </span>
+      </div>
+
+      <div class="cell">${p.alta || '—'}</div>
+
+      <div class="actions">
+
+        <button
+          class="icon-btn"
+          onclick="window.location='tratamientos.html?exp=${p.exp}'">
+          🦷
+        </button>
+
+        <button
+          class="icon-btn"
+          onclick="editPatient(${i})">
+          ✏️
+        </button>
+
+        <button
+          class="icon-btn"
+          onclick="deletePatient('${p.exp}')">
+          🗑️
+        </button>
+
+      </div>
+
+    </div>
+
+  `).join('');
+}
+
+/* =========================
+   MODAL
+========================= */
+
+function openModal(){
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+}
+
+/* =========================
+   GUARDAR PACIENTE
+========================= */
+
+async function savePatient(){
+
+  try{
+
+    const nombre =
+      document.getElementById('f-nombre')
+      .value
+      .toUpperCase()
+      .trim();
+
+    const exp =
+      document.getElementById('f-exp')
+      .value
+      .trim();
+
+    if(!nombre || !exp){
+
+      alert('Nombre y expediente son obligatorios');
+      return;
+
+    }
+
+    const p = {
+
+      exp,
+      nombre,
+
+      fnac: document.getElementById('f-fnac').value,
+
+      edad:'',
+
+      genero: document.getElementById('f-genero').value,
+
+      tel: document.getElementById('f-tel').value,
+
+      email: document.getElementById('f-email').value,
+
+      alergias:
+        document.getElementById('f-alergias').value
+        || 'Ninguna',
+
+      padecimientos:
+        document.getElementById('f-padec').value
+        || 'Ninguna',
+
+      alta: new Date().toLocaleDateString('es-MX'),
+
+      visitas:0
+
+    };
+
+    if(p.fnac){
+
+      const d = new Date(p.fnac);
+      const hoy = new Date();
+
+      p.edad = Math.floor(
+        (hoy - d) / 31557600000
+      );
+
+    }
+
+    console.log("GUARDANDO:", p);
+
+    await guardarPaciente(p);
+
+    console.log("PACIENTE GUARDADO");
+
+    await cargarPacientes();
+
+    closeModal();
+
+    document
+      .querySelectorAll('.form-input,.form-textarea')
+      .forEach(el => el.value='');
+
+    alert("Paciente guardado correctamente");
+
+  }catch(err){
+
+    console.error(err);
+
+    alert("Error al guardar paciente");
+
+  }
+
+}
+
+/* =========================
+   ELIMINAR
+========================= */
+
+function deletePatient(exp){
+
+  alert(
+    "Eliminar se configurará después con Firebase"
+  );
+
+}
+
+/* =========================
+   EDITAR
+========================= */
+
+function editPatient(idx){
+
+  alert(
+    "Editar se configurará después"
+  );
+
+}
+
+/* =========================
+   CARGAR
+========================= */
+
+async function cargarPacientes(){
+
+  try{
+
+    patients = await leerPacientes();
+
+    console.log(
+      "PACIENTES CARGADOS:",
+      patients
+    );
+
+    renderTable();
+
+  }catch(err){
+
+    console.error(
+      "ERROR CARGANDO:",
+      err
+    );
+
+  }
+
+}
+
+/* =========================
+   HACER GLOBALES
+========================= */
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.savePatient = savePatient;
+window.deletePatient = deletePatient;
+window.editPatient = editPatient;
+window.renderTable = renderTable;
+
+/* =========================
+   INICIO
+========================= */
+
+cargarPacientes();
+
+</script>
 
 
 
@@ -191,87 +479,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
   
 
-  <script type="module">
 
-import {
-  leerPacientes,
-  guardarPaciente
-} from "./shared.js";
-
-let patients = [];
-window.patients = [];
-
-function renderTable(){
-  const q=document.getElementById('searchInput').value.toLowerCase();
-  const g=document.getElementById('filterGenero').value;
-  const a=document.getElementById('filterAlergia').value;
-  let filtered=patients.filter(p=>{
-
-    const match =
-  (p.nombre || '').toLowerCase().includes(q) ||
-  (p.exp || '').toLowerCase().includes(q) ||
-  (p.tel || '').includes(q);
-    
-    const gMatch=!g||p.genero===g;
-    const aMatch=!a||(a==='si'?p.alergias&&p.alergias!=='Ninguna':p.alergias==='Ninguna'||!p.alergias);
-    return match&&gMatch&&aMatch;
-  });
-  document.getElementById('countLabel').textContent=`${filtered.length} paciente${filtered.length!==1?'s':''} encontrado${filtered.length!==1?'s':''}`;
-  const body=document.getElementById('tableBody');
-  if(!filtered.length){body.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No se encontraron pacientes</div></div>`;return;}
-  body.innerHTML=filtered.map((p,i)=>`
-    <div class="patient-row" onclick="window.location='tratamientos.html?exp=${p.exp}'">
-      <div><span class="exp-badge">${p.exp}</span></div>
-      <div class="patient-info"><div class="name">${p.nombre}</div><div class="sub">${p.email||'—'}</div></div>
-      <div class="cell mono">${p.edad||'—'}</div>
-      <div><span class="gender-badge ${p.genero==='Femenino'?'gender-f':'gender-m'}">${p.genero||'—'}</span></div>
-      <div class="cell mono">${p.tel||'—'}</div>
-      <div><span class="alergia-badge ${p.alergias&&p.alergias!=='Ninguna'?'alergia-yes':'alergia-none'}">${p.alergias||'Ninguna'}</span></div>
-      <div class="cell">${p.alta||'—'}</div>
-      <div class="actions">
-        <button class="icon-btn" title="Ver tratamientos" onclick="event.stopPropagation();window.location='tratamientos.html?exp=${p.exp}'">🦷</button>
-        <button class="icon-btn" title="Editar" onclick="event.stopPropagation();editPatient(${i})">✏️</button>
-        <button class="icon-btn" title="Eliminar" onclick="event.stopPropagation();deletePatient('${p.exp}')">🗑️</button>
-      </div>
-    </div>`).join('');
-}
-function openModal(){document.getElementById('modal').classList.add('open');}
-function closeModal(){document.getElementById('modal').classList.remove('open');}
-async function savePatient(){
-  const nombre=document.getElementById('f-nombre').value.toUpperCase().trim();
-  const exp=document.getElementById('f-exp').value.trim();
-  if(!nombre||!exp){alert('Nombre y expediente son obligatorios');return;}
-  const p={exp,nombre,fnac:document.getElementById('f-fnac').value,edad:'',genero:document.getElementById('f-genero').value,tel:document.getElementById('f-tel').value,email:document.getElementById('f-email').value,alergias:document.getElementById('f-alergias').value||'Ninguna',padecimientos:document.getElementById('f-padec').value||'Ninguna',alta:new Date().toLocaleDateString('es-MX'),visitas:0};
-  if(p.fnac){const d=new Date(p.fnac),hoy=new Date();p.edad=Math.floor((hoy-d)/31557600000);}
-  await guardarPaciente(p);
-await cargarPacientes();
-renderTable();
-closeModal();  
-  document.querySelectorAll('.form-input,.form-textarea').forEach(el=>el.value='');
-}
-
-
-    
-
-function deletePatient(exp){
-  if(!confirm('¿Eliminar este expediente? Esta acción no se puede deshacer.'))return;
-  DB.pacientes=DB.pacientes.filter(p=>p.exp!==exp);DB.save();patients=[...DB.pacientes];renderTable();
-}
-
-function editPatient(idx){alert('Para editar, haga clic en el expediente y modifique los datos directamente.');}
-
-async function cargarPacientes() {
-
-  patients = await leerPacientes();
-
-  console.log("PACIENTES CARGADOS:", patients);
-
-  renderTable();
-
-}
-
-cargarPacientes();
-
-</script>
 </body>
 </html>
