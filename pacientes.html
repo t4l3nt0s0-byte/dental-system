@@ -36,25 +36,25 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .search-input::placeholder{color:var(--text-dim)}
 .filter-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;cursor:pointer}
 .patients-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
-.table-head{display:grid;grid-template-columns:80px 1fr 80px 100px 120px 120px 120px 100px;gap:0;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.table-head{display:grid;grid-template-columns:90px 1fr 60px 100px 120px 120px 110px 100px;gap:0;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
 .th{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
 .table-body{display:flex;flex-direction:column}
-.patient-row{display:grid;grid-template-columns:80px 1fr 80px 100px 120px 120px 120px 100px;gap:0;padding:16px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background .2s;cursor:pointer}
+.patient-row{display:grid;grid-template-columns:90px 1fr 60px 100px 120px 120px 110px 100px;gap:0;padding:16px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background .2s;cursor:pointer}
 .patient-row:hover{background:var(--surface2)}
 .patient-row:last-child{border-bottom:none}
-.exp-badge{font-family:var(--font-mono);font-size:.72rem;color:var(--teal);background:var(--teal-dim);padding:3px 8px;border-radius:5px;display:inline-block}
+.exp-badge{font-family:var(--font-mono);font-size:.72rem;color:var(--teal);background:var(--teal-dim);padding:3px 8px;border-radius:5px;display:inline-block;white-space:nowrap}
 .patient-info .name{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:2px}
 .patient-info .sub{font-size:.72rem;color:var(--text-muted)}
-.gender-badge{padding:4px 10px;border-radius:100px;font-size:.68rem;font-weight:600}
+.gender-badge{padding:4px 10px;border-radius:100px;font-size:.68rem;font-weight:600;white-space:nowrap}
 .gender-f{background:rgba(255,100,200,.1);color:#FF64C8}
 .gender-m{background:var(--blue-dim);color:var(--blue)}
 .cell{font-size:.82rem;color:var(--text-muted)}
 .cell.mono{font-family:var(--font-mono);font-size:.75rem}
-.alergia-badge{font-size:.7rem;padding:3px 8px;border-radius:5px}
+.alergia-badge{font-size:.7rem;padding:3px 8px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;display:inline-block}
 .alergia-none{color:var(--text-dim)}
 .alergia-yes{background:var(--red-dim);color:var(--red)}
 .actions{display:flex;gap:6px}
-.icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s}
+.icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s;flex-shrink:0}
 .icon-btn:hover{background:var(--surface2);color:var(--text);border-color:rgba(255,255,255,.2)}
 
 /* MODAL */
@@ -81,7 +81,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .empty-icon{font-size:2.5rem;margin-bottom:12px}
 .empty-text{font-size:.9rem}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.table-head,.patient-row{grid-template-columns:80px 1fr 100px 80px}}
+@media(max-width:900px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .table-head{display:none}
+  .patient-row{grid-template-columns:1fr;gap:8px;padding:16px}
+  .patient-row > div{display:flex;align-items:center;gap:8px}
+}
 </style>
 </head>
 <body>
@@ -226,24 +232,18 @@ function renderTable(){
   const body = document.getElementById('tableBody');
 
   if(!filtered.length){
-
     body.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
-        <div class="empty-text">
-          No se encontraron pacientes
-        </div>
+        <div class="empty-text">No se encontraron pacientes</div>
       </div>
     `;
-
     return;
   }
 
-  body.innerHTML = filtered.map((p,i)=>`
+  body.innerHTML = filtered.map((p, i) => `
 
-    <button
-  class="icon-btn"
-  onclick="event.stopPropagation(); editPatient(${i})">
+    <div class="patient-row" onclick="editPatient(${i})">
 
       <div>
         <span class="exp-badge">${p.exp}</span>
@@ -254,10 +254,10 @@ function renderTable(){
         <div class="sub">${p.email || '—'}</div>
       </div>
 
-      <div class="cell mono">${p.edad || '—'}</div>
+      <div class="cell mono">${p.edad ?? '—'}</div>
 
       <div>
-        <span class="gender-badge ${p.genero==='Femenino'?'gender-f':'gender-m'}">
+        <span class="gender-badge ${p.genero === 'Femenino' ? 'gender-f' : 'gender-m'}">
           ${p.genero || '—'}
         </span>
       </div>
@@ -265,29 +265,26 @@ function renderTable(){
       <div class="cell mono">${p.tel || '—'}</div>
 
       <div>
-        <span class="alergia-badge ${p.alergias && p.alergias !== 'Ninguna' ? 'alergia-yes':'alergia-none'}">
+        <span class="alergia-badge ${p.alergias && p.alergias !== 'Ninguna' ? 'alergia-yes' : 'alergia-none'}">
           ${p.alergias || 'Ninguna'}
         </span>
       </div>
 
       <div class="cell">${p.alta || '—'}</div>
 
-      <div class="actions">
+      <div class="actions" onclick="event.stopPropagation()">
 
-        <button
-          class="icon-btn"
+        <button class="icon-btn" title="Tratamientos"
           onclick="window.location='tratamientos.html?exp=${p.exp}'">
           🦷
         </button>
 
-        <button
-          class="icon-btn"
+        <button class="icon-btn" title="Editar"
           onclick="editPatient(${i})">
           ✏️
         </button>
 
-        <button
-          class="icon-btn"
+        <button class="icon-btn" title="Eliminar"
           onclick="deletePatient('${p.exp}')">
           🗑️
         </button>
@@ -330,144 +327,81 @@ async function savePatient(){
       .value
       .trim();
 
-
     if(!nombre || !exp){
-
-  alert('Nombre y expediente son obligatorios');
-
-  return;
-
-}
-
-const existe = patients.find(
-  x => (x.exp || '').toLowerCase() === exp.toLowerCase()
-);
-
-if(existe){
-
-  alert("Ese expediente ya existe");
-
-  return;
-
-}
-
-    const fechaNacimiento =
-  document.getElementById('f-fnac').value;
-
-if(
-  fechaNacimiento &&
-  new Date(fechaNacimiento) > new Date()
-){
-
-  alert("La fecha de nacimiento no puede ser futura");
-
-  return;
-
-}
-
-    const p = {
-
-      exp,
-      nombre,
-
-      fnac: document.getElementById('f-fnac').value,
-
-      edad:null,
-
-      genero: document.getElementById('f-genero').value,
-
-      tel: document.getElementById('f-tel').value,
-
-      email: document.getElementById('f-email').value,
-
-      alergias:
-        document.getElementById('f-alergias').value
-        || 'Ninguna',
-
-      padecimientos:
-        document.getElementById('f-padec').value
-        || 'Ninguna',
-      ocupacion:
-  document.getElementById('f-ocup').value,
-
-ciudad:
-  document.getElementById('f-ciudad').value,
-
-direccion:
-  document.getElementById('f-dir').value,
-
-contactoEmergencia:
-  document.getElementById('f-cemerg').value,
-
-telEmergencia:
-  document.getElementById('f-temerg').value,
-
-observaciones:
-  document.getElementById('f-obs').value,
-
-      alta: new Date().toLocaleDateString('es-MX'),
-
-      visitas:0
-
-    };
-
-    
-
-      if(p.fnac){
-
-  const d = new Date(p.fnac + "T00:00:00");
-
-  const hoy = new Date();
-
-  let edad =
-    hoy.getFullYear() - d.getFullYear();
-
-  const m =
-    hoy.getMonth() - d.getMonth();
-
-  if(
-    m < 0 ||
-    (m === 0 && hoy.getDate() < d.getDate())
-  ){
-    edad--;
-  }
-
-  p.edad = edad;
-
+      alert('Nombre y expediente son obligatorios');
+      return;
     }
 
-  
+    const existe = patients.find(
+      x => (x.exp || '').toLowerCase() === exp.toLowerCase()
+    );
+
+    if(existe){
+      alert("Ese expediente ya existe");
+      return;
+    }
+
+    const fechaNacimiento =
+      document.getElementById('f-fnac').value;
+
+    if(fechaNacimiento && new Date(fechaNacimiento) > new Date()){
+      alert("La fecha de nacimiento no puede ser futura");
+      return;
+    }
+
+    const p = {
+      exp,
+      nombre,
+      fnac: document.getElementById('f-fnac').value,
+      edad: null,
+      genero: document.getElementById('f-genero').value,
+      tel: document.getElementById('f-tel').value,
+      email: document.getElementById('f-email').value,
+      alergias: document.getElementById('f-alergias').value || 'Ninguna',
+      padecimientos: document.getElementById('f-padec').value || 'Ninguna',
+      ocupacion: document.getElementById('f-ocup').value,
+      ciudad: document.getElementById('f-ciudad').value,
+      direccion: document.getElementById('f-dir').value,
+      contactoEmergencia: document.getElementById('f-cemerg').value,
+      telEmergencia: document.getElementById('f-temerg').value,
+      observaciones: document.getElementById('f-obs').value,
+      alta: new Date().toLocaleDateString('es-MX'),
+      visitas: 0
+    };
+
+    if(p.fnac){
+      const d = new Date(p.fnac + "T00:00:00");
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - d.getFullYear();
+      const m = hoy.getMonth() - d.getMonth();
+      if(m < 0 || (m === 0 && hoy.getDate() < d.getDate())){
+        edad--;
+      }
+      p.edad = edad;
+    }
 
     console.log("GUARDANDO:", p);
-
     await guardarPaciente(p);
-
     console.log("PACIENTE GUARDADO");
 
     await cargarPacientes();
-
     closeModal();
 
-   document
-  .querySelectorAll('.form-input,.form-textarea,.form-select')
-  .forEach(el => {
-
-    if(el.tagName === 'SELECT'){
-      el.selectedIndex = 0;
-    }else{
-      el.value = '';
-    }
-
-  });
+    document
+      .querySelectorAll('.form-input,.form-textarea,.form-select')
+      .forEach(el => {
+        if(el.tagName === 'SELECT'){
+          el.selectedIndex = 0;
+        } else {
+          el.value = '';
+        }
+      });
 
     alert("Paciente guardado correctamente");
 
-  }catch(err){
-
+  } catch(err){
     console.error(err);
-
     alert("Error al guardar paciente");
-
   }
 
 }
@@ -477,11 +411,7 @@ observaciones:
 ========================= */
 
 function deletePatient(exp){
-
-  alert(
-    "Eliminar se configurará después con Firebase"
-  );
-
+  alert("Eliminar se configurará después con Firebase");
 }
 
 /* =========================
@@ -489,11 +419,7 @@ function deletePatient(exp){
 ========================= */
 
 function editPatient(idx){
-
-  alert(
-    "Editar se configurará después"
-  );
-
+  alert("Editar se configurará después");
 }
 
 /* =========================
@@ -503,23 +429,11 @@ function editPatient(idx){
 async function cargarPacientes(){
 
   try{
-
     patients = await leerPacientes();
-
-    console.log(
-      "PACIENTES CARGADOS:",
-      patients
-    );
-
+    console.log("PACIENTES CARGADOS:", patients);
     renderTable();
-
-  }catch(err){
-
-    console.error(
-      "ERROR CARGANDO:",
-      err
-    );
-
+  } catch(err){
+    console.error("ERROR CARGANDO:", err);
   }
 
 }
@@ -542,14 +456,6 @@ window.renderTable = renderTable;
 cargarPacientes();
 
 </script>
-
-
-
-
-
-
-  
-
 
 </body>
 </html>
