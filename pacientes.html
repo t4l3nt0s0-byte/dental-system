@@ -36,25 +36,26 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .search-input::placeholder{color:var(--text-dim)}
 .filter-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;cursor:pointer}
 .patients-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
-.table-head{display:grid;grid-template-columns:80px 1fr 80px 100px 120px 120px 120px 100px;gap:0;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.table-head{display:grid;grid-template-columns:90px 1fr 70px 110px 130px 130px 120px 110px;gap:0;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
 .th{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
 .table-body{display:flex;flex-direction:column}
-.patient-row{display:grid;grid-template-columns:80px 1fr 80px 100px 120px 120px 120px 100px;gap:0;padding:16px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background .2s;cursor:pointer}
+/* FIX: patient-row usa el mismo grid que table-head */
+.patient-row{display:grid;grid-template-columns:90px 1fr 70px 110px 130px 130px 120px 110px;gap:0;padding:16px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background .2s;cursor:pointer}
 .patient-row:hover{background:var(--surface2)}
 .patient-row:last-child{border-bottom:none}
 .exp-badge{font-family:var(--font-mono);font-size:.72rem;color:var(--teal);background:var(--teal-dim);padding:3px 8px;border-radius:5px;display:inline-block}
 .patient-info .name{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:2px}
 .patient-info .sub{font-size:.72rem;color:var(--text-muted)}
-.gender-badge{padding:4px 10px;border-radius:100px;font-size:.68rem;font-weight:600}
+.gender-badge{padding:4px 10px;border-radius:100px;font-size:.68rem;font-weight:600;display:inline-block}
 .gender-f{background:rgba(255,100,200,.1);color:#FF64C8}
 .gender-m{background:var(--blue-dim);color:var(--blue)}
 .cell{font-size:.82rem;color:var(--text-muted)}
 .cell.mono{font-family:var(--font-mono);font-size:.75rem}
-.alergia-badge{font-size:.7rem;padding:3px 8px;border-radius:5px}
+.alergia-badge{font-size:.7rem;padding:3px 8px;border-radius:5px;display:inline-block}
 .alergia-none{color:var(--text-dim)}
 .alergia-yes{background:var(--red-dim);color:var(--red)}
-.actions{display:flex;gap:6px}
-.icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s}
+.actions{display:flex;gap:6px;align-items:center}
+.icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s;flex-shrink:0}
 .icon-btn:hover{background:var(--surface2);color:var(--text);border-color:rgba(255,255,255,.2)}
 
 /* MODAL */
@@ -80,6 +81,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted)}
 .empty-icon{font-size:2.5rem;margin-bottom:12px}
 .empty-text{font-size:.9rem}
+
+/* Modal editar */
+.modal-edit .modal-title-edit{font-family:var(--font-display);font-size:1.3rem;font-style:italic;color:var(--teal)}
+
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 @media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.table-head,.patient-row{grid-template-columns:80px 1fr 100px 80px}}
 </style>
@@ -87,7 +92,15 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 
 <aside class="sidebar">
-  <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">🦷</div><div><div class="logo-text">Dental<span>OS</span></div><div class="logo-sub">Sistema integral</div></div></div></div>
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">🦷</div>
+      <div>
+        <div class="logo-text">Dental<span>OS</span></div>
+        <div class="logo-sub">Sistema integral</div>
+      </div>
+    </div>
+  </div>
   <nav class="sidebar-nav">
     <div class="nav-section">Principal</div>
     <a href="index.html" class="nav-item">📊 Dashboard</a>
@@ -103,7 +116,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <a href="metricas.html" class="nav-item">📈 Métricas</a>
     <a href="busqueda.html" class="nav-item">🔍 Búsqueda</a>
   </nav>
-  <div class="sidebar-footer"><div class="clinic-name">Consultorio Dental</div><div class="clinic-info">Dr. Administrador · v2026</div></div>
+  <div class="sidebar-footer">
+    <div class="clinic-name">Consultorio Dental</div>
+    <div class="clinic-info">Dr. Administrador · v2026</div>
+  </div>
 </aside>
 
 <main class="main">
@@ -119,7 +135,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <input class="search-input" id="searchInput" placeholder="🔍 Buscar por nombre, expediente, teléfono..." oninput="renderTable()">
       <select class="filter-select" id="filterGenero" onchange="renderTable()">
         <option value="">Todos los géneros</option>
-        <option>Femenino</option><option>Masculino</option>
+        <option>Femenino</option>
+        <option>Masculino</option>
       </select>
       <select class="filter-select" id="filterAlergia" onchange="renderTable()">
         <option value="">Todas las alergias</option>
@@ -156,7 +173,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div class="modal-body">
       <div class="form-section">Datos personales</div>
       <div class="form-grid">
-        <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="f-nombre" placeholder="APELLIDO PATERNO AMATERNO NOMBRE" style="text-transform:uppercase"></div>
+        <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="f-nombre" placeholder="APELLIDO PATERNO MATERNO NOMBRE" style="text-transform:uppercase"></div>
         <div class="form-group"><label class="form-label"># Expediente *</label><input class="form-input" id="f-exp" placeholder="P-006"></div>
         <div class="form-group"><label class="form-label">Fecha de nacimiento</label><input type="date" class="form-input" id="f-fnac"></div>
         <div class="form-group"><label class="form-label">Género</label><select class="form-select" id="f-genero"><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
@@ -182,374 +199,342 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
+<!-- MODAL EDITAR EXPEDIENTE -->
+<div class="modal-overlay" id="modalEdit">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--teal)">✏️ Editar Expediente</div>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="e-exp-original">
+      <div class="form-section">Datos personales</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="e-nombre" style="text-transform:uppercase"></div>
+        <div class="form-group"><label class="form-label"># Expediente *</label><input class="form-input" id="e-exp" readonly style="opacity:.6;cursor:not-allowed"></div>
+        <div class="form-group"><label class="form-label">Fecha de nacimiento</label><input type="date" class="form-input" id="e-fnac"></div>
+        <div class="form-group"><label class="form-label">Género</label><select class="form-select" id="e-genero"><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="e-tel"></div>
+        <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" class="form-input" id="e-email"></div>
+        <div class="form-group"><label class="form-label">Ocupación</label><input class="form-input" id="e-ocup"></div>
+        <div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" id="e-ciudad"></div>
+        <div class="form-group full"><label class="form-label">Dirección</label><input class="form-input" id="e-dir"></div>
+      </div>
+      <div class="form-section">Información médica</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Alergias</label><input class="form-input" id="e-alergias"></div>
+        <div class="form-group"><label class="form-label">Padecimientos</label><input class="form-input" id="e-padec"></div>
+        <div class="form-group"><label class="form-label">Contacto emergencia</label><input class="form-input" id="e-cemerg"></div>
+        <div class="form-group"><label class="form-label">Tel. emergencia</label><input class="form-input" id="e-temerg"></div>
+        <div class="form-group full"><label class="form-label">Observaciones médicas</label><textarea class="form-textarea" id="e-obs"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="updatePatient()">💾 Actualizar Expediente</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 
-import {
-  leerPacientes,
-  guardarPaciente
-} from "./shared.js";
+import { leerPacientes, guardarPaciente, actualizarPaciente, eliminarPaciente } from "./shared.js";
 
 let patients = [];
 
-/* =========================
-   RENDER TABLA
-========================= */
-function renderTable(){
+/* ─── CALCULAR EDAD ─── */
+function calcEdad(fnac) {
+  if (!fnac) return null;
+  const d = new Date(fnac + "T00:00:00");
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - d.getFullYear();
+  const m = hoy.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < d.getDate())) edad--;
+  return edad;
+}
 
+/* ─── RENDER TABLA ─── */
+function renderTable() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const g = document.getElementById('filterGenero').value;
   const a = document.getElementById('filterAlergia').value;
 
-  let filtered = patients.filter(p => {
-
+  const filtered = patients.filter(p => {
     const match =
       (p.nombre || '').toLowerCase().includes(q) ||
       (p.exp || '').toLowerCase().includes(q) ||
       (p.tel || '').includes(q);
-
     const gMatch = !g || p.genero === g;
-
     const aMatch = !a ||
-      (
-        a === 'si'
-          ? p.alergias && p.alergias !== 'Ninguna'
-          : p.alergias === 'Ninguna' || !p.alergias
-      );
-
+      (a === 'si' ? p.alergias && p.alergias !== 'Ninguna'
+                  : !p.alergias || p.alergias === 'Ninguna');
     return match && gMatch && aMatch;
-
   });
 
   document.getElementById('countLabel').textContent =
-    `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`;
+    `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''}`;
 
   const body = document.getElementById('tableBody');
 
-  if(!filtered.length){
-
+  if (!filtered.length) {
     body.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
-        <div class="empty-text">
-          No se encontraron pacientes
-        </div>
-      </div>
-    `;
-
+        <div class="empty-text">No se encontraron pacientes</div>
+      </div>`;
     return;
   }
 
-  body.innerHTML = filtered.map((p,i)=>`
+  /* ─── FIX PRINCIPAL: cada fila es un <div class="patient-row">,
+         NO un <button>. Los botones de acción van dentro de la celda .actions ─── */
+  body.innerHTML = filtered.map((p, i) => {
+    const globalIdx = patients.indexOf(p);
+    const tieneAlergia = p.alergias && p.alergias !== 'Ninguna';
+    const esF = p.genero === 'Femenino';
 
-    <button
-  class="icon-btn"
-  onclick="event.stopPropagation(); editPatient(${i})">
+    return `
+      <div class="patient-row" onclick="editPatient(${globalIdx})">
 
-      <div>
-        <span class="exp-badge">${p.exp}</span>
-      </div>
+        <!-- 1. Expediente -->
+        <div>
+          <span class="exp-badge">${p.exp || '—'}</span>
+        </div>
 
-      <div class="patient-info">
-        <div class="name">${p.nombre}</div>
-        <div class="sub">${p.email || '—'}</div>
-      </div>
+        <!-- 2. Paciente -->
+        <div class="patient-info">
+          <div class="name">${p.nombre || '—'}</div>
+          <div class="sub">${p.email || '—'}</div>
+        </div>
 
-      <div class="cell mono">${p.edad || '—'}</div>
+        <!-- 3. Edad -->
+        <div class="cell mono">${p.edad != null ? p.edad : '—'}</div>
 
-      <div>
-        <span class="gender-badge ${p.genero==='Femenino'?'gender-f':'gender-m'}">
-          ${p.genero || '—'}
-        </span>
-      </div>
+        <!-- 4. Género -->
+        <div>
+          <span class="gender-badge ${esF ? 'gender-f' : 'gender-m'}">
+            ${p.genero || '—'}
+          </span>
+        </div>
 
-      <div class="cell mono">${p.tel || '—'}</div>
+        <!-- 5. Teléfono -->
+        <div class="cell mono">${p.tel || '—'}</div>
 
-      <div>
-        <span class="alergia-badge ${p.alergias && p.alergias !== 'Ninguna' ? 'alergia-yes':'alergia-none'}">
-          ${p.alergias || 'Ninguna'}
-        </span>
-      </div>
+        <!-- 6. Alergias -->
+        <div>
+          <span class="alergia-badge ${tieneAlergia ? 'alergia-yes' : 'alergia-none'}">
+            ${tieneAlergia ? p.alergias : 'Ninguna'}
+          </span>
+        </div>
 
-      <div class="cell">${p.alta || '—'}</div>
+        <!-- 7. 1ª Consulta -->
+        <div class="cell">${p.alta || '—'}</div>
 
-      <div class="actions">
+        <!-- 8. Acciones -->
+        <div class="actions" onclick="event.stopPropagation()">
+          <button class="icon-btn" title="Tratamientos"
+            onclick="window.location='tratamientos.html?exp=${encodeURIComponent(p.exp)}'">
+            🦷
+          </button>
+          <button class="icon-btn" title="Editar"
+            onclick="editPatient(${globalIdx})">
+            ✏️
+          </button>
+          <button class="icon-btn" title="Eliminar"
+            onclick="deletePatient('${p.exp}')">
+            🗑️
+          </button>
+        </div>
 
-        <button
-          class="icon-btn"
-          onclick="window.location='tratamientos.html?exp=${p.exp}'">
-          🦷
-        </button>
-
-        <button
-          class="icon-btn"
-          onclick="editPatient(${i})">
-          ✏️
-        </button>
-
-        <button
-          class="icon-btn"
-          onclick="deletePatient('${p.exp}')">
-          🗑️
-        </button>
-
-      </div>
-
-    </div>
-
-  `).join('');
+      </div>`;
+  }).join('');
 }
 
-/* =========================
-   MODAL
-========================= */
-
-function openModal(){
+/* ─── MODAL NUEVO ─── */
+function openModal() {
   document.getElementById('modal').classList.add('open');
 }
-
-function closeModal(){
+function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
 
-/* =========================
-   GUARDAR PACIENTE
-========================= */
-
-async function savePatient(){
-
-  try{
-
-    const nombre =
-      document.getElementById('f-nombre')
-      .value
-      .toUpperCase()
-      .trim();
-
-    const exp =
-      document.getElementById('f-exp')
-      .value
-      .trim();
-
-
-    if(!nombre || !exp){
-
-  alert('Nombre y expediente son obligatorios');
-
-  return;
-
+/* ─── MODAL EDITAR ─── */
+function openEditModal() {
+  document.getElementById('modalEdit').classList.add('open');
+}
+function closeEditModal() {
+  document.getElementById('modalEdit').classList.remove('open');
 }
 
-const existe = patients.find(
-  x => (x.exp || '').toLowerCase() === exp.toLowerCase()
-);
+/* ─── GUARDAR NUEVO PACIENTE ─── */
+async function savePatient() {
+  try {
+    const nombre = document.getElementById('f-nombre').value.toUpperCase().trim();
+    const exp    = document.getElementById('f-exp').value.trim();
 
-if(existe){
+    if (!nombre || !exp) { alert('Nombre y expediente son obligatorios'); return; }
 
-  alert("Ese expediente ya existe");
+    if (patients.find(x => (x.exp || '').toLowerCase() === exp.toLowerCase())) {
+      alert('Ese número de expediente ya existe'); return;
+    }
 
-  return;
-
-}
-
-    const fechaNacimiento =
-  document.getElementById('f-fnac').value;
-
-if(
-  fechaNacimiento &&
-  new Date(fechaNacimiento) > new Date()
-){
-
-  alert("La fecha de nacimiento no puede ser futura");
-
-  return;
-
-}
+    const fnac = document.getElementById('f-fnac').value;
+    if (fnac && new Date(fnac) > new Date()) {
+      alert('La fecha de nacimiento no puede ser futura'); return;
+    }
 
     const p = {
-
       exp,
       nombre,
-
-      fnac: document.getElementById('f-fnac').value,
-
-      edad:null,
-
-      genero: document.getElementById('f-genero').value,
-
-      tel: document.getElementById('f-tel').value,
-
-      email: document.getElementById('f-email').value,
-
-      alergias:
-        document.getElementById('f-alergias').value
-        || 'Ninguna',
-
-      padecimientos:
-        document.getElementById('f-padec').value
-        || 'Ninguna',
-      ocupacion:
-  document.getElementById('f-ocup').value,
-
-ciudad:
-  document.getElementById('f-ciudad').value,
-
-direccion:
-  document.getElementById('f-dir').value,
-
-contactoEmergencia:
-  document.getElementById('f-cemerg').value,
-
-telEmergencia:
-  document.getElementById('f-temerg').value,
-
-observaciones:
-  document.getElementById('f-obs').value,
-
-      alta: new Date().toLocaleDateString('es-MX'),
-
-      visitas:0
-
+      fnac,
+      edad: calcEdad(fnac),
+      genero:               document.getElementById('f-genero').value,
+      tel:                  document.getElementById('f-tel').value,
+      email:                document.getElementById('f-email').value,
+      alergias:             document.getElementById('f-alergias').value || 'Ninguna',
+      padecimientos:        document.getElementById('f-padec').value   || 'Ninguna',
+      ocupacion:            document.getElementById('f-ocup').value,
+      ciudad:               document.getElementById('f-ciudad').value,
+      direccion:            document.getElementById('f-dir').value,
+      contactoEmergencia:   document.getElementById('f-cemerg').value,
+      telEmergencia:        document.getElementById('f-temerg').value,
+      observaciones:        document.getElementById('f-obs').value,
+      alta:   new Date().toLocaleDateString('es-MX'),
+      visitas: 0
     };
 
-    
-
-      if(p.fnac){
-
-  const d = new Date(p.fnac + "T00:00:00");
-
-  const hoy = new Date();
-
-  let edad =
-    hoy.getFullYear() - d.getFullYear();
-
-  const m =
-    hoy.getMonth() - d.getMonth();
-
-  if(
-    m < 0 ||
-    (m === 0 && hoy.getDate() < d.getDate())
-  ){
-    edad--;
-  }
-
-  p.edad = edad;
-
-    }
-
-  
-
-    console.log("GUARDANDO:", p);
-
     await guardarPaciente(p);
-
-    console.log("PACIENTE GUARDADO");
-
     await cargarPacientes();
-
     closeModal();
 
-   document
-  .querySelectorAll('.form-input,.form-textarea,.form-select')
-  .forEach(el => {
+    document.querySelectorAll('#modal .form-input, #modal .form-textarea, #modal .form-select')
+      .forEach(el => { el.tagName === 'SELECT' ? el.selectedIndex = 0 : el.value = ''; });
 
-    if(el.tagName === 'SELECT'){
-      el.selectedIndex = 0;
-    }else{
-      el.value = '';
+    alert('Paciente guardado correctamente ✅');
+  } catch (err) {
+    console.error(err);
+    alert('Error al guardar el paciente');
+  }
+}
+
+/* ─── EDITAR PACIENTE ─── */
+function editPatient(idx) {
+  const p = patients[idx];
+  if (!p) return;
+
+  document.getElementById('e-exp-original').value = p.exp;
+  document.getElementById('e-exp').value           = p.exp;
+  document.getElementById('e-nombre').value        = p.nombre     || '';
+  document.getElementById('e-fnac').value          = p.fnac       || '';
+  document.getElementById('e-tel').value           = p.tel        || '';
+  document.getElementById('e-email').value         = p.email      || '';
+  document.getElementById('e-alergias').value      = p.alergias === 'Ninguna' ? '' : (p.alergias || '');
+  document.getElementById('e-padec').value         = p.padecimientos === 'Ninguna' ? '' : (p.padecimientos || '');
+  document.getElementById('e-ocup').value          = p.ocupacion  || '';
+  document.getElementById('e-ciudad').value        = p.ciudad     || '';
+  document.getElementById('e-dir').value           = p.direccion  || '';
+  document.getElementById('e-cemerg').value        = p.contactoEmergencia || '';
+  document.getElementById('e-temerg').value        = p.telEmergencia      || '';
+  document.getElementById('e-obs').value           = p.observaciones      || '';
+
+  const sel = document.getElementById('e-genero');
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === p.genero) { sel.selectedIndex = i; break; }
+  }
+
+  openEditModal();
+}
+
+/* ─── ACTUALIZAR PACIENTE ─── */
+async function updatePatient() {
+  try {
+    const expOriginal = document.getElementById('e-exp-original').value;
+    const nombre = document.getElementById('e-nombre').value.toUpperCase().trim();
+
+    if (!nombre) { alert('El nombre es obligatorio'); return; }
+
+    const fnac = document.getElementById('e-fnac').value;
+    if (fnac && new Date(fnac) > new Date()) {
+      alert('La fecha de nacimiento no puede ser futura'); return;
     }
 
-  });
+    const idx = patients.findIndex(x => x.exp === expOriginal);
+    if (idx === -1) { alert('Paciente no encontrado'); return; }
 
-    alert("Paciente guardado correctamente");
+    const pActualizado = {
+      ...patients[idx],
+      nombre,
+      fnac,
+      edad:               calcEdad(fnac),
+      genero:             document.getElementById('e-genero').value,
+      tel:                document.getElementById('e-tel').value,
+      email:              document.getElementById('e-email').value,
+      alergias:           document.getElementById('e-alergias').value || 'Ninguna',
+      padecimientos:      document.getElementById('e-padec').value   || 'Ninguna',
+      ocupacion:          document.getElementById('e-ocup').value,
+      ciudad:             document.getElementById('e-ciudad').value,
+      direccion:          document.getElementById('e-dir').value,
+      contactoEmergencia: document.getElementById('e-cemerg').value,
+      telEmergencia:      document.getElementById('e-temerg').value,
+      observaciones:      document.getElementById('e-obs').value,
+    };
 
-  }catch(err){
+    // Si tu shared.js expone actualizarPaciente úsalo; si no, guarda directamente
+    if (typeof actualizarPaciente === 'function') {
+      await actualizarPaciente(expOriginal, pActualizado);
+    } else {
+      await guardarPaciente(pActualizado);
+    }
 
+    await cargarPacientes();
+    closeEditModal();
+    alert('Expediente actualizado correctamente ✅');
+  } catch (err) {
     console.error(err);
-
-    alert("Error al guardar paciente");
-
+    alert('Error al actualizar el expediente');
   }
-
 }
 
-/* =========================
-   ELIMINAR
-========================= */
-
-function deletePatient(exp){
-
-  alert(
-    "Eliminar se configurará después con Firebase"
-  );
-
+/* ─── ELIMINAR PACIENTE ─── */
+async function deletePatient(exp) {
+  if (!confirm(`¿Eliminar el expediente ${exp}? Esta acción no se puede deshacer.`)) return;
+  try {
+    if (typeof eliminarPaciente === 'function') {
+      await eliminarPaciente(exp);
+    } else {
+      alert('La función de eliminar aún no está configurada en shared.js');
+      return;
+    }
+    await cargarPacientes();
+    alert('Expediente eliminado ✅');
+  } catch (err) {
+    console.error(err);
+    alert('Error al eliminar el expediente');
+  }
 }
 
-/* =========================
-   EDITAR
-========================= */
-
-function editPatient(idx){
-
-  alert(
-    "Editar se configurará después"
-  );
-
-}
-
-/* =========================
-   CARGAR
-========================= */
-
-async function cargarPacientes(){
-
-  try{
-
+/* ─── CARGAR PACIENTES ─── */
+async function cargarPacientes() {
+  try {
     patients = await leerPacientes();
-
-    console.log(
-      "PACIENTES CARGADOS:",
-      patients
-    );
-
     renderTable();
-
-  }catch(err){
-
-    console.error(
-      "ERROR CARGANDO:",
-      err
-    );
-
+  } catch (err) {
+    console.error('ERROR CARGANDO:', err);
   }
-
 }
 
-/* =========================
-   HACER GLOBALES
-========================= */
+/* ─── EXPONER GLOBALES ─── */
+window.openModal      = openModal;
+window.closeModal     = closeModal;
+window.closeEditModal = closeEditModal;
+window.savePatient    = savePatient;
+window.updatePatient  = updatePatient;
+window.deletePatient  = deletePatient;
+window.editPatient    = editPatient;
+window.renderTable    = renderTable;
 
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.savePatient = savePatient;
-window.deletePatient = deletePatient;
-window.editPatient = editPatient;
-window.renderTable = renderTable;
-
-/* =========================
-   INICIO
-========================= */
-
+/* ─── INICIO ─── */
 cargarPacientes();
 
 </script>
-
-
-
-
-
-
-  
-
-
 </body>
 </html>
