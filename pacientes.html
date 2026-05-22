@@ -241,7 +241,9 @@ function renderTable(){
 
   body.innerHTML = filtered.map((p,i)=>`
 
-    <div class="patient-row">
+    <button
+  class="icon-btn"
+  onclick="event.stopPropagation(); editPatient(${i})">
 
       <div>
         <span class="exp-badge">${p.exp}</span>
@@ -328,12 +330,40 @@ async function savePatient(){
       .value
       .trim();
 
+
     if(!nombre || !exp){
 
-      alert('Nombre y expediente son obligatorios');
-      return;
+  alert('Nombre y expediente son obligatorios');
 
-    }
+  return;
+
+}
+
+const existe = patients.find(
+  x => (x.exp || '').toLowerCase() === exp.toLowerCase()
+);
+
+if(existe){
+
+  alert("Ese expediente ya existe");
+
+  return;
+
+}
+
+    const fechaNacimiento =
+  document.getElementById('f-fnac').value;
+
+if(
+  fechaNacimiento &&
+  new Date(fechaNacimiento) > new Date()
+){
+
+  alert("La fecha de nacimiento no puede ser futura");
+
+  return;
+
+}
 
     const p = {
 
@@ -342,7 +372,7 @@ async function savePatient(){
 
       fnac: document.getElementById('f-fnac').value,
 
-      edad:'',
+      edad:null,
 
       genero: document.getElementById('f-genero').value,
 
@@ -357,6 +387,23 @@ async function savePatient(){
       padecimientos:
         document.getElementById('f-padec').value
         || 'Ninguna',
+      ocupacion:
+  document.getElementById('f-ocup').value,
+
+ciudad:
+  document.getElementById('f-ciudad').value,
+
+direccion:
+  document.getElementById('f-dir').value,
+
+contactoEmergencia:
+  document.getElementById('f-cemerg').value,
+
+telEmergencia:
+  document.getElementById('f-temerg').value,
+
+observaciones:
+  document.getElementById('f-obs').value,
 
       alta: new Date().toLocaleDateString('es-MX'),
 
@@ -364,16 +411,32 @@ async function savePatient(){
 
     };
 
-    if(p.fnac){
+    
 
-      const d = new Date(p.fnac);
-      const hoy = new Date();
+      if(p.fnac){
 
-      p.edad = Math.floor(
-        (hoy - d) / 31557600000
-      );
+  const d = new Date(p.fnac + "T00:00:00");
+
+  const hoy = new Date();
+
+  let edad =
+    hoy.getFullYear() - d.getFullYear();
+
+  const m =
+    hoy.getMonth() - d.getMonth();
+
+  if(
+    m < 0 ||
+    (m === 0 && hoy.getDate() < d.getDate())
+  ){
+    edad--;
+  }
+
+  p.edad = edad;
 
     }
+
+  
 
     console.log("GUARDANDO:", p);
 
@@ -385,9 +448,17 @@ async function savePatient(){
 
     closeModal();
 
-    document
-      .querySelectorAll('.form-input,.form-textarea')
-      .forEach(el => el.value='');
+   document
+  .querySelectorAll('.form-input,.form-textarea,.form-select')
+  .forEach(el => {
+
+    if(el.tagName === 'SELECT'){
+      el.selectedIndex = 0;
+    }else{
+      el.value = '';
+    }
+
+  });
 
     alert("Paciente guardado correctamente");
 
