@@ -2,372 +2,351 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Abonos & Pagos</title>
+<title>Hersantych Dental · Abonos & Pagos</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--gold:#F4B942;--gold-dim:rgba(244,185,66,.1);--red:#FF5C5C;--red-dim:rgba(255,92,92,.1);--blue:#4A9EFF;--blue-dim:rgba(74,158,255,.1);--text:#E8F0F8;--text-muted:rgba(232,240,248,.45);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;--r:12px;--r-lg:20px;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px}body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
-.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
-.logo-mark{display:flex;align-items:center;gap:10px}
-.logo-icon{width:38px;height:38px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:20px}
-.logo-text{font-family:var(--font-display);font-size:1.3rem;color:var(--text)}.logo-text span{color:var(--teal)}
-.logo-sub{font-size:.7rem;color:var(--text-muted);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
-.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-.nav-section{font-size:.65rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);padding:12px 12px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text-muted);font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s;border:1px solid transparent}
-.nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
-.nav-item.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.2)}
-.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
-.clinic-info{font-size:.75rem;color:var(--text-muted)}.clinic-name{font-weight:600;color:var(--text);font-size:.875rem;margin-bottom:2px}
-.main{margin-left:240px;min-height:100vh;position:relative;z-index:1}
-.topbar{position:sticky;top:0;background:rgba(6,13,20,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;z-index:50}
-.topbar-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic}
-.btn{padding:9px 20px;border-radius:8px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;font-family:var(--font-body);transition:all .2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
-.btn-primary{background:var(--teal);color:var(--bg)}.btn-primary:hover{background:#00d4b8}
-.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text)}
-.btn-sm{padding:6px 14px;font-size:.75rem}
-.content{padding:32px}
-/* SUMMARY */
-.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
-.strip-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;display:flex;align-items:center;gap:14px}
-.strip-icon{font-size:1.5rem}
-.strip-val{font-family:var(--font-mono);font-size:1.25rem;font-weight:700;line-height:1}
-.strip-label{font-size:.7rem;color:var(--text-muted);margin-top:3px}
-/* LAYOUT */
-.page-layout{display:grid;grid-template-columns:1fr 360px;gap:20px}
-/* TABLE */
-.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
-.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.search-input{flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;transition:border-color .2s}
-.search-input:focus{border-color:var(--teal)}
-.search-input::placeholder{color:var(--text-dim)}
-.filter-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:var(--font-body);font-size:.8rem;outline:none;cursor:pointer}
-.t-head{display:grid;grid-template-columns:80px 70px 1fr 90px 100px 110px 80px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2);gap:8px}
-.th{font-size:.63rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
-.t-row{display:grid;grid-template-columns:80px 70px 1fr 90px 100px 110px 80px;padding:13px 18px;border-bottom:1px solid var(--border);align-items:center;gap:8px;transition:background .15s}
-.t-row:hover{background:var(--surface2)}
-.t-row:last-child{border-bottom:none}
-.id-badge{font-family:var(--font-mono);font-size:.7rem;padding:2px 7px;border-radius:5px;background:var(--gold-dim);color:var(--gold);display:inline-block}
-.exp-chip{font-family:var(--font-mono);font-size:.7rem;color:var(--teal)}
-.cell{font-size:.82rem;color:var(--text-muted)}
-.cell-name{font-size:.84rem;font-weight:500;color:var(--text)}
-.cell-sub{font-size:.7rem;color:var(--text-dim)}
-.monto{font-family:var(--font-mono);font-size:.9rem;font-weight:700;color:var(--teal)}
-.forma-chip{font-size:.68rem;padding:3px 9px;border-radius:100px;font-weight:600}
-.forma-ef{background:var(--teal-dim);color:var(--teal)}
-.forma-tr{background:var(--blue-dim);color:var(--blue)}
-.forma-tc{background:var(--gold-dim);color:var(--gold)}
-.forma-td{background:rgba(180,100,255,.12);color:#C47AFF}
-/* ADEUDOS PANEL */
-.adeudos-panel{display:flex;flex-direction:column;gap:14px}
-.panel-title{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.adeudo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:border-color .2s}
-.adeudo-card:hover{border-color:rgba(255,92,92,.3)}
-.adeudo-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
-.adeudo-name{font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:2px}
-.adeudo-treat{font-size:.72rem;color:var(--text-muted)}
-.adeudo-exp{font-family:var(--font-mono);font-size:.68rem;color:var(--teal)}
-.adeudo-amounts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
-.adeudo-amt{text-align:center;padding:8px;background:var(--surface2);border-radius:7px}
-.adeudo-amt-val{font-family:var(--font-mono);font-size:.88rem;font-weight:700;display:block}
-.adeudo-amt-lbl{font-size:.62rem;color:var(--text-dim);margin-top:2px}
-.prog-bar{height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:10px}
-.prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),var(--blue))}
-.abono-quick{display:flex;gap:6px}
-.abono-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-family:var(--font-mono);font-size:.85rem;outline:none;transition:border-color .2s}
-.abono-input:focus{border-color:var(--teal)}
-.abono-input::placeholder{color:var(--text-dim)}
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
-.modal-header{padding:22px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.modal-title{font-family:var(--font-display);font-size:1.2rem;font-style:italic;color:var(--text)}
-.modal-close{background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:all .2s}
-.modal-close:hover{background:var(--surface2);color:var(--text)}
-.modal-body{padding:24px 26px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.form-group{display:flex;flex-direction:column;gap:6px}
-.form-group.full{grid-column:1/-1}
-.form-label{font-size:.7rem;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase}
-.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-family:var(--font-body);font-size:.875rem;outline:none;transition:border-color .2s;width:100%}
-.form-input:focus,.form-select:focus{border-color:var(--teal)}
-.form-input::placeholder{color:var(--text-dim)}
-.form-select option{background:var(--surface2)}
-.modal-footer{padding:18px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
-/* RECIBO */
-.recibo-preview{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-top:16px;display:none}
-.recibo-preview.show{display:block}
-.recibo-title{font-family:var(--font-display);font-size:1rem;font-style:italic;color:var(--teal);margin-bottom:12px;text-align:center}
-.recibo-row{display:flex;justify-content:space-between;font-size:.8rem;padding:5px 0;border-bottom:1px solid var(--border)}
-.recibo-row:last-child{border-bottom:none;font-weight:700;color:var(--text)}
-.recibo-label{color:var(--text-muted)}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-@media(max-width:1100px){.t-head,.t-row{grid-template-columns:80px 1fr 100px 110px 70px}}
-@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.page-layout{grid-template-columns:1fr}.summary-strip{grid-template-columns:1fr 1fr}}
+.filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.filters .search-wrap{flex:1;min-width:180px}
+.abono-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.sum-val{font-family:var(--font-mono);font-size:1.25rem;font-weight:700;margin-bottom:3px}
+.sum-label{font-size:.72rem;color:var(--text-muted)}
+.forma-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:.68rem;font-weight:600}
+.forma-Efectivo{background:var(--green-dim);color:var(--green)}
+.forma-Transferencia{background:var(--blue-dim);color:var(--blue)}
+.forma-Tarjeta,.forma-TDC,.forma-TDD{background:var(--purple-dim);color:var(--purple)}
+.forma-Cheque{background:var(--gold-dim);color:var(--gold)}
+.forma-default{background:var(--surface2);color:var(--text-muted)}
+@media(max-width:900px){.abono-summary{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">🦷</div><div><div class="logo-text">Dental<span>OS</span></div><div class="logo-sub">Sistema integral</div></div></div></div>
-  <nav class="sidebar-nav">
-    <div class="nav-section">Principal</div>
-    <a href="index.html" class="nav-item">📊 Dashboard</a>
-    <a href="agenda.html" class="nav-item">📅 Agenda de Citas</a>
-    <a href="pacientes.html" class="nav-item">👤 Expedientes</a>
-    <div class="nav-section">Clínica</div>
-    <a href="tratamientos.html" class="nav-item">🦷 Tratamientos</a>
-    <a href="abonos.html" class="nav-item active">💰 Abonos & Pagos</a>
-    <a href="catalogo.html" class="nav-item">📚 Catálogo & Precios</a>
-    <a href="cotizacion.html" class="nav-item">📝 Cotizaciones</a>
-    <div class="nav-section">Más</div>
-    <a href="ofertas.html" class="nav-item">🎁 Ofertas & Promos</a>
-    <a href="metricas.html" class="nav-item">📈 Métricas</a>
-    <a href="busqueda.html" class="nav-item">🔍 Búsqueda</a>
-  </nav>
-  <div class="sidebar-footer"><div class="clinic-name">Consultorio Dental</div><div class="clinic-info">Dr. Administrador · v2026 Todos los derechos reservados</div></div>
-</aside>
-
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
     <div class="topbar-title">💰 Abonos & Pagos</div>
-    <div style="display:flex;gap:10px">
-      <button class="btn btn-primary" onclick="openModal()">+ Registrar Abono</button>
-      <a href="tratamientos.html" class="btn btn-ghost">🦷 Tratamientos</a>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" id="btnNuevo">+ Registrar pago</button>
+      <button class="btn btn-ghost btn-sm" id="btnExport">📥 CSV</button>
     </div>
   </div>
   <div class="content">
-    <div class="summary-strip" id="summaryStrip"></div>
-    <div class="page-layout">
-      <!-- LEFT: HISTORIAL -->
-      <div>
-        <div class="toolbar">
-          <input class="search-input" id="searchInput" placeholder="🔍 Buscar paciente, expediente, recibo..." oninput="renderTable()">
-          <select class="filter-select" id="filterForma" onchange="renderTable()">
-            <option value="">Todas las formas</option>
-            <option>Efectivo</option><option>Transferencia</option><option>Tarjeta Crédito</option><option>Tarjeta Débito</option>
-          </select>
-        </div>
-        <div class="table-wrap">
-          <div class="t-head">
-            <div class="th">ID</div><div class="th">Expd.</div><div class="th">Paciente</div>
-            <div class="th">Fecha</div><div class="th">Forma</div><div class="th">Monto</div><div class="th">Recibo</div>
-          </div>
-          <div id="tableBody"></div>
-        </div>
-      </div>
-      <!-- RIGHT: ADEUDOS -->
-      <div>
-        <div class="panel-title">❗ Saldos pendientes por paciente</div>
-        <div class="adeudos-panel" id="adeudosPanel"></div>
-      </div>
+    <div class="abono-summary" id="abonoSummary">
+      <div class="sum-card"><div class="spinner" style="margin:8px auto"></div></div>
+      <div class="sum-card"></div><div class="sum-card"></div><div class="sum-card"></div>
     </div>
+    <div class="filters">
+      <div class="search-wrap"><span class="search-icon">🔍</span><input class="search-input" id="searchInput" placeholder="Buscar por paciente o tratamiento..."></div>
+      <select class="form-select" id="filterForma" style="width:150px">
+        <option value="">Todas las formas</option>
+        <option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>TDC</option><option>TDD</option><option>Cheque</option><option>Otro</option>
+      </select>
+      <input type="date" class="form-input" id="filterFecha" style="width:160px">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('filterFecha').value='';renderTable()">✕ Limpiar</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Paciente</th><th>Tratamiento</th><th>Monto</th><th>IVA (16%)</th><th>Total</th><th>Forma de pago</th><th>Concepto</th><th>Recibo</th><th>Acciones</th></tr></thead>
+      <tbody id="abonoBody"><tr><td colspan="10"><div class="loader"><div class="spinner"></div>Cargando...</div></td></tr></tbody>
+    </table></div>
   </div>
 </main>
 
-<!-- MODAL ABONO -->
-<div class="modal-overlay" id="modal">
+<!-- MODAL NUEVO ABONO -->
+<div class="modal-overlay" id="modalAbono">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Registrar Abono</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title" id="modalAbonoTitle">Registrar Pago</div>
+      <button class="modal-close" onclick="closeModal('modalAbono')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label"># Expediente *</label><input class="form-input" id="f-exp" placeholder="P-001" oninput="lookupTrat()"></div>
-        <div class="form-group"><label class="form-label">ID Tratamiento *</label>
-          <select class="form-select" id="f-trat" onchange="fillTratInfo()"><option value="">Seleccionar...</option></select>
+        <div class="form-group full">
+          <label class="form-label">Paciente *</label>
+          <select class="form-select" id="f-paciente" onchange="loadTratsByPx()"><option value="">Seleccionar paciente...</option></select>
         </div>
-        <div class="form-group full"><label class="form-label">Paciente</label><input class="form-input" id="f-pac" readonly style="opacity:.6" placeholder="Se llena automático"></div>
-        <div class="form-group"><label class="form-label">Saldo actual</label><input class="form-input" id="f-saldo" readonly style="opacity:.6;color:var(--red)" placeholder="—"></div>
-        <div class="form-group"><label class="form-label">Monto del abono *</label><input type="number" class="form-input" id="f-monto" placeholder="0.00" oninput="updatePreview()"></div>
-        <div class="form-group"><label class="form-label">Fecha de pago *</label><input type="date" class="form-input" id="f-fecha"></div>
+        <div class="form-group full">
+          <label class="form-label">Tratamiento *</label>
+          <select class="form-select" id="f-tratamiento"><option value="">Seleccionar tratamiento...</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Fecha del pago *</label><input type="date" class="form-input" id="f-fecha"></div>
+        <div class="form-group"><label class="form-label">Monto (MXN) *</label><input type="number" class="form-input" id="f-monto" min="0" step="0.01" oninput="calcIVA()"></div>
+        <div class="form-group"><label class="form-label">¿Aplica IVA?</label>
+          <select class="form-select" id="f-iva" onchange="calcIVA()"><option value="no">Sin IVA</option><option value="si">Con IVA (16%)</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Total a cobrar</label><input class="form-input" id="f-total" readonly style="color:var(--teal)"></div>
         <div class="form-group"><label class="form-label">Forma de pago *</label>
-          <select class="form-select" id="f-forma">
-            <option>Efectivo</option><option>Transferencia</option><option>Tarjeta Crédito</option><option>Tarjeta Débito</option>
-          </select>
+          <select class="form-select" id="f-forma"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>TDC</option><option>TDD</option><option>Cheque</option><option>Otro</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Número de recibo</label><input class="form-input" id="f-recibo" placeholder="R-060"></div>
-        <div class="form-group full"><label class="form-label">Observaciones</label><input class="form-input" id="f-obs" placeholder="Notas del pago..."></div>
+        <div class="form-group"><label class="form-label">N° Recibo / Referencia</label><input class="form-input" id="f-recibo" placeholder="R-001"></div>
+        <div class="form-group full"><label class="form-label">Concepto / Notas</label><textarea class="form-textarea" id="f-concepto" placeholder="Abono, pago parcial, liquidación..." rows="2"></textarea></div>
       </div>
-      <!-- Preview recibo -->
-      <div class="recibo-preview" id="reciboPreview">
-        <div class="recibo-title">🧾 Vista previa del recibo</div>
-        <div class="recibo-row"><span class="recibo-label">Paciente</span><span id="prev-pac">—</span></div>
-        <div class="recibo-row"><span class="recibo-label">Tratamiento</span><span id="prev-trat">—</span></div>
-        <div class="recibo-row"><span class="recibo-label">Fecha</span><span id="prev-fecha">—</span></div>
-        <div class="recibo-row"><span class="recibo-label">Forma de pago</span><span id="prev-forma">—</span></div>
-        <div class="recibo-row"><span class="recibo-label">Saldo anterior</span><span id="prev-saldo-ant">—</span></div>
-        <div class="recibo-row"><span class="recibo-label">Abono</span><span id="prev-monto">—</span></div>
-        <div class="recibo-row"><span class="recibo-label">Nuevo saldo</span><span id="prev-nuevo">—</span></div>
+      <div id="saldoInfo" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:10px;font-size:.8rem;color:var(--text-muted);display:none">
+        Saldo actual del tratamiento: <span id="saldoActual" style="color:var(--gold);font-family:var(--font-mono);font-weight:700"></span>
+        → Nuevo saldo: <span id="nuevoSaldo" style="color:var(--text);font-family:var(--font-mono);font-weight:700"></span>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveAbono()">💾 Guardar Abono</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalAbono')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveAbono">💾 Registrar pago</button>
     </div>
   </div>
 </div>
 
-<script type="module" src="shared.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
 <script>
-let abonos=[...DB.abonos];
-let tratamientos=[...DB.tratamientos];
+window.CURRENT_PAGE = 'abonos';
+let allAbonos = [], allPacientes = [], allTrat = [], editId = null;
 
-function renderSummary(){
-  const totalCobrado=abonos.reduce((s,a)=>s+Number(a.monto),0);
-  const pendiente=tratamientos.reduce((s,t)=>s+Number(t.saldo),0);
-  const hoy=new Date().toLocaleDateString('es-MX');
-  const hoyTotal=abonos.filter(a=>a.fecha===hoy).reduce((s,a)=>s+Number(a.monto),0);
-  const ef=abonos.filter(a=>a.forma==='Efectivo').reduce((s,a)=>s+Number(a.monto),0);
-  document.getElementById('summaryStrip').innerHTML=`
-    <div class="strip-card"><div class="strip-icon">💵</div><div><div class="strip-val" style="color:var(--teal)">${fmtMXN(totalCobrado)}</div><div class="strip-label">Total cobrado histórico</div></div></div>
-    <div class="strip-card"><div class="strip-icon">📅</div><div><div class="strip-val" style="color:var(--blue)">${fmtMXN(hoyTotal)}</div><div class="strip-label">Cobrado hoy</div></div></div>
-    <div class="strip-card"><div class="strip-icon">💸</div><div><div class="strip-val" style="color:var(--gold)">${fmtMXN(ef)}</div><div class="strip-label">En efectivo</div></div></div>
-    <div class="strip-card"><div class="strip-icon">❗</div><div><div class="strip-val" style="color:var(--red)">${fmtMXN(pendiente)}</div><div class="strip-label">Saldo por cobrar</div></div></div>`;
+initSession('any').then(async session => {
+  if (!session) return;
+  const tratId = new URLSearchParams(location.search).get('trat');
+  await Promise.all([loadAbonos(), loadPacientes(), loadTrat()]);
+  if (tratId) { abrirModalParaTrat(tratId); }
+  document.getElementById('searchInput').addEventListener('input', renderTable);
+  document.getElementById('filterForma').addEventListener('change', renderTable);
+  document.getElementById('filterFecha').addEventListener('change', renderTable);
+  document.getElementById('btnNuevo').addEventListener('click', openNewModal);
+  document.getElementById('btnSaveAbono').addEventListener('click', saveAbono);
+  document.getElementById('btnExport').addEventListener('click', exportCSV);
+  document.getElementById('f-monto').addEventListener('input', updateNuevoSaldo);
+  document.getElementById('f-iva').addEventListener('change', updateNuevoSaldo);
+  document.getElementById('f-fecha').value = todayISO();
+});
+
+async function loadAbonos() {
+  allAbonos = await fsGetAll('abonos');
+  renderTable();
+  renderSummary();
+}
+async function loadPacientes() {
+  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+  const sel = document.getElementById('f-paciente');
+  sel.innerHTML = '<option value="">Seleccionar paciente...</option>' +
+    allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
+}
+async function loadTrat() {
+  allTrat = await fsGetAll('tratamientos');
 }
 
-function renderTable(){
-  const q=document.getElementById('searchInput').value.toLowerCase();
-  const f=document.getElementById('filterForma').value;
-  let filtered=[...abonos].reverse().filter(a=>{
-    const match=a.paciente.toLowerCase().includes(q)||a.exp.toLowerCase().includes(q)||(a.recibo&&a.recibo.toLowerCase().includes(q))||(a.idTrat&&a.idTrat.toLowerCase().includes(q));
-    const fMatch=!f||a.forma===f;
-    return match&&fMatch;
-  });
-  const formaClass={'Efectivo':'forma-ef','Transferencia':'forma-tr','Tarjeta Crédito':'forma-tc','Tarjeta Débito':'forma-td'};
-  const body=document.getElementById('tableBody');
-  if(!filtered.length){body.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text-muted)">Sin abonos registrados</div>`;return;}
-  body.innerHTML=filtered.map(a=>`
-    <div class="t-row">
-      <div><span class="id-badge">${a.id}</span></div>
-      <div><span class="exp-chip">${a.exp}</span><div style="font-size:.65rem;color:var(--text-dim)">${a.idTrat||''}</div></div>
-      <div><div class="cell-name">${a.paciente}</div><div class="cell-sub">${a.obs||''}</div></div>
-      <div class="cell" style="font-family:var(--font-mono);font-size:.75rem">${a.fecha}</div>
-      <div><span class="forma-chip ${formaClass[a.forma]||'forma-ef'}">${a.forma}</span></div>
-      <div class="monto">${fmtMXN(a.monto)}</div>
-      <div class="cell" style="font-family:var(--font-mono);font-size:.75rem">${a.recibo||'—'}</div>
-    </div>`).join('');
+window.loadTratsByPx = function() {
+  const expId = document.getElementById('f-paciente').value;
+  const sel = document.getElementById('f-tratamiento');
+  const conSaldo = allTrat.filter(t => t.expId===expId && Number(t.saldo||0)>0);
+  sel.innerHTML = '<option value="">Seleccionar tratamiento...</option>' +
+    conSaldo.map(t=>`<option value="${t.id}" data-saldo="${t.saldo}" data-nombre="${t.tratamiento}">${t.tratamiento} (saldo: ${fmtMXN(t.saldo)})</option>`).join('');
+  sel.addEventListener('change', updateSaldoInfo);
+  updateSaldoInfo();
+};
+
+function updateSaldoInfo() {
+  const sel = document.getElementById('f-tratamiento');
+  const opt = sel.options[sel.selectedIndex];
+  const saldo = parseFloat(opt?.dataset.saldo||0);
+  if (saldo > 0) {
+    document.getElementById('saldoInfo').style.display = 'block';
+    document.getElementById('saldoActual').textContent = fmtMXN(saldo);
+    updateNuevoSaldo();
+  } else {
+    document.getElementById('saldoInfo').style.display = 'none';
+  }
 }
 
-function renderAdeudos(){
-  const con=tratamientos.filter(t=>Number(t.saldo)>0);
-  if(!con.length){document.getElementById('adeudosPanel').innerHTML=`<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:.85rem">✅ Sin saldos pendientes</div>`;return;}
-  document.getElementById('adeudosPanel').innerHTML=con.map(t=>{
-    const pct=t.costo>0?Math.min(100,Math.round(t.abonado/t.costo*100)):0;
-    return `<div class="adeudo-card">
-      <div class="adeudo-top">
-        <div>
-          <div class="adeudo-name">${t.paciente.split(' ').slice(0,3).join(' ')}</div>
-          <div class="adeudo-treat">${t.tratamiento} · ${t.desc||''}</div>
-          <div class="adeudo-exp">${t.exp} · ${t.id}</div>
+function updateNuevoSaldo() {
+  const sel = document.getElementById('f-tratamiento');
+  const opt = sel.options[sel.selectedIndex];
+  const saldo = parseFloat(opt?.dataset.saldo||0);
+  const monto = parseFloat(document.getElementById('f-monto').value)||0;
+  const iva = document.getElementById('f-iva').value;
+  const montoReal = iva==='si' ? monto : monto;
+  const nuevo = Math.max(0, saldo - montoReal);
+  document.getElementById('nuevoSaldo').textContent = fmtMXN(nuevo);
+  calcIVA();
+}
+
+window.calcIVA = function() {
+  const monto = parseFloat(document.getElementById('f-monto').value)||0;
+  const iva = document.getElementById('f-iva').value;
+  const total = iva==='si' ? monto*1.16 : monto;
+  document.getElementById('f-total').value = iva==='si' ? fmtMXN(total) : '—';
+};
+
+function renderSummary() {
+  const hoy = todayISO();
+  const mes = hoy.slice(0,7);
+  const totalMes = allAbonos.filter(a=>a.fecha?.startsWith(mes)).reduce((s,a)=>s+Number(a.monto||0),0);
+  const totalHoy = allAbonos.filter(a=>a.fecha===hoy).reduce((s,a)=>s+Number(a.monto||0),0);
+  const totalGeneral = allAbonos.reduce((s,a)=>s+Number(a.monto||0),0);
+  const efectivo = allAbonos.filter(a=>a.forma==='Efectivo').reduce((s,a)=>s+Number(a.monto||0),0);
+  document.getElementById('abonoSummary').innerHTML = `
+    <div class="sum-card"><div class="sum-val" style="color:var(--teal)">${fmtMXN(totalHoy)}</div><div class="sum-label">💵 Cobrado hoy</div></div>
+    <div class="sum-card"><div class="sum-val" style="color:var(--blue)">${fmtMXN(totalMes)}</div><div class="sum-label">📅 Cobrado este mes</div></div>
+    <div class="sum-card"><div class="sum-val" style="color:var(--green)">${fmtMXN(efectivo)}</div><div class="sum-label">💵 Total en efectivo</div></div>
+    <div class="sum-card"><div class="sum-val" style="color:var(--text)">${fmtMXN(totalGeneral)}</div><div class="sum-label">📊 Total histórico</div></div>`;
+}
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const f = document.getElementById('filterForma').value;
+  const fecha = document.getElementById('filterFecha').value;
+  const filtered = allAbonos.filter(a =>
+    (!q || a.paciente?.toLowerCase().includes(q) || a.tratamiento?.toLowerCase().includes(q)) &&
+    (!f || a.forma===f) &&
+    (!fecha || a.fecha===fecha)
+  );
+  const tbody = document.getElementById('abonoBody');
+  if (!filtered.length) {
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">Sin pagos registrados</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(a => {
+    const ivaAmt = a.aplicaIva ? IVA(a.monto) : 0;
+    const total = a.aplicaIva ? conIVA(a.monto) : Number(a.monto||0);
+    const formaCls = `forma-${(a.forma||'default').replace(/\s/g,'')}`;
+    return `<tr>
+      <td style="font-family:var(--font-mono);font-size:.78rem">${a.fecha||'—'}</td>
+      <td><div style="font-weight:600;color:var(--text);font-size:.83rem">${a.paciente||'—'}</div></td>
+      <td style="font-size:.78rem">${a.tratamiento||'—'}</td>
+      <td style="font-family:var(--font-mono);color:var(--teal)">${fmtMXN(a.monto)}</td>
+      <td style="font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted)">${a.aplicaIva?fmtMXN(ivaAmt):'—'}</td>
+      <td style="font-family:var(--font-mono);font-weight:700">${fmtMXN(total)}</td>
+      <td><span class="forma-badge ${formaCls}">${a.forma||'—'}</span></td>
+      <td style="font-size:.77rem;color:var(--text-muted)">${a.concepto||'—'}</td>
+      <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim)">${a.recibo||'—'}</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-ghost btn-sm" onclick="editAbono('${a.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteAbono('${a.id}')">🗑️</button>
         </div>
-      </div>
-      <div class="adeudo-amounts">
-        <div class="adeudo-amt"><span class="adeudo-amt-val" style="color:var(--text)">${fmtMXN(t.costo)}</span><div class="adeudo-amt-lbl">Total</div></div>
-        <div class="adeudo-amt"><span class="adeudo-amt-val" style="color:var(--teal)">${fmtMXN(t.abonado)}</span><div class="adeudo-amt-lbl">Abonado</div></div>
-        <div class="adeudo-amt"><span class="adeudo-amt-val" style="color:var(--red)">${fmtMXN(t.saldo)}</span><div class="adeudo-amt-lbl">Saldo</div></div>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div class="abono-quick">
-        <input class="abono-input" id="quick-${t.id}" type="number" placeholder="Monto abono rápido">
-        <button class="btn btn-primary btn-sm" onclick="quickAbono('${t.id}','${t.exp}')">+ Abonar</button>
-      </div>
-    </div>`;
+      </td>
+    </tr>`;
   }).join('');
 }
 
-function quickAbono(idTrat,exp){
-  const inp=document.getElementById('quick-'+idTrat);
-  const monto=parseFloat(inp.value);
-  if(!monto||monto<=0){alert('Ingresa un monto válido');return;}
-  const t=DB.tratamientos.find(t=>t.id===idTrat);
-  if(!t){return;}
-  applyAbono(idTrat,exp,t.paciente,monto,'Efectivo','—','Abono rápido');
-  inp.value='';
+function abrirModalParaTrat(tratId) {
+  const t = allTrat.find(x=>x.id===tratId); if(!t) return;
+  openNewModal();
+  setTimeout(()=>{
+    document.getElementById('f-paciente').value = t.expId||'';
+    loadTratsByPx();
+    setTimeout(()=>{ document.getElementById('f-tratamiento').value = tratId; updateSaldoInfo(); }, 200);
+  }, 100);
 }
 
-function applyAbono(idTrat,exp,paciente,monto,forma,recibo,obs){
-  const t=DB.tratamientos.find(t=>t.id===idTrat);
-  if(!t){alert('Tratamiento no encontrado');return;}
-  const abonoReal=Math.min(monto,Number(t.saldo));
-  t.abonado=Number(t.abonado)+abonoReal;
-  t.saldo=Number(t.saldo)-abonoReal;
-  if(t.saldo<=0){t.estado='✅ Liquidado';t.saldo=0;}
-  else t.estado='⚠ Abonando';
-  const abIds=DB.abonos.map(a=>parseInt(a.id.replace('AB-',''))||0);
-  const nextId='AB-'+String(Math.max(0,...abIds)+1).padStart(3,'0');
-  const hoy=new Date().toLocaleDateString('es-MX');
-  DB.abonos.push({id:nextId,idTrat,exp,paciente,fecha:hoy,monto:abonoReal,forma,recibo,obs});
-  DB.save();
-  abonos=[...DB.abonos];tratamientos=[...DB.tratamientos];
-  renderSummary();renderTable();renderAdeudos();
+function openNewModal() {
+  editId = null;
+  document.getElementById('modalAbonoTitle').textContent = 'Registrar Pago';
+  document.getElementById('f-paciente').value = '';
+  document.getElementById('f-tratamiento').innerHTML = '<option value="">Seleccionar tratamiento...</option>';
+  document.getElementById('f-fecha').value = todayISO();
+  document.getElementById('f-monto').value = '';
+  document.getElementById('f-iva').value = 'no';
+  document.getElementById('f-total').value = '';
+  document.getElementById('f-forma').value = 'Efectivo';
+  document.getElementById('f-recibo').value = '';
+  document.getElementById('f-concepto').value = '';
+  document.getElementById('saldoInfo').style.display = 'none';
+  openModal('modalAbono');
 }
 
-function openModal(){
-  document.getElementById('f-fecha').value=new Date().toISOString().slice(0,10);
-  // auto next recibo
-  const rids=DB.abonos.map(a=>parseInt((a.recibo||'R-0').replace('R-',''))||0);
-  document.getElementById('f-recibo').value='R-'+String(Math.max(0,...rids)+1).padStart(3,'0');
-  document.getElementById('modal').classList.add('open');
-}
-function closeModal(){document.getElementById('modal').classList.remove('open');}
-
-function lookupTrat(){
-  const exp=document.getElementById('f-exp').value.trim();
-  const sel=document.getElementById('f-trat');
-  sel.innerHTML='<option value="">Seleccionar...</option>';
-  const p=DB.pacientes.find(p=>p.exp===exp);
-  if(p)document.getElementById('f-pac').value=p.nombre;
-  const treats=DB.tratamientos.filter(t=>t.exp===exp&&Number(t.saldo)>0);
-  treats.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=`${t.id} · ${t.tratamiento} · Saldo: ${fmtMXN(t.saldo)}`;sel.appendChild(o);});
-}
-
-function fillTratInfo(){
-  const id=document.getElementById('f-trat').value;
-  const t=DB.tratamientos.find(t=>t.id===id);
-  if(!t){document.getElementById('f-saldo').value='';return;}
-  document.getElementById('f-saldo').value=fmtMXN(t.saldo);
-  document.getElementById('f-pac').value=t.paciente;
-  updatePreview();
+function editAbono(id) {
+  editId = id;
+  const a = allAbonos.find(x=>x.id===id); if(!a) return;
+  document.getElementById('modalAbonoTitle').textContent = 'Editar Pago';
+  document.getElementById('f-paciente').value = a.expId||'';
+  loadTratsByPx();
+  setTimeout(()=>{
+    document.getElementById('f-tratamiento').value = a.tratId||'';
+    document.getElementById('f-fecha').value = a.fecha||todayISO();
+    document.getElementById('f-monto').value = a.monto||0;
+    document.getElementById('f-iva').value = a.aplicaIva?'si':'no';
+    document.getElementById('f-forma').value = a.forma||'Efectivo';
+    document.getElementById('f-recibo').value = a.recibo||'';
+    document.getElementById('f-concepto').value = a.concepto||'';
+    calcIVA();
+  }, 200);
+  openModal('modalAbono');
 }
 
-function updatePreview(){
-  const id=document.getElementById('f-trat').value;
-  const t=DB.tratamientos.find(t=>t.id===id);
-  const monto=parseFloat(document.getElementById('f-monto').value)||0;
-  const preview=document.getElementById('reciboPreview');
-  if(!t||!monto){preview.classList.remove('show');return;}
-  preview.classList.add('show');
-  document.getElementById('prev-pac').textContent=t.paciente;
-  document.getElementById('prev-trat').textContent=t.tratamiento;
-  document.getElementById('prev-fecha').textContent=document.getElementById('f-fecha').value;
-  document.getElementById('prev-forma').textContent=document.getElementById('f-forma').value;
-  document.getElementById('prev-saldo-ant').textContent=fmtMXN(t.saldo);
-  document.getElementById('prev-monto').textContent=fmtMXN(monto);
-  document.getElementById('prev-nuevo').textContent=fmtMXN(Math.max(0,t.saldo-monto));
+async function saveAbono() {
+  const expId = document.getElementById('f-paciente').value;
+  const tratId = document.getElementById('f-tratamiento').value;
+  const monto = parseFloat(document.getElementById('f-monto').value)||0;
+  if (!expId || !tratId || !monto) { showToast('Completa todos los campos requeridos','error'); return; }
+  const px = allPacientes.find(p=>p.id===expId);
+  const trat = allTrat.find(t=>t.id===tratId);
+  const aplicaIva = document.getElementById('f-iva').value === 'si';
+  const data = {
+    expId, tratId,
+    paciente: px?.nombre||'—',
+    tratamiento: trat?.tratamiento||'—',
+    fecha: document.getElementById('f-fecha').value,
+    monto, aplicaIva,
+    forma: document.getElementById('f-forma').value,
+    recibo: document.getElementById('f-recibo').value.trim(),
+    concepto: document.getElementById('f-concepto').value.trim(),
+  };
+  const btn = document.getElementById('btnSaveAbono');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    if (editId) {
+      await fsUpdate('abonos', editId, data);
+    } else {
+      await fsCreate('abonos', data);
+      // Update tratamiento saldo
+      if (trat) {
+        const nuevoAbonado = Number(trat.abonado||0) + monto;
+        const nuevoSaldo = Math.max(0, Number(trat.saldo||trat.costo||0) - monto);
+        const nuevoEstado = nuevoSaldo <= 0 ? 'Liquidado' : 'Abonando';
+        await fsUpdate('tratamientos', tratId, { abonado: nuevoAbonado, saldo: nuevoSaldo, estado: nuevoEstado });
+        // Update local cache
+        const idx = allTrat.findIndex(t=>t.id===tratId);
+        if(idx>=0){ allTrat[idx].abonado=nuevoAbonado; allTrat[idx].saldo=nuevoSaldo; allTrat[idx].estado=nuevoEstado; }
+      }
+    }
+    showToast(editId ? 'Pago actualizado':'Pago registrado', 'success');
+    closeModal('modalAbono');
+    await loadAbonos();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  btn.disabled = false; btn.textContent = '💾 Registrar pago';
 }
 
-function saveAbono(){
-  const exp=document.getElementById('f-exp').value.trim();
-  const idTrat=document.getElementById('f-trat').value;
-  const monto=parseFloat(document.getElementById('f-monto').value)||0;
-  if(!exp||!idTrat||!monto){alert('Expediente, tratamiento y monto son obligatorios');return;}
-  const t=DB.tratamientos.find(t=>t.id===idTrat);
-  if(!t){alert('Tratamiento no encontrado');return;}
-  const forma=document.getElementById('f-forma').value;
-  const recibo=document.getElementById('f-recibo').value||'—';
-  const obs=document.getElementById('f-obs').value||'';
-  applyAbono(idTrat,exp,t.paciente,monto,forma,recibo,obs);
-  closeModal();
-  document.querySelectorAll('#modal .form-input,#modal .form-select').forEach(el=>el.value='');
-  document.getElementById('reciboPreview').classList.remove('show');
+async function deleteAbono(id) {
+  if (!await confirmDialog('¿Eliminar este pago? El saldo del tratamiento será revertido.')) return;
+  const a = allAbonos.find(x=>x.id===id); if(!a) return;
+  try {
+    // Revert treatment saldo
+    if (a.tratId) {
+      const trat = allTrat.find(t=>t.id===a.tratId);
+      if(trat){
+        const nuevoAbonado = Math.max(0, Number(trat.abonado||0)-Number(a.monto||0));
+        const nuevoSaldo = Number(trat.costo||0) - nuevoAbonado;
+        const nuevoEstado = nuevoSaldo<=0?'Liquidado': nuevoAbonado>0?'Abonando':'Pendiente';
+        await fsUpdate('tratamientos', a.tratId, {abonado:nuevoAbonado, saldo:nuevoSaldo, estado:nuevoEstado});
+      }
+    }
+    await fsDelete('abonos', id);
+    showToast('Pago eliminado','success');
+    await loadAbonos();
+  } catch(e){ showToast('Error: '+e.message,'error'); }
 }
 
-renderSummary();renderTable();renderAdeudos();
+function exportCSV() {
+  const headers=['Fecha','Paciente','Tratamiento','Monto','IVA','Total','Forma','Concepto','Recibo'];
+  const rows=allAbonos.map(a=>{
+    const ivaAmt=a.aplicaIva?IVA(a.monto):0;
+    const total=a.aplicaIva?conIVA(a.monto):Number(a.monto||0);
+    return[a.fecha,a.paciente,a.tratamiento,a.monto,ivaAmt.toFixed(2),total.toFixed(2),a.forma,a.concepto,a.recibo].map(v=>`"${v||''}"`).join(',');
+  });
+  const csv=[headers.join(','),...rows].join('\n');
+  const el=document.createElement('a');
+  el.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  el.download=`abonos_${todayISO()}.csv`; el.click();
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Corte de Caja</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.corte-layout{display:grid;grid-template-columns:1fr 360px;gap:20px}
+.corte-date-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.date-nav-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:.9rem}
+.date-nav-btn:hover{background:var(--surface2);color:var(--text)}
+.corte-date-label{font-family:var(--font-display);font-size:1.1rem;font-style:italic}
+.forma-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.forma-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.forma-icon{font-size:1.3rem;margin-bottom:6px}
+.forma-val{font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:3px}
+.forma-label{font-size:.7rem;color:var(--text-muted)}
+.corte-total-box{background:linear-gradient(135deg,var(--teal-dim),rgba(74,158,255,.08));border:1px solid rgba(0,194,168,.2);border-radius:var(--r-lg);padding:20px;text-align:center;margin-bottom:18px}
+.corte-total-label{font-size:.72rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.corte-total-val{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--teal)}
+/* Ticket preview */
+.ticket{background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);color:#111;font-family:'DM Sans',sans-serif}
+.ticket-header{background:#060D14;padding:18px;text-align:center;color:#fff}
+.ticket-logo{font-size:1.4rem;margin-bottom:6px}
+.ticket-clinic{font-family:'Instrument Serif',serif;font-size:1.1rem;font-style:italic;color:#00C2A8;margin-bottom:2px}
+.ticket-body{padding:16px}
+.ticket-row{display:flex;justify-content:space-between;font-size:.78rem;padding:5px 0;border-bottom:1px dashed #eee;color:#555}
+.ticket-row:last-child{border-bottom:none}
+.ticket-row.total{font-weight:700;color:#111;font-size:.9rem;border-top:2px solid #eee;border-bottom:none;padding-top:10px;margin-top:5px}
+.ticket-row.total span:last-child{color:#00C2A8}
+.ticket-footer{background:#f5f5f5;padding:12px;text-align:center;font-size:.68rem;color:#999}
+.ticket-sep{border:none;border-top:2px dashed #ddd;margin:10px 0}
+@media(max-width:900px){.corte-layout{grid-template-columns:1fr}.forma-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🧾 Corte de Caja</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="printTicket()">🖨️ Imprimir corte</button>
+      <button class="btn btn-primary btn-sm" onclick="exportCSV()">📥 Exportar CSV</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="corte-date-nav">
+      <button class="date-nav-btn" id="prevDay">‹</button>
+      <input type="date" class="form-input" id="fechaCorte" style="width:auto">
+      <button class="date-nav-btn" id="nextDay">›</button>
+      <div class="corte-date-label" id="corteLabel"></div>
+      <button class="btn btn-ghost btn-sm" id="btnHoy">Hoy</button>
+    </div>
+
+    <div class="corte-layout">
+      <div>
+        <!-- Total del día -->
+        <div class="corte-total-box">
+          <div class="corte-total-label">💵 Total cobrado del día</div>
+          <div class="corte-total-val" id="totalDia">$0.00</div>
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:6px" id="totalDiaSub"></div>
+        </div>
+        <!-- Por forma de pago -->
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Por forma de pago</div>
+        <div class="forma-grid" id="formaGrid"></div>
+        <!-- Detalle de pagos -->
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;margin-top:18px">Detalle de pagos del día</div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Hora</th><th>Paciente</th><th>Tratamiento</th><th>Forma</th><th>Monto</th><th>IVA</th><th>Total</th></tr></thead>
+          <tbody id="detallebody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- TICKET PREVIEW -->
+      <div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Vista previa del corte</div>
+        <div class="ticket" id="ticketPreview">
+          <div class="ticket-header">
+            <div class="ticket-logo">🦷</div>
+            <div class="ticket-clinic" id="tkClinica">Hersantych Dental</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.5)" id="tkSub"></div>
+          </div>
+          <div class="ticket-body">
+            <div style="text-align:center;margin-bottom:12px">
+              <div style="font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:#999;margin-bottom:3px">CORTE DE CAJA</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;color:#111" id="tkFecha"></div>
+            </div>
+            <hr class="ticket-sep">
+            <div id="tkDetalle"></div>
+            <hr class="ticket-sep">
+            <div id="tkFormas"></div>
+            <div class="ticket-row total"><span>TOTAL DEL DÍA</span><span id="tkTotal">$0.00</span></div>
+            <div class="ticket-row total" style="color:#666;font-size:.78rem"><span>Con IVA (16%)</span><span id="tkIvaTotal">$0.00</span></div>
+          </div>
+          <div class="ticket-footer" id="tkFooter">Hersantych Dental · Gracias por su visita</div>
+        </div>
+        <!-- Historial de cortes guardados -->
+        <div style="margin-top:16px">
+          <div style="font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Cortes anteriores</div>
+          <div id="historialCortes"><div class="loader"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'corte-caja';
+let abonosDia = [], clinicaData = null;
+
+initSession('any').then(async session => {
+  if (!session) return;
+  clinicaData = session.clinica;
+  document.getElementById('tkClinica').textContent = clinicaData.nombre||'Hersantych Dental';
+  document.getElementById('tkSub').textContent = clinicaData.telefono||'';
+  document.getElementById('tkFooter').textContent = `${clinicaData.nombre||'Hersantych Dental'} · Gracias por su visita`;
+
+  document.getElementById('fechaCorte').value = todayISO();
+  updateLabel();
+  await loadCorte();
+  await loadHistorial();
+
+  document.getElementById('fechaCorte').addEventListener('change', async () => { updateLabel(); await loadCorte(); });
+  document.getElementById('prevDay').addEventListener('click', async () => {
+    const d=new Date(document.getElementById('fechaCorte').value+'T12:00');
+    d.setDate(d.getDate()-1);
+    document.getElementById('fechaCorte').value=d.toISOString().slice(0,10);
+    updateLabel(); await loadCorte();
+  });
+  document.getElementById('nextDay').addEventListener('click', async () => {
+    const d=new Date(document.getElementById('fechaCorte').value+'T12:00');
+    d.setDate(d.getDate()+1);
+    document.getElementById('fechaCorte').value=d.toISOString().slice(0,10);
+    updateLabel(); await loadCorte();
+  });
+  document.getElementById('btnHoy').addEventListener('click', async () => {
+    document.getElementById('fechaCorte').value=todayISO();
+    updateLabel(); await loadCorte();
+  });
+});
+
+function updateLabel() {
+  const fecha = document.getElementById('fechaCorte').value;
+  if(!fecha) return;
+  const d = new Date(fecha+'T12:00');
+  const dayNames=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const monthNames=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('corteLabel').textContent = `${dayNames[d.getDay()]}, ${d.getDate()} de ${monthNames[d.getMonth()]} de ${d.getFullYear()}`;
+  document.getElementById('tkFecha').textContent = d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+async function loadCorte() {
+  const fecha = document.getElementById('fechaCorte').value;
+  abonosDia = await fsGetAll('abonos', r => r.where('fecha','==',fecha));
+
+  // Total del día
+  const total = abonosDia.reduce((s,a)=>s+Number(a.monto||0),0);
+  const totalConIva = abonosDia.reduce((s,a)=>s+(a.aplicaIva?Number(a.monto||0)*1.16:Number(a.monto||0)),0);
+  const ivaTotal = totalConIva - total;
+  document.getElementById('totalDia').textContent = fmtMXN(total);
+  document.getElementById('totalDiaSub').textContent = `${abonosDia.length} pago(s) · IVA: ${fmtMXN(ivaTotal)}`;
+  document.getElementById('tkTotal').textContent = fmtMXN(total);
+  document.getElementById('tkIvaTotal').textContent = fmtMXN(ivaTotal);
+
+  // Por forma
+  const formas = {};
+  abonosDia.forEach(a => {
+    const f = a.forma||'Otro';
+    formas[f] = (formas[f]||0) + Number(a.monto||0);
+  });
+  const formaIcons = {Efectivo:'💵',Transferencia:'🏦',Tarjeta:'💳',TDC:'💳',TDD:'💳',Cheque:'📋',Otro:'🔖'};
+  const formaEntries = Object.entries(formas).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('formaGrid').innerHTML = formaEntries.length
+    ? formaEntries.map(([f,v])=>`<div class="forma-card"><div class="forma-icon">${formaIcons[f]||'💰'}</div><div class="forma-val">${fmtMXN(v)}</div><div class="forma-label">${f}</div></div>`).join('')
+    : '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px;font-size:.82rem">Sin pagos en esta fecha</div>';
+
+  // Ticket formas
+  document.getElementById('tkFormas').innerHTML = formaEntries.map(([f,v])=>`<div class="ticket-row"><span>${formaIcons[f]||''} ${f}</span><span style="font-family:'JetBrains Mono',monospace">${fmtMXN(v)}</span></div>`).join('');
+
+  // Detalle tabla
+  const tbody = document.getElementById('detallebody');
+  if (!abonosDia.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:30px"><div class="empty-icon">🧾</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">No se registraron cobros en esta fecha</div></div></td></tr>`;
+  } else {
+    tbody.innerHTML = abonosDia.map(a=>{
+      const ivaAmt = a.aplicaIva ? Number(a.monto||0)*0.16 : 0;
+      const totalPago = a.aplicaIva ? Number(a.monto||0)*1.16 : Number(a.monto||0);
+      const hora = a.creadoEn?.toDate ? a.creadoEn.toDate().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '—';
+      return `<tr>
+        <td style="font-family:var(--font-mono);font-size:.75rem">${hora}</td>
+        <td style="font-weight:600;color:var(--text)">${a.paciente||'—'}</td>
+        <td style="font-size:.77rem">${a.tratamiento||'—'}</td>
+        <td><span class="badge badge-blue" style="font-size:.65rem">${a.forma||'—'}</span></td>
+        <td style="font-family:var(--font-mono);color:var(--teal)">${fmtMXN(a.monto)}</td>
+        <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim)">${a.aplicaIva?fmtMXN(ivaAmt):'—'}</td>
+        <td style="font-family:var(--font-mono);font-weight:700">${fmtMXN(totalPago)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Ticket detalle
+  document.getElementById('tkDetalle').innerHTML = abonosDia.length
+    ? abonosDia.map(a=>`<div class="ticket-row"><span>${a.paciente?.split(' ').slice(0,3).join(' ')||'—'}<br><span style="font-size:.65rem;color:#999">${a.tratamiento||'—'}</span></span><span style="font-family:'JetBrains Mono',monospace">${fmtMXN(a.monto)}</span></div>`).join('')
+    : '<div style="text-align:center;color:#ccc;padding:12px;font-size:.78rem">Sin movimientos</div>';
+}
+
+async function loadHistorial() {
+  const cortes = await fsGetAll('cortes', r => r.orderBy('creadoEn','desc').limit(7));
+  const el = document.getElementById('historialCortes');
+  if (!cortes.length) { el.innerHTML='<div style="font-size:.78rem;color:var(--text-dim);padding:10px">Sin cortes guardados</div>'; return; }
+  el.innerHTML = cortes.map(c=>`
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.78rem">
+      <span style="color:var(--text-muted)">${c.fecha||'—'}</span>
+      <span style="font-family:var(--font-mono);color:var(--teal);font-weight:700">${fmtMXN(c.total||0)}</span>
+    </div>`).join('');
+}
+
+function printTicket() {
+  const ticket = document.getElementById('ticketPreview').outerHTML;
+  const pw = window.open('','_blank');
+  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:20px;display:flex;justify-content:center}
+      .ticket{max-width:320px;width:100%;background:#fff;color:#111;font-family:'DM Sans',sans-serif}
+      .ticket-header{background:#060D14;padding:18px;text-align:center;color:#fff}
+      .ticket-logo{font-size:1.4rem;margin-bottom:6px}
+      .ticket-clinic{font-family:'Instrument Serif',serif;font-size:1.1rem;font-style:italic;color:#00C2A8;margin-bottom:2px}
+      .ticket-body{padding:16px}
+      .ticket-row{display:flex;justify-content:space-between;font-size:.78rem;padding:5px 0;border-bottom:1px dashed #eee;color:#555}
+      .ticket-row:last-child{border-bottom:none}
+      .ticket-row.total{font-weight:700;color:#111;font-size:.9rem;border-top:2px solid #eee;border-bottom:none;padding-top:10px;margin-top:5px}
+      .ticket-row.total span:last-child{color:#00C2A8}
+      .ticket-footer{background:#f5f5f5;padding:12px;text-align:center;font-size:.68rem;color:#999}
+      .ticket-sep{border:none;border-top:2px dashed #ddd;margin:10px 0}
+      @media print{@page{margin:5mm}}
+    </style>
+  </head><body>${ticket}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  pw.document.close();
+}
+
+function exportCSV() {
+  const fecha = document.getElementById('fechaCorte').value;
+  const headers=['Fecha','Paciente','Tratamiento','Forma','Monto','IVA','Total'];
+  const rows=abonosDia.map(a=>{
+    const ivaAmt=a.aplicaIva?Number(a.monto||0)*0.16:0;
+    const total=a.aplicaIva?Number(a.monto||0)*1.16:Number(a.monto||0);
+    return[a.fecha,a.paciente,a.tratamiento,a.forma,a.monto,ivaAmt.toFixed(2),total.toFixed(2)].map(v=>`"${v||''}"`).join(',');
+  });
+  const csv=[headers.join(','),...rows].join('\n');
+  const el=document.createElement('a');
+  el.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  el.download=`corte_${fecha}.csv`; el.click();
+  showToast('Corte exportado','success');
+}
+</script>
+</body>
+</html>

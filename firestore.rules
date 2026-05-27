@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Función auxiliar: verifica si el usuario es de esta clínica
+    function belongsToClinica(clinicaId) {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.clinicaId == clinicaId;
+    }
+
+    // ── Función auxiliar: verifica si el usuario es admin
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    // ── Usuarios: cada usuario puede leer/editar su propio doc
+    //    Los admins pueden leer todos los usuarios de su clínica
+    match /usuarios/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null &&
+        (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── Clínicas: acceso solo a miembros de esa clínica
+    match /clinicas/{clinicaId} {
+      allow read, write: if belongsToClinica(clinicaId);
+
+      // ── Subcolecciones de la clínica
+      match /pacientes/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /tratamientos/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /abonos/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /citas/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /catalogo/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /cotizaciones/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /cortes/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /inventario/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /movimientos-inventario/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /ofertas/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /odontogramas/{pacienteId} {
+        allow read, write: if belongsToClinica(clinicaId);
+        match /historial/{histId} {
+          allow read, write: if belongsToClinica(clinicaId);
+        }
+      }
+      match /usuarios/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+    }
+  }
+}

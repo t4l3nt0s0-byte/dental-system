@@ -2,262 +2,373 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Cotizaciones</title>
+<title>Hersantych Dental · Cotizaciones</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--gold:#F4B942;--gold-dim:rgba(244,185,66,.1);--red:#FF5C5C;--red-dim:rgba(255,92,92,.1);--blue:#4A9EFF;--blue-dim:rgba(74,158,255,.1);--text:#E8F0F8;--text-muted:rgba(232,240,248,.45);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;--r:12px;--r-lg:20px;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px}body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
-.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
-.logo-mark{display:flex;align-items:center;gap:10px}
-.logo-icon{width:38px;height:38px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:20px}
-.logo-text{font-family:var(--font-display);font-size:1.3rem;color:var(--text)}.logo-text span{color:var(--teal)}
-.logo-sub{font-size:.7rem;color:var(--text-muted);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
-.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-.nav-section{font-size:.65rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);padding:12px 12px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text-muted);font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s;border:1px solid transparent}
-.nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
-.nav-item.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.2)}
-.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
-.clinic-info{font-size:.75rem;color:var(--text-muted)}.clinic-name{font-weight:600;color:var(--text);font-size:.875rem;margin-bottom:2px}
-.main{margin-left:240px;min-height:100vh;position:relative;z-index:1}
-.topbar{position:sticky;top:0;background:rgba(6,13,20,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;z-index:50}
-.topbar-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic}
-.btn{padding:9px 20px;border-radius:8px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;font-family:var(--font-body);transition:all .2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
-.btn-primary{background:var(--teal);color:var(--bg)}.btn-primary:hover{background:#00d4b8}
-.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text)}
-.btn-sm{padding:6px 12px;font-size:.75rem}
-.content{padding:32px}
-/* COTIZACION LAYOUT */
-.cot-layout{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start}
-/* BUILDER */
-.builder-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px}
-.builder-title{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-.form-label{font-size:.7rem;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase}
-.form-input,.form-select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:.875rem;outline:none;transition:border-color .2s;width:100%}
-.form-input:focus,.form-select:focus{border-color:var(--teal)}
-.form-input::placeholder{color:var(--text-dim)}
-.form-select option{background:var(--surface2)}
-.add-item-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px}
-.add-item-row .form-group{flex:1;margin-bottom:0}
-.items-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;min-height:40px}
-.item-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
-.item-treat{flex:1;font-size:.85rem;color:var(--text);font-weight:500}
-.item-price{font-family:var(--font-mono);font-size:.85rem;color:var(--teal);min-width:80px;text-align:right}
-.item-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;opacity:.6;transition:opacity .2s}
+.cot-layout{display:grid;grid-template-columns:1fr 420px;gap:20px}
+.builder{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px}
+.builder-title{font-family:var(--font-display);font-size:1.05rem;font-style:italic;margin-bottom:18px;color:var(--text)}
+.add-item-row{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:end;margin-bottom:10px}
+.items-list{margin-bottom:18px}
+.item-row{display:grid;grid-template-columns:1fr 90px 90px 32px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.item-row:last-child{border-bottom:none}
+.item-name{font-size:.83rem;color:var(--text)}
+.item-price{font-family:var(--font-mono);font-size:.82rem;color:var(--text-muted);text-align:right}
+.item-total{font-family:var(--font-mono);font-size:.82rem;color:var(--teal);text-align:right}
+.item-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;opacity:.6;transition:opacity .15s}
 .item-del:hover{opacity:1}
-.total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--border);margin-top:4px}
-.total-label{font-size:.85rem;font-weight:700;color:var(--text)}
-.total-val{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--teal)}
-.disc-row{display:flex;gap:10px;align-items:center;margin-bottom:12px}
-.disc-row .form-input{width:80px;padding:8px 10px;font-size:.85rem}
-.disc-label{font-size:.8rem;color:var(--text-muted)}
-.disc-applied{font-family:var(--font-mono);font-size:.85rem;color:var(--gold)}
+.totals-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px}
+.total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.82rem;color:var(--text-muted)}
+.total-row.grand{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:0;padding-top:8px;border-top:1px solid var(--border)}
+.total-val{font-family:var(--font-mono);color:var(--text)}
+.grand .total-val{color:var(--teal);font-size:1.1rem}
 /* PREVIEW */
-.preview-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;position:sticky;top:80px}
-.preview-header{background:linear-gradient(135deg,#0B2A3E,#0D3D55);padding:24px;text-align:center;border-bottom:1px solid var(--border)}
-.preview-logo{font-size:2rem;margin-bottom:6px}
-.preview-clinic{font-family:var(--font-display);font-size:1.2rem;color:var(--teal);font-style:italic}
-.preview-sub{font-size:.72rem;color:var(--text-dim);margin-top:2px}
-.preview-body{padding:20px}
-.preview-section{margin-bottom:16px}
-.preview-section-title{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.preview-patient{font-size:.9rem;font-weight:600;color:var(--text)}
-.preview-info{font-size:.75rem;color:var(--text-muted);margin-top:2px}
-.preview-items{display:flex;flex-direction:column;gap:6px}
-.preview-item{display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.preview-item-name{color:var(--text-muted)}
-.preview-item-price{font-family:var(--font-mono);color:var(--text)}
-.preview-total-row{display:flex;justify-content:space-between;padding:12px 0 0;margin-top:4px;border-top:1px solid var(--border)}
-.preview-total-label{font-weight:700;font-size:.9rem;color:var(--text)}
-.preview-total-val{font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--teal)}
-.preview-footer{padding:16px 20px;border-top:1px solid var(--border);text-align:center;font-size:.72rem;color:var(--text-dim);line-height:1.6}
-.preview-actions{display:flex;gap:8px;padding:16px 20px;border-top:1px solid var(--border)}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.preview-wrap{position:sticky;top:80px}
+.preview-card{background:#fff;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-lg)}
+.preview-header{background:linear-gradient(135deg,#060D14,#0C1622);padding:28px;color:#fff;text-align:center}
+.preview-logo{font-size:1.8rem;margin-bottom:8px}
+.preview-clinic{font-family:'Instrument Serif',serif;font-size:1.4rem;font-style:italic;color:#00C2A8;margin-bottom:4px}
+.preview-sub{font-size:.72rem;color:rgba(255,255,255,.5);letter-spacing:.1em}
+.preview-body{padding:24px;background:#fff;color:#111}
+.preview-section{margin-bottom:18px}
+.preview-section-title{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#999;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px}
+.preview-px{font-size:.92rem;font-weight:700;color:#111;margin-bottom:3px}
+.preview-px-sub{font-size:.75rem;color:#666}
+.preview-items{width:100%;border-collapse:collapse;margin-top:4px}
+.preview-items th{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#999;text-align:left;padding:5px 6px;border-bottom:1px solid #eee}
+.preview-items td{font-size:.8rem;color:#333;padding:7px 6px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+.preview-items td:last-child{text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:#111}
+.preview-totals{margin-top:12px;padding-top:12px;border-top:2px solid #eee}
+.preview-total-row{display:flex;justify-content:space-between;font-size:.8rem;color:#666;margin-bottom:5px}
+.preview-total-row.grand{font-size:1rem;font-weight:700;color:#111;border-top:1px solid #ddd;padding-top:8px;margin-top:4px}
+.preview-total-row.grand span:last-child{color:#00C2A8}
+.preview-footer{background:#f8f9fa;padding:16px 24px;text-align:center;font-size:.72rem;color:#999;border-top:1px solid #eee}
+.preview-validity{background:#fffbf0;border:1px solid #f4b94244;border-radius:6px;padding:8px 12px;font-size:.75rem;color:#b8860b;margin-top:10px;text-align:center}
+.preview-actions{display:flex;gap:8px;margin-top:16px}
+@media print{
+  body{background:#fff}.main,.sidebar,.topbar,.hamburger,.preview-actions{display:none!important}
+  .print-area{display:block!important}
+}
+.print-area{display:none}
 @media(max-width:1100px){.cot-layout{grid-template-columns:1fr}}
-@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
 </style>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">🦷</div><div><div class="logo-text">Dental<span>OS</span></div><div class="logo-sub">Sistema integral</div></div></div></div>
-  <nav class="sidebar-nav">
-    <div class="nav-section">Principal</div>
-    <a href="index.html" class="nav-item">📊 Dashboard</a>
-    <a href="agenda.html" class="nav-item">📅 Agenda de Citas</a>
-    <a href="pacientes.html" class="nav-item">👤 Expedientes</a>
-    <div class="nav-section">Clínica</div>
-    <a href="tratamientos.html" class="nav-item">🦷 Tratamientos</a>
-    <a href="abonos.html" class="nav-item">💰 Abonos & Pagos</a>
-    <a href="catalogo.html" class="nav-item">📚 Catálogo & Precios</a>
-    <a href="cotizacion.html" class="nav-item active">📝 Cotizaciones</a>
-    <div class="nav-section">Más</div>
-    <a href="ofertas.html" class="nav-item">🎁 Ofertas & Promos</a>
-    <a href="metricas.html" class="nav-item">📈 Métricas</a>
-    <a href="busqueda.html" class="nav-item">🔍 Búsqueda</a>
-  </nav>
-  <div class="sidebar-footer"><div class="clinic-name">Consultorio Dental</div><div class="clinic-info">Dr. Administrador · v2026</div></div>
-</aside>
-
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">📝 Generador de Cotizaciones</div>
-    <a href="catalogo.html" class="btn btn-ghost">← Catálogo</a>
+    <div class="topbar-title">📝 Cotizaciones</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" id="btnGuardar">💾 Guardar cotización</button>
+      <button class="btn btn-primary" onclick="imprimirCot()">🖨️ Imprimir / PDF</button>
+    </div>
   </div>
   <div class="content">
     <div class="cot-layout">
       <!-- BUILDER -->
       <div>
-        <div class="builder-card" style="margin-bottom:16px">
-          <div class="builder-title">👤 Datos del paciente</div>
-          <div class="form-group"><label class="form-label">Nombre del paciente *</label><input class="form-input" id="cot-nombre" placeholder="Nombre completo" oninput="updatePreview()"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="form-group"><label class="form-label">Fecha</label><input type="date" class="form-input" id="cot-fecha" oninput="updatePreview()"></div>
-            <div class="form-group"><label class="form-label">Expediente</label><input class="form-input" id="cot-exp" placeholder="P-001" oninput="updatePreview()"></div>
+        <div class="builder">
+          <div class="builder-title">📋 Datos del paciente</div>
+          <div class="form-grid" style="margin-bottom:18px">
+            <div class="form-group full">
+              <label class="form-label">Paciente</label>
+              <select class="form-select" id="f-paciente" onchange="onPxChange()"><option value="">Sin paciente (cotización libre)</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">Nombre (si es libre)</label><input class="form-input" id="f-nombre-libre" placeholder="Nombre del paciente" oninput="updatePreview()"></div>
+            <div class="form-group"><label class="form-label">Fecha</label><input type="date" class="form-input" id="f-fecha" oninput="updatePreview()"></div>
+            <div class="form-group"><label class="form-label">Vigencia (días)</label>
+              <select class="form-select" id="f-vigencia" onchange="updatePreview()"><option value="7">7 días</option><option value="15" selected>15 días</option><option value="30">30 días</option><option value="60">60 días</option></select>
+            </div>
+            <div class="form-group full"><label class="form-label">Notas / Observaciones</label><textarea class="form-textarea" id="f-notas" placeholder="Información adicional para el paciente..." rows="2" oninput="updatePreview()"></textarea></div>
           </div>
-          <div class="form-group"><label class="form-label">Nota adicional</label><input class="form-input" id="cot-nota" placeholder="Observación o condición especial..." oninput="updatePreview()"></div>
         </div>
 
-        <div class="builder-card">
-          <div class="builder-title">🦷 Tratamientos a cotizar</div>
+        <div class="builder" style="margin-top:16px">
+          <div class="builder-title">🦷 Tratamientos incluidos</div>
           <div class="add-item-row">
-            <div class="form-group"><label class="form-label">Tratamiento</label>
-              <select class="form-select" id="cot-treat" onchange="autoPrice()">
-                <option value="">Seleccionar del catálogo...</option>
-              </select>
+            <div class="form-group" style="margin:0">
+              <select class="form-select" id="f-addTrat"><option value="">Seleccionar tratamiento...</option></select>
             </div>
-            <div class="form-group" style="max-width:120px"><label class="form-label">Precio</label><input type="number" class="form-input" id="cot-price" placeholder="0"></div>
-            <button class="btn btn-primary btn-sm" onclick="addItem()" style="margin-bottom:0;flex-shrink:0">+ Agregar</button>
+            <div class="form-group" style="margin:0">
+              <input type="number" class="form-input" id="f-addPrecio" placeholder="Precio" min="0" step="0.01" style="width:100px">
+            </div>
+            <div class="form-group" style="margin:0">
+              <select class="form-select" id="f-addIva" style="width:110px"><option value="no">Sin IVA</option><option value="si">+IVA 16%</option></select>
+            </div>
+            <button class="btn btn-primary" onclick="addItem()">+ Agregar</button>
           </div>
-          <div class="items-list" id="itemsList"></div>
-          <div class="disc-row">
-            <span class="disc-label">Descuento:</span>
-            <input type="number" class="form-input" id="cot-disc" placeholder="0" oninput="updatePreview()" min="0" max="100">
-            <span class="disc-label">%</span>
-            <span class="disc-applied" id="discAmount"></span>
+          <!-- Manual item -->
+          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:16px">
+            <input class="form-input" id="f-addManual" placeholder="O escribe un concepto libre...">
+            <button class="btn btn-ghost" onclick="addManual()">Agregar</button>
           </div>
-          <div class="total-row">
-            <span class="total-label">Total cotización</span>
-            <span class="total-val" id="totalVal">$0</span>
+          <div class="items-list" id="itemsList">
+            <div class="empty-state" style="padding:24px"><div class="empty-icon">📋</div><div class="empty-title">Sin tratamientos</div><div class="empty-sub">Agrega tratamientos del catálogo</div></div>
+          </div>
+          <!-- IVA global -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <label style="font-size:.78rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="ivaGlobal" onchange="updatePreview()">
+              Aplicar IVA 16% a todos los conceptos
+            </label>
+          </div>
+          <div class="totals-box">
+            <div class="total-row"><span>Subtotal</span><span class="total-val" id="tSubtotal">$0.00</span></div>
+            <div class="total-row"><span>IVA (16%)</span><span class="total-val" id="tIva">$0.00</span></div>
+            <div class="total-row"><span>Descuento</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" class="form-input" id="f-descuento" min="0" max="100" step="1" placeholder="0" style="width:60px;padding:5px 8px;font-size:.78rem" oninput="updatePreview()"> %
+              </div>
+            </div>
+            <div class="total-row grand"><span>Total</span><span class="total-val" id="tTotal">$0.00</span></div>
           </div>
         </div>
       </div>
 
       <!-- PREVIEW -->
-      <div class="preview-card">
-        <div class="preview-header">
-          <div class="preview-logo">🦷</div>
-          <div class="preview-clinic">Consultorio Dental</div>
-          <div class="preview-sub">Tel: 55 0000 0000 · consultorio@dental.mx</div>
-        </div>
-        <div class="preview-body">
-          <div class="preview-section">
-            <div class="preview-section-title">Cotización para</div>
-            <div class="preview-patient" id="prev-nombre">—</div>
-            <div class="preview-info" id="prev-info">—</div>
+      <div class="preview-wrap">
+        <div class="preview-card" id="previewCard">
+          <div class="preview-header">
+            <div class="preview-logo">🦷</div>
+            <div class="preview-clinic" id="pvClinica">Hersantych Dental</div>
+            <div class="preview-sub" id="pvSub">Sistema de Administración</div>
           </div>
-          <div class="preview-section">
-            <div class="preview-section-title">Tratamientos</div>
-            <div class="preview-items" id="prev-items"><div style="font-size:.8rem;color:var(--text-dim)">Sin tratamientos agregados</div></div>
+          <div class="preview-body">
+            <div style="text-align:center;margin-bottom:18px">
+              <div style="font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#999;margin-bottom:4px">Cotización</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:#111" id="pvNumero">#COT-001</div>
+              <div style="font-size:.75rem;color:#999;margin-top:3px" id="pvFecha"></div>
+            </div>
+            <div class="preview-section">
+              <div class="preview-section-title">Paciente</div>
+              <div class="preview-px" id="pvPaciente">—</div>
+              <div class="preview-px-sub" id="pvPacienteSub"></div>
+            </div>
+            <div class="preview-section">
+              <div class="preview-section-title">Tratamientos</div>
+              <table class="preview-items">
+                <thead><tr><th>Concepto</th><th>P. Unit.</th><th>IVA</th><th>Total</th></tr></thead>
+                <tbody id="pvItems"><tr><td colspan="4" style="color:#ccc;text-align:center;padding:14px">Sin conceptos</td></tr></tbody>
+              </table>
+              <div class="preview-totals">
+                <div class="preview-total-row"><span>Subtotal</span><span id="pvSubtotal">$0.00</span></div>
+                <div class="preview-total-row"><span>IVA (16%)</span><span id="pvIva">$0.00</span></div>
+                <div class="preview-total-row" id="pvDescRow" style="display:none"><span>Descuento</span><span id="pvDesc" style="color:#e53e3e">—</span></div>
+                <div class="preview-total-row grand"><span>TOTAL</span><span id="pvTotal">$0.00</span></div>
+              </div>
+            </div>
+            <div id="pvNotasSection" style="display:none">
+              <div class="preview-section-title">Notas</div>
+              <div id="pvNotas" style="font-size:.78rem;color:#555;line-height:1.5"></div>
+            </div>
+            <div class="preview-validity" id="pvVigencia">Cotización válida por 15 días</div>
           </div>
-          <div class="preview-total-row">
-            <div class="preview-total-label">Total</div>
-            <div class="preview-total-val" id="prev-total">$0</div>
-          </div>
-        </div>
-        <div class="preview-footer" id="prev-nota"></div>
-        <div class="preview-footer">
-          Esta cotización es válida por 30 días naturales.<br>Precios sujetos a cambio sin previo aviso.<br>Formas de pago: Efectivo · Transferencia · Tarjeta
+          <div class="preview-footer" id="pvFooter">Hersantych Dental · Gracias por su preferencia</div>
         </div>
         <div class="preview-actions">
-          <button class="btn btn-primary" style="flex:1" onclick="printCot()">🖨️ Imprimir</button>
-          <button class="btn btn-ghost" onclick="clearAll()">🗑️ Limpiar</button>
+          <button class="btn btn-primary" style="flex:1" onclick="imprimirCot()">🖨️ Imprimir / PDF</button>
+          <button class="btn btn-ghost btn-sm" id="btnGuardar2">💾 Guardar</button>
         </div>
       </div>
     </div>
   </div>
 </main>
 
-<script type="module" src="shared.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
 <script>
-let items=[];
+window.CURRENT_PAGE = 'cotizacion';
+let allCatalogo = [], allPacientes = [], items = [], cotNum = 1;
 
-// Populate catalog select
-const catSel=document.getElementById('cot-treat');
-DB.catalogo.forEach(c=>{const o=document.createElement('option');o.value=c.tratamiento;o.dataset.price=c.sugerido||0;o.textContent=`${c.tratamiento} — ${fmtMXN(c.sugerido)}`;catSel.appendChild(o);});
+initSession('any').then(async session => {
+  if (!session) return;
+  const { clinica } = session;
+  document.getElementById('pvClinica').textContent = clinica.nombre || 'Hersantych Dental';
+  document.getElementById('pvSub').textContent = clinica.telefono ? 'Tel: '+clinica.telefono : '';
+  document.getElementById('pvFooter').textContent = `${clinica.nombre||'Hersantych Dental'} · ${clinica.direccion||''} · Gracias por su preferencia`;
 
-// Auto-fill from URL param
-const urlT=new URLSearchParams(location.search).get('t');
-if(urlT){catSel.value=urlT;autoPrice();}
+  await Promise.all([loadCatalogo(), loadPacientes(), loadCotNum()]);
 
-// Set today
-document.getElementById('cot-fecha').value=new Date().toISOString().slice(0,10);
+  const tParam = new URLSearchParams(location.search).get('t');
+  if (tParam) {
+    const cat = allCatalogo.find(c=>c.tratamiento===decodeURIComponent(tParam));
+    if(cat){ items.push({nombre:cat.tratamiento, precio:cat.sugerido||0, iva:cat.iva==='si'}); renderItems(); updatePreview(); }
+  }
 
-function autoPrice(){
-  const opt=catSel.options[catSel.selectedIndex];
-  if(opt&&opt.dataset.price)document.getElementById('cot-price').value=opt.dataset.price;
-  else document.getElementById('cot-price').value='';
+  document.getElementById('f-fecha').value = todayISO();
+  document.getElementById('f-addTrat').addEventListener('change', function(){
+    const cat = allCatalogo.find(c=>c.id===this.value);
+    if(cat){ document.getElementById('f-addPrecio').value = cat.sugerido||0; document.getElementById('f-addIva').value = cat.iva||'no'; }
+  });
+  document.getElementById('btnGuardar').addEventListener('click', guardarCot);
+  document.getElementById('btnGuardar2').addEventListener('click', guardarCot);
+  updatePreview();
+});
+
+async function loadCatalogo() {
+  allCatalogo = await fsGetAll('catalogo', r=>r.where('vigente','==',true).orderBy('tratamiento','asc'));
+  const sel = document.getElementById('f-addTrat');
+  sel.innerHTML = '<option value="">Seleccionar del catálogo...</option>' + allCatalogo.map(c=>`<option value="${c.id}">${c.tratamiento} — ${fmtMXN(c.sugerido||0)}</option>`).join('');
+}
+async function loadPacientes() {
+  allPacientes = await fsGetAll('pacientes', r=>r.orderBy('nombre','asc'));
+  const sel = document.getElementById('f-paciente');
+  sel.innerHTML = '<option value="">Sin paciente (cotización libre)</option>' + allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
+}
+async function loadCotNum() {
+  const cots = await fsGetAll('cotizaciones', r=>r.orderBy('creadoEn','desc').limit(1));
+  cotNum = (cots[0]?.numero||0) + 1;
+  document.getElementById('pvNumero').textContent = '#COT-' + String(cotNum).padStart(3,'0');
 }
 
-function addItem(){
-  const treat=catSel.value;
-  const price=parseFloat(document.getElementById('cot-price').value)||0;
-  if(!treat){alert('Selecciona un tratamiento');return;}
-  items.push({treat,price});
-  catSel.value='';document.getElementById('cot-price').value='';
-  renderItems();updatePreview();
-}
+window.onPxChange = function() {
+  const expId = document.getElementById('f-paciente').value;
+  const px = allPacientes.find(p=>p.id===expId);
+  document.getElementById('f-nombre-libre').value = '';
+  updatePreview();
+};
 
-function removeItem(i){items.splice(i,1);renderItems();updatePreview();}
+window.addItem = function() {
+  const sel = document.getElementById('f-addTrat');
+  const cat = allCatalogo.find(c=>c.id===sel.value);
+  const precio = parseFloat(document.getElementById('f-addPrecio').value)||0;
+  const iva = document.getElementById('f-addIva').value==='si';
+  const nombre = cat?.tratamiento || sel.options[sel.selectedIndex]?.text?.split(' — ')[0] || '';
+  if (!nombre) { showToast('Selecciona un tratamiento','error'); return; }
+  items.push({nombre, precio, iva});
+  renderItems(); updatePreview();
+  sel.value=''; document.getElementById('f-addPrecio').value=''; document.getElementById('f-addIva').value='no';
+};
 
-function renderItems(){
-  const list=document.getElementById('itemsList');
-  if(!items.length){list.innerHTML='<div style="font-size:.8rem;color:var(--text-dim);text-align:center;padding:12px">Sin tratamientos agregados</div>';return;}
-  list.innerHTML=items.map((item,i)=>`
+window.addManual = function() {
+  const nombre = document.getElementById('f-addManual').value.trim();
+  const precio = 0;
+  if (!nombre) return;
+  items.push({nombre, precio, iva:false});
+  renderItems(); updatePreview();
+  document.getElementById('f-addManual').value='';
+};
+
+window.removeItem = function(i) { items.splice(i,1); renderItems(); updatePreview(); };
+window.updateItemPrecio = function(i,val) { items[i].precio = parseFloat(val)||0; updatePreview(); };
+window.toggleIva = function(i) { items[i].iva = !items[i].iva; updatePreview(); };
+
+function renderItems() {
+  const el = document.getElementById('itemsList');
+  if (!items.length) {
+    el.innerHTML=`<div class="empty-state" style="padding:24px"><div class="empty-icon">📋</div><div class="empty-title">Sin tratamientos</div></div>`;
+    return;
+  }
+  el.innerHTML = items.map((it,i)=>`
     <div class="item-row">
-      <div class="item-treat">${item.treat}</div>
-      <div class="item-price">${fmtMXN(item.price)}</div>
+      <div class="item-name">${it.nombre}</div>
+      <input type="number" class="form-input" style="padding:5px 8px;font-size:.78rem;width:90px" value="${it.precio}" onchange="updateItemPrecio(${i},this.value)" min="0" step="0.01">
+      <label style="display:flex;align-items:center;gap:4px;font-size:.72rem;color:var(--text-muted);cursor:pointer;white-space:nowrap">
+        <input type="checkbox" ${it.iva?'checked':''} onchange="toggleIva(${i})"> IVA
+      </label>
       <button class="item-del" onclick="removeItem(${i})">✕</button>
     </div>`).join('');
 }
 
-function updatePreview(){
-  const nombre=document.getElementById('cot-nombre').value||'—';
-  const exp=document.getElementById('cot-exp').value;
-  const fecha=document.getElementById('cot-fecha').value;
-  const nota=document.getElementById('cot-nota').value;
-  const disc=parseFloat(document.getElementById('cot-disc').value)||0;
-  const subtotal=items.reduce((s,i)=>s+i.price,0);
-  const discAmt=subtotal*(disc/100);
-  const total=subtotal-discAmt;
-  document.getElementById('prev-nombre').textContent=nombre;
-  document.getElementById('prev-info').textContent=`${exp?'Expd. '+exp+' · ':''}Fecha: ${fecha||'—'}`;
-  document.getElementById('prev-items').innerHTML=items.length?
-    [...items.map(it=>`<div class="preview-item"><span class="preview-item-name">${it.treat}</span><span class="preview-item-price">${fmtMXN(it.price)}</span></div>`),
-    disc>0?`<div class="preview-item"><span class="preview-item-name" style="color:var(--gold)">Descuento ${disc}%</span><span class="preview-item-price" style="color:var(--gold)">-${fmtMXN(discAmt)}</span></div>`:''].join('')
-    :'<div style="font-size:.8rem;color:var(--text-dim)">Sin tratamientos</div>';
-  document.getElementById('totalVal').textContent=fmtMXN(total);
-  document.getElementById('prev-total').textContent=fmtMXN(total);
-  document.getElementById('discAmount').textContent=disc>0?`-${fmtMXN(discAmt)}`:'';
-  document.getElementById('prev-nota').textContent=nota?`📌 ${nota}`:'';
+function calcTotals() {
+  const ivaGlobal = document.getElementById('ivaGlobal').checked;
+  let subtotal=0, ivaTotal=0;
+  items.forEach(it=>{
+    subtotal += it.precio;
+    if(it.iva || ivaGlobal) ivaTotal += it.precio*0.16;
+  });
+  const desc = parseFloat(document.getElementById('f-descuento').value)||0;
+  const descAmt = (subtotal+ivaTotal)*(desc/100);
+  const total = subtotal+ivaTotal-descAmt;
+  return {subtotal, ivaTotal, descAmt, total, desc};
 }
 
-function printCot(){
-  if(!items.length){alert('Agrega al menos un tratamiento');return;}
-  window.print();
+function updatePreview() {
+  const expId = document.getElementById('f-paciente').value;
+  const px = allPacientes.find(p=>p.id===expId);
+  const nombreLibre = document.getElementById('f-nombre-libre').value.trim();
+  const pacienteNombre = px?.nombre || nombreLibre || '—';
+  document.getElementById('pvPaciente').textContent = pacienteNombre;
+  document.getElementById('pvPacienteSub').textContent = px ? (px.tel||'') : '';
+
+  const fecha = document.getElementById('f-fecha').value;
+  document.getElementById('pvFecha').textContent = fecha ? new Date(fecha+'T12:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) : '';
+
+  const vigDias = parseInt(document.getElementById('f-vigencia').value)||15;
+  document.getElementById('pvVigencia').textContent = `Cotización válida por ${vigDias} días a partir de la fecha de emisión`;
+
+  const notas = document.getElementById('f-notas').value.trim();
+  const notasSection = document.getElementById('pvNotasSection');
+  notasSection.style.display = notas?'block':'none';
+  document.getElementById('pvNotas').textContent = notas;
+
+  const ivaGlobal = document.getElementById('ivaGlobal').checked;
+  const {subtotal,ivaTotal,descAmt,total,desc} = calcTotals();
+  document.getElementById('tSubtotal').textContent = fmtMXN(subtotal);
+  document.getElementById('tIva').textContent = fmtMXN(ivaTotal);
+  document.getElementById('tTotal').textContent = fmtMXN(total);
+  document.getElementById('pvSubtotal').textContent = fmtMXN(subtotal);
+  document.getElementById('pvIva').textContent = fmtMXN(ivaTotal);
+  document.getElementById('pvTotal').textContent = fmtMXN(total);
+  const descRow = document.getElementById('pvDescRow');
+  descRow.style.display = desc>0?'flex':'none';
+  document.getElementById('pvDesc').textContent = `-${fmtMXN(descAmt)} (${desc}%)`;
+
+  // Items table
+  document.getElementById('pvItems').innerHTML = items.length
+    ? items.map(it=>{
+        const ivaAmt = (it.iva||ivaGlobal)?it.precio*0.16:0;
+        return `<tr>
+          <td>${it.nombre}</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmtMXN(it.precio)}</td>
+          <td style="text-align:right;font-size:.72rem;color:#999">${(it.iva||ivaGlobal)?fmtMXN(ivaAmt):'—'}</td>
+          <td>${fmtMXN(it.precio+ivaAmt)}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="4" style="color:#ccc;text-align:center;padding:14px">Sin conceptos</td></tr>';
 }
 
-function clearAll(){
-  items=[];
-  ['cot-nombre','cot-exp','cot-nota','cot-disc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cot-fecha').value=new Date().toISOString().slice(0,10);
-  renderItems();updatePreview();
+async function guardarCot() {
+  const {total} = calcTotals();
+  const expId = document.getElementById('f-paciente').value;
+  const px = allPacientes.find(p=>p.id===expId);
+  const data = {
+    numero: cotNum,
+    paciente: px?.nombre || document.getElementById('f-nombre-libre').value.trim() || 'Sin nombre',
+    expId: expId||null,
+    fecha: document.getElementById('f-fecha').value,
+    vigencia: parseInt(document.getElementById('f-vigencia').value)||15,
+    items, total,
+    notas: document.getElementById('f-notas').value.trim(),
+    descuento: parseFloat(document.getElementById('f-descuento').value)||0,
+  };
+  try {
+    await fsCreate('cotizaciones', data);
+    showToast('Cotización guardada','success');
+    cotNum++;
+    document.getElementById('pvNumero').textContent = '#COT-'+String(cotNum).padStart(3,'0');
+  } catch(e){ showToast('Error: '+e.message,'error'); }
 }
 
-renderItems();updatePreview();
+function imprimirCot() {
+  const printWin = window.open('','_blank');
+  const card = document.getElementById('previewCard').outerHTML;
+  printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{background:#fff;font-family:'DM Sans',sans-serif;padding:0}
+      ${document.querySelector('style') ? [...document.querySelectorAll('style')].map(s=>s.textContent).join('') : ''}
+      .preview-card{max-width:600px;margin:0 auto;box-shadow:none}
+      @media print{@page{margin:10mm}}
+    </style>
+  </head><body>${card}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  printWin.document.close();
+}
 </script>
 </body>
 </html>

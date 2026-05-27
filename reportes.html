@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Reportes</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.report-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;transition:all .2s;cursor:pointer;position:relative;overflow:hidden}
+.report-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.report-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.report-card.type-ingreso::before{background:var(--teal)}
+.report-card.type-paciente::before{background:var(--blue)}
+.report-card.type-tratamiento::before{background:var(--gold)}
+.report-card.type-caja::before{background:var(--green)}
+.report-icon{font-size:2rem;margin-bottom:10px}
+.report-name{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.report-desc{font-size:.76rem;color:var(--text-muted);line-height:1.5;margin-bottom:14px}
+.report-actions{display:flex;gap:8px}
+.preview-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin-top:20px}
+.preview-title{font-family:var(--font-display);font-size:1.1rem;font-style:italic;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📊 Reportes</div>
+    <div class="topbar-actions">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" class="form-input" id="fechaDesde" style="width:150px">
+        <span style="color:var(--text-dim);font-size:.8rem">—</span>
+        <input type="date" class="form-input" id="fechaHasta" style="width:150px">
+      </div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="report-grid">
+      <div class="report-card type-ingreso" onclick="genReporte('ingresos')">
+        <div class="report-icon">💵</div>
+        <div class="report-name">Reporte de Ingresos</div>
+        <div class="report-desc">Detalle de todos los cobros realizados en el período, agrupados por forma de pago, paciente y tratamiento.</div>
+        <div class="report-actions">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();genReporte('ingresos')">📄 Generar</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();exportCSV('ingresos')">📥 CSV</button>
+        </div>
+      </div>
+      <div class="report-card type-paciente" onclick="genReporte('pacientes')">
+        <div class="report-icon">👥</div>
+        <div class="report-name">Reporte de Pacientes</div>
+        <div class="report-desc">Listado completo de pacientes con su estado de cuenta, tratamientos activos y saldos pendientes.</div>
+        <div class="report-actions">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();genReporte('pacientes')">📄 Generar</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();exportCSV('pacientes')">📥 CSV</button>
+        </div>
+      </div>
+      <div class="report-card type-tratamiento" onclick="genReporte('tratamientos')">
+        <div class="report-icon">🦷</div>
+        <div class="report-name">Reporte de Tratamientos</div>
+        <div class="report-desc">Estado actual de todos los tratamientos: liquidados, en proceso y pendientes de pago.</div>
+        <div class="report-actions">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();genReporte('tratamientos')">📄 Generar</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();exportCSV('tratamientos')">📥 CSV</button>
+        </div>
+      </div>
+      <div class="report-card type-caja" onclick="genReporte('caja')">
+        <div class="report-icon">🧾</div>
+        <div class="report-name">Reporte de Caja</div>
+        <div class="report-desc">Resumen de caja del período con totales por día, forma de pago e IVA generado.</div>
+        <div class="report-actions">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();genReporte('caja')">📄 Generar</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();exportCSV('caja')">📥 CSV</button>
+        </div>
+      </div>
+      <div class="report-card type-paciente" onclick="genReporte('adeudos')">
+        <div class="report-icon">❗</div>
+        <div class="report-name">Reporte de Adeudos</div>
+        <div class="report-desc">Pacientes con saldo pendiente, ordenados por monto mayor a menor. Incluye datos de contacto.</div>
+        <div class="report-actions">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();genReporte('adeudos')">📄 Generar</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();exportCSV('adeudos')">📥 CSV</button>
+        </div>
+      </div>
+      <div class="report-card type-caja" onclick="genReporte('agenda')">
+        <div class="report-icon">📅</div>
+        <div class="report-name">Reporte de Agenda</div>
+        <div class="report-desc">Citas del período con estado de asistencia, tratamiento y datos del paciente.</div>
+        <div class="report-actions">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();genReporte('agenda')">📄 Generar</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();exportCSV('agenda')">📥 CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREVIEW AREA -->
+    <div class="preview-section" id="previewSection" style="display:none">
+      <div class="preview-title">
+        <span id="previewTitle">Reporte</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="imprimirReporte()">🖨️ Imprimir / PDF</button>
+          <button class="btn btn-ghost btn-sm" id="btnCSVPreview">📥 CSV</button>
+        </div>
+      </div>
+      <div id="previewContent"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'reportes';
+let currentReporte = null, clinicaInfo = null;
+let reporteData = {};
+
+initSession('reportes').then(async session => {
+  if (!session) return;
+  clinicaInfo = session.clinica;
+  const hoy = new Date(), hace30 = new Date();
+  hace30.setDate(hoy.getDate()-30);
+  document.getElementById('fechaDesde').value = hace30.toISOString().slice(0,10);
+  document.getElementById('fechaHasta').value = hoy.toISOString().slice(0,10);
+});
+
+async function genReporte(tipo) {
+  currentReporte = tipo;
+  const desde = document.getElementById('fechaDesde').value;
+  const hasta  = document.getElementById('fechaHasta').value;
+  const section = document.getElementById('previewSection');
+  section.style.display = 'block';
+  document.getElementById('previewContent').innerHTML = '<div class="loader"><div class="spinner"></div>Generando reporte...</div>';
+  section.scrollIntoView({behavior:'smooth'});
+
+  const titles = {ingresos:'💵 Reporte de Ingresos',pacientes:'👥 Reporte de Pacientes',tratamientos:'🦷 Reporte de Tratamientos',caja:'🧾 Reporte de Caja',adeudos:'❗ Reporte de Adeudos',agenda:'📅 Reporte de Agenda'};
+  document.getElementById('previewTitle').textContent = `${titles[tipo]||tipo} · ${desde} a ${hasta}`;
+  document.getElementById('btnCSVPreview').onclick = ()=>exportCSV(tipo);
+
+  // Load data
+  let [trat, abonos, pxList, citas] = await Promise.all([
+    fsGetAll('tratamientos'),
+    fsGetAll('abonos'),
+    fsGetAll('pacientes', r=>r.orderBy('nombre','asc')),
+    fsGetAll('citas'),
+  ]);
+
+  // Filter by date where applicable
+  const abonosPeriodo = abonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
+  const citasPeriodo = citas.filter(c=>(!desde||c.fecha>=desde)&&(!hasta||c.fecha<=hasta));
+
+  reporteData = {trat, abonos: abonosPeriodo, pxList, citas: citasPeriodo, desde, hasta};
+
+  let html = '';
+  const headerHtml = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-weight:700;font-size:.88rem">${clinicaInfo?.nombre||'Hersantych Dental'}</div><div style="font-size:.72rem;color:var(--text-muted)">${titles[tipo]} · ${desde} al ${hasta}</div></div>
+      <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim)">Generado: ${todayISO()}</div>
+    </div>`;
+
+  if (tipo === 'ingresos') {
+    const total = abonosPeriodo.reduce((s,a)=>s+Number(a.monto||0),0);
+    const ivaTotal = abonosPeriodo.filter(a=>a.aplicaIva).reduce((s,a)=>s+Number(a.monto||0)*0.16,0);
+    const formas = {};
+    abonosPeriodo.forEach(a=>{ formas[a.forma||'Otro']=(formas[a.forma||'Otro']||0)+Number(a.monto||0); });
+    html = headerHtml;
+    html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div class="kpi-card" style="--accent:var(--teal)"><div class="kpi-icon">💵</div><div class="kpi-value" style="color:var(--teal)">${fmtMXN(total)}</div><div class="kpi-label">Total cobrado</div></div>
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-icon">🧾</div><div class="kpi-value" style="color:var(--blue)">${fmtMXN(ivaTotal)}</div><div class="kpi-label">IVA generado</div></div>
+      <div class="kpi-card" style="--accent:var(--gold)"><div class="kpi-icon">📋</div><div class="kpi-value" style="color:var(--gold)">${abonosPeriodo.length}</div><div class="kpi-label">Transacciones</div></div>
+    </div>`;
+    html += `<div style="margin-bottom:16px"><div style="font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Por forma de pago</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">${Object.entries(formas).map(([f,v])=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:.8rem"><div style="font-weight:600;color:var(--text)">${f}</div><div style="font-family:var(--font-mono);color:var(--teal)">${fmtMXN(v)}</div></div>`).join('')}</div></div>`;
+    html += `<div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Paciente</th><th>Tratamiento</th><th>Forma</th><th>Monto</th><th>IVA</th><th>Total</th></tr></thead>
+      <tbody>${abonosPeriodo.map(a=>{
+        const iv=a.aplicaIva?Number(a.monto||0)*0.16:0;
+        const tot=a.aplicaIva?Number(a.monto||0)*1.16:Number(a.monto||0);
+        return`<tr><td style="font-family:var(--font-mono);font-size:.75rem">${a.fecha||'—'}</td><td style="font-weight:600">${a.paciente||'—'}</td><td>${a.tratamiento||'—'}</td><td><span class="badge badge-blue" style="font-size:.65rem">${a.forma||'—'}</span></td><td style="font-family:var(--font-mono);color:var(--teal)">${fmtMXN(a.monto)}</td><td style="font-family:var(--font-mono);font-size:.75rem">${a.aplicaIva?fmtMXN(iv):'—'}</td><td style="font-family:var(--font-mono);font-weight:700">${fmtMXN(tot)}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  }
+  else if (tipo === 'adeudos') {
+    const conAdeudo = trat.filter(t=>Number(t.saldo||0)>0).sort((a,b)=>Number(b.saldo)-Number(a.saldo));
+    const totalAdeudo = conAdeudo.reduce((s,t)=>s+Number(t.saldo||0),0);
+    html = headerHtml;
+    html += `<div class="kpi-card" style="--accent:var(--red);margin-bottom:16px;max-width:300px"><div class="kpi-icon">❗</div><div class="kpi-value" style="color:var(--red)">${fmtMXN(totalAdeudo)}</div><div class="kpi-label">Total saldo pendiente</div></div>`;
+    html += `<div class="table-wrap"><table>
+      <thead><tr><th>Paciente</th><th>Tratamiento</th><th>Costo total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th>Teléfono</th></tr></thead>
+      <tbody>${conAdeudo.map(t=>{
+        const px=pxList.find(p=>p.id===t.expId);
+        return`<tr><td style="font-weight:600;color:var(--text)">${t.paciente||'—'}</td><td>${t.tratamiento||'—'}</td><td style="font-family:var(--font-mono)">${fmtMXN(t.costo)}</td><td style="font-family:var(--font-mono);color:var(--green)">${fmtMXN(t.abonado)}</td><td style="font-family:var(--font-mono);color:var(--red);font-weight:700">${fmtMXN(t.saldo)}</td><td><span class="badge badge-gold" style="font-size:.65rem">${t.estado||'—'}</span></td><td>${px?.tel?`<button class="btn btn-ghost btn-sm" onclick="whatsapp('${px.tel}','Hola ${t.paciente?.split(' ')[0]||''}, te recordamos que tienes un saldo pendiente de ${fmtMXN(t.saldo)} en Hersantych Dental.')">💬</button>`:'—'}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  }
+  else if (tipo === 'agenda') {
+    html = headerHtml;
+    const estats={Confirmado:0,Completado:0,Cancelado:0,'No Asistió':0,Agendado:0};
+    citasPeriodo.forEach(c=>{if(estats[c.estado]!==undefined)estats[c.estado]++;});
+    html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${Object.entries(estats).map(([e,c])=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:.8rem"><div style="font-weight:600;color:var(--text)">${e}</div><div style="font-family:var(--font-mono);color:var(--teal)">${c}</div></div>`).join('')}</div>`;
+    html+=`<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Tratamiento</th><th>Estado</th><th>RX</th></tr></thead>
+      <tbody>${citasPeriodo.sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).map(c=>{
+        const estadoClass={Confirmado:'badge-teal',Completado:'badge-green',Cancelado:'badge-red','No Asistió':'badge-purple',Agendado:'badge-gold'};
+        return`<tr><td style="font-family:var(--font-mono);font-size:.78rem">${c.fecha||'—'}</td><td style="font-family:var(--font-mono)">${c.hora||'—'}</td><td style="font-weight:600;color:var(--text)">${c.paciente||'—'}</td><td>${c.tratamiento||'—'}</td><td><span class="badge ${estadoClass[c.estado]||'badge-blue'}" style="font-size:.65rem">${c.estado||'—'}</span></td><td>${c.rx==='Sí'?'<span class="badge badge-purple" style="font-size:.65rem">RX</span>':'—'}</td></tr>`;
+      }).join('')}</tbody></table></div>`;
+  }
+  else {
+    // pacientes / tratamientos / caja — simpler
+    html = headerHtml + `<div style="color:var(--text-muted);font-size:.85rem;padding:20px;text-align:center">Selecciona un período y genera el reporte para ver el detalle.</div>`;
+    // For tratamientos
+    if (tipo==='tratamientos') {
+      html = headerHtml;
+      const estadoClass={Liquidado:'badge-green',Abonando:'badge-gold',Pendiente:'badge-red',Cancelado:'badge-purple'};
+      html+=`<div class="table-wrap"><table><thead><tr><th>Paciente</th><th>Tratamiento</th><th>Inicio</th><th>Costo</th><th>Abonado</th><th>Saldo</th><th>Estado</th></tr></thead>
+        <tbody>${trat.map(t=>`<tr><td style="font-weight:600;color:var(--text)">${t.paciente||'—'}</td><td>${t.tratamiento||'—'}</td><td>${t.fechaInicio||'—'}</td><td style="font-family:var(--font-mono)">${fmtMXN(t.costo)}</td><td style="font-family:var(--font-mono);color:var(--green)">${fmtMXN(t.abonado)}</td><td style="font-family:var(--font-mono);color:var(--red)">${fmtMXN(t.saldo)}</td><td><span class="badge ${estadoClass[t.estado]||'badge-blue'}" style="font-size:.65rem">${t.estado||'—'}</span></td></tr>`).join('')}</tbody></table></div>`;
+    }
+    if (tipo==='pacientes') {
+      html = headerHtml;
+      html+=`<div class="table-wrap"><table><thead><tr><th>Expediente</th><th>Nombre</th><th>Género</th><th>Teléfono</th><th>Alergias</th><th>Alta</th></tr></thead>
+        <tbody>${pxList.map(p=>`<tr><td style="font-family:var(--font-mono);font-size:.75rem">${p.expediente||p.id}</td><td style="font-weight:600;color:var(--text)">${p.nombre||'—'}</td><td>${p.genero||'—'}</td><td>${p.tel||'—'}</td><td>${p.alergias&&p.alergias!=='Ninguna'?`<span class="badge badge-gold" style="font-size:.65rem">${p.alergias}</span>`:p.alergias||'—'}</td><td>${p.alta||'—'}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+  }
+
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+function imprimirReporte() {
+  const content = document.getElementById('previewContent').innerHTML;
+  const title = document.getElementById('previewTitle').textContent;
+  const pw = window.open('','_blank');
+  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>${title}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      :root{--teal:#00C2A8;--gold:#F4B942;--red:#FF5C5C;--blue:#4A9EFF;--green:#34D399;--purple:#A78BFA;--teal-dim:rgba(0,194,168,.1);--gold-dim:rgba(244,185,66,.1);--red-dim:rgba(255,92,92,.1);--blue-dim:rgba(74,158,255,.1);--surface2:#f5f7fa;--border:#e2e8f0;--border2:#cbd5e0;--font-mono:'JetBrains Mono',monospace;--font-body:'DM Sans',sans-serif;--r:8px}
+      body{background:#fff;padding:24px;font-family:var(--font-body);color:#111}
+      h1{font-family:'Instrument Serif',serif;font-style:italic;margin-bottom:4px}
+      table{width:100%;border-collapse:collapse;font-size:.82rem}
+      th{padding:8px 12px;background:#f5f7fa;border-bottom:2px solid #e2e8f0;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#666;text-align:left}
+      td{padding:9px 12px;border-bottom:1px solid #eee;color:#333;vertical-align:middle}
+      .kpi-card{background:#f5f7fa;border:1px solid #e2e8f0;border-radius:8px;padding:14px;display:inline-block;margin-right:10px;margin-bottom:10px}
+      .kpi-icon{font-size:1.1rem;margin-bottom:6px}
+      .kpi-value{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;margin-bottom:3px}
+      .kpi-label{font-size:.7rem;color:#666}
+      .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:.65rem;font-weight:700}
+      .badge-green{background:#dcfce7;color:#16a34a}.badge-gold{background:#fef3c7;color:#d97706}
+      .badge-red{background:#fee2e2;color:#dc2626}.badge-blue{background:#dbeafe;color:#2563eb}
+      .badge-teal{background:#ccfbf1;color:#0d9488}.badge-purple{background:#ede9fe;color:#7c3aed}
+      @media print{@page{margin:12mm} body{padding:0}}
+    </style>
+  </head><body>
+    <h1 style="margin-bottom:16px">${title}</h1>
+    ${content}
+    <script>window.onload=()=>window.print()<\/script>
+  </body></html>`);
+  pw.document.close();
+}
+
+async function exportCSV(tipo) {
+  const desde = document.getElementById('fechaDesde').value;
+  const hasta  = document.getElementById('fechaHasta').value;
+  let [trat,abonos,pxList,citas] = await Promise.all([
+    fsGetAll('tratamientos'),fsGetAll('abonos'),
+    fsGetAll('pacientes',r=>r.orderBy('nombre','asc')),fsGetAll('citas'),
+  ]);
+  const abonosPeriodo = abonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
+  let headers=[], rows=[];
+  if(tipo==='ingresos'||tipo==='caja'){
+    headers=['Fecha','Paciente','Tratamiento','Forma','Monto','IVA','Total'];
+    rows=abonosPeriodo.map(a=>[a.fecha,a.paciente,a.tratamiento,a.forma,a.monto,a.aplicaIva?(Number(a.monto||0)*0.16).toFixed(2):'0',a.aplicaIva?(Number(a.monto||0)*1.16).toFixed(2):a.monto].map(v=>`"${v||''}"`).join(','));
+  }else if(tipo==='pacientes'){
+    headers=['Expediente','Nombre','Género','Teléfono','Email','Alergias','Padecimientos','Alta'];
+    rows=pxList.map(p=>[p.expediente||p.id,p.nombre,p.genero,p.tel,p.email,p.alergias,p.padecimientos,p.alta].map(v=>`"${v||''}"`).join(','));
+  }else if(tipo==='tratamientos'){
+    headers=['Paciente','Tratamiento','Inicio','Costo','Abonado','Saldo','Estado'];
+    rows=trat.map(t=>[t.paciente,t.tratamiento,t.fechaInicio,t.costo,t.abonado,t.saldo,t.estado].map(v=>`"${v||''}"`).join(','));
+  }else if(tipo==='adeudos'){
+    headers=['Paciente','Tratamiento','Saldo','Estado'];
+    rows=trat.filter(t=>Number(t.saldo||0)>0).sort((a,b)=>Number(b.saldo)-Number(a.saldo)).map(t=>[t.paciente,t.tratamiento,t.saldo,t.estado].map(v=>`"${v||''}"`).join(','));
+  }else if(tipo==='agenda'){
+    headers=['Fecha','Hora','Paciente','Tratamiento','Estado','RX'];
+    rows=citas.filter(c=>(!desde||c.fecha>=desde)&&(!hasta||c.fecha<=hasta)).map(c=>[c.fecha,c.hora,c.paciente,c.tratamiento,c.estado,c.rx].map(v=>`"${v||''}"`).join(','));
+  }
+  const csv=[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`reporte_${tipo}_${todayISO()}.csv`;a.click();
+  showToast('Reporte exportado','success');
+}
+</script>
+</body>
+</html>

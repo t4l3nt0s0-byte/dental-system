@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Inventario</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.filters .search-wrap{flex:1;min-width:180px}
+.inv-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.sum-val{font-family:var(--font-mono);font-size:1.2rem;font-weight:700;margin-bottom:3px}
+.sum-label{font-size:.7rem;color:var(--text-muted)}
+.stock-bar{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:8px}
+.stock-fill{height:100%;border-radius:3px;transition:width .5s}
+.stock-ok{background:var(--teal)}
+.stock-low{background:var(--gold)}
+.stock-out{background:var(--red)}
+.alerta-badge{position:absolute;top:10px;right:10px}
+@media(max-width:900px){.inv-summary{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">💊 Inventario de Materiales</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" id="btnNuevo">+ Agregar producto</button>
+      <button class="btn btn-ghost btn-sm" id="btnExport">📥 CSV</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="inv-summary" id="invSummary">
+      <div class="sum-card"><div class="spinner" style="margin:8px auto"></div></div>
+      <div class="sum-card"></div><div class="sum-card"></div><div class="sum-card"></div>
+    </div>
+    <div class="filters">
+      <div class="search-wrap"><span class="search-icon">🔍</span><input class="search-input" id="searchInput" placeholder="Buscar producto..."></div>
+      <select class="form-select" id="filterCat" style="width:160px">
+        <option value="">Todas las categorías</option>
+        <option>Medicamentos</option><option>Materiales dentales</option>
+        <option>Instrumental</option><option>Consumibles</option><option>Equipos</option><option>Otro</option>
+      </select>
+      <select class="form-select" id="filterStock" style="width:150px">
+        <option value="">Todo el stock</option>
+        <option value="ok">Stock OK</option>
+        <option value="low">Stock bajo</option>
+        <option value="out">Sin stock</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Producto</th><th>Categoría</th><th>Stock actual</th><th>Stock mínimo</th><th>Unidad</th><th>Costo unit.</th><th>Caducidad</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="invBody"><tr><td colspan="10"><div class="loader"><div class="spinner"></div>Cargando...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL NUEVO/EDITAR -->
+<div class="modal-overlay" id="modalInv">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="modalInvTitle">Nuevo Producto</div>
+      <button class="modal-close" onclick="closeModal('modalInv')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Nombre del producto *</label><input class="form-input" id="f-nombre" placeholder="Anestesia lidocaína 2%"></div>
+        <div class="form-group full"><label class="form-label">Descripción</label><textarea class="form-textarea" id="f-desc" placeholder="Detalles del producto, marca, presentación..." rows="2"></textarea></div>
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select class="form-select" id="f-cat">
+            <option>Medicamentos</option><option>Materiales dentales</option>
+            <option>Instrumental</option><option>Consumibles</option><option>Equipos</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Unidad de medida</label>
+          <select class="form-select" id="f-unidad">
+            <option>Pieza</option><option>Caja</option><option>Frasco</option><option>Tubo</option>
+            <option>Cartucho</option><option>Par</option><option>Rollo</option><option>Paquete</option><option>ml</option><option>g</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Stock actual *</label><input type="number" class="form-input" id="f-stock" min="0" step="0.01" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Stock mínimo (alerta)</label><input type="number" class="form-input" id="f-minStock" min="0" step="0.01" placeholder="5"></div>
+        <div class="form-group"><label class="form-label">Costo unitario (MXN)</label><input type="number" class="form-input" id="f-costo" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="form-group"><label class="form-label">Precio de venta (MXN)</label><input type="number" class="form-input" id="f-precio" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="form-group"><label class="form-label">Fecha de caducidad</label><input type="date" class="form-input" id="f-caducidad"></div>
+        <div class="form-group"><label class="form-label">Lote / No. de serie</label><input class="form-input" id="f-lote" placeholder="LOT-2024-001"></div>
+        <div class="form-group"><label class="form-label">Proveedor</label><input class="form-input" id="f-proveedor" placeholder="Nombre del proveedor"></div>
+        <div class="form-group"><label class="form-label">Ubicación en consultorio</label><input class="form-input" id="f-ubicacion" placeholder="Cajón 3, Estante A..."></div>
+        <div class="form-group full"><label class="form-label">Notas adicionales</label><textarea class="form-textarea" id="f-notas" placeholder="Instrucciones de almacenamiento, observaciones..." rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalInv')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveInv">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJUSTE DE STOCK -->
+<div class="modal-overlay" id="modalAjuste">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title" id="ajusteTitle">Ajustar Stock</div>
+      <button class="modal-close" onclick="closeModal('modalAjuste')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:8px;font-size:.82rem;color:var(--text-muted)">
+        Producto: <strong id="ajusteNombre" style="color:var(--text)"></strong><br>
+        Stock actual: <span id="ajusteStockActual" style="font-family:var(--font-mono);color:var(--teal)"></span>
+      </div>
+      <div class="form-group"><label class="form-label">Tipo de movimiento</label>
+        <select class="form-select" id="aj-tipo">
+          <option value="entrada">📦 Entrada (compra/recepción)</option>
+          <option value="salida">📤 Salida (uso/consumo)</option>
+          <option value="ajuste">⚙️ Ajuste manual</option>
+          <option value="merma">🗑️ Merma / Caducidad</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Cantidad *</label><input type="number" class="form-input" id="aj-cantidad" min="0" step="0.01" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">Motivo / Notas</label><textarea class="form-textarea" id="aj-notas" placeholder="Motivo del ajuste..." rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalAjuste')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveAjuste">✅ Aplicar ajuste</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'inventario';
+let allInv = [], editId = null, ajusteId = null;
+
+initSession('inventario').then(async () => {
+  await loadInventario();
+  document.getElementById('searchInput').addEventListener('input', renderTable);
+  document.getElementById('filterCat').addEventListener('change', renderTable);
+  document.getElementById('filterStock').addEventListener('change', renderTable);
+  document.getElementById('btnNuevo').addEventListener('click', openNewModal);
+  document.getElementById('btnSaveInv').addEventListener('click', saveInv);
+  document.getElementById('btnSaveAjuste').addEventListener('click', saveAjuste);
+  document.getElementById('btnExport').addEventListener('click', exportCSV);
+});
+
+async function loadInventario() {
+  allInv = await fsGetAll('inventario', r => r.orderBy('nombre','asc'));
+  renderTable();
+  renderSummary();
+}
+
+function getStockStatus(item) {
+  const stock = Number(item.stock||0), min = Number(item.minStock||0);
+  if (stock <= 0) return 'out';
+  if (min > 0 && stock <= min) return 'low';
+  return 'ok';
+}
+
+function renderSummary() {
+  const total = allInv.length;
+  const agotados = allInv.filter(i=>Number(i.stock||0)<=0).length;
+  const bajos = allInv.filter(i=>getStockStatus(i)==='low').length;
+  const valorTotal = allInv.reduce((s,i)=>s+(Number(i.stock||0)*Number(i.costo||0)),0);
+  const prox = allInv.filter(i=>{
+    if(!i.caducidad) return false;
+    const diff=(new Date(i.caducidad)-new Date())/86400000;
+    return diff>=0 && diff<=30;
+  }).length;
+  document.getElementById('invSummary').innerHTML=[
+    {icon:'📦',val:total,label:'Total productos',color:'var(--blue)',accent:'var(--blue)'},
+    {icon:'⚠️',val:bajos,label:'Stock bajo',color:'var(--gold)',accent:'var(--gold)'},
+    {icon:'🚫',val:agotados,label:'Sin stock',color:'var(--red)',accent:'var(--red)'},
+    {icon:'💵',val:fmtMXN(valorTotal),label:'Valor del inventario',color:'var(--teal)',accent:'var(--teal)'},
+  ].map(k=>`<div class="sum-card"><div class="sum-val" style="color:${k.color}">${k.val}</div><div class="sum-label">${k.icon} ${k.label}</div></div>`).join('');
+}
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('filterCat').value;
+  const stockF = document.getElementById('filterStock').value;
+  const filtered = allInv.filter(i=>{
+    const status = getStockStatus(i);
+    return (!q || i.nombre?.toLowerCase().includes(q) || i.proveedor?.toLowerCase().includes(q)) &&
+      (!cat || i.categoria===cat) &&
+      (!stockF || status===stockF);
+  });
+  const tbody = document.getElementById('invBody');
+  if (!filtered.length) {
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state" style="padding:30px"><div class="empty-icon">💊</div><div class="empty-title">Sin productos</div><div class="empty-sub">Agrega productos al inventario</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(i => {
+    const status = getStockStatus(i);
+    const statusBadge = {ok:'<span class="badge badge-green">✅ OK</span>',low:'<span class="badge badge-gold">⚠️ Bajo</span>',out:'<span class="badge badge-red">🚫 Agotado</span>'}[status];
+    const stock = Number(i.stock||0), min = Number(i.minStock||1);
+    const pct = Math.min(100, Math.round(stock/Math.max(min*2,1)*100));
+    const barClass = status==='ok'?'stock-ok':status==='low'?'stock-low':'stock-out';
+    const cadStatus = i.caducidad ? (() => {
+      const diff = (new Date(i.caducidad)-new Date())/86400000;
+      if (diff < 0) return '<span class="badge badge-red">Caducado</span>';
+      if (diff <= 30) return `<span class="badge badge-gold">⚠️ ${Math.round(diff)}d</span>`;
+      return `<span style="font-size:.75rem;color:var(--text-muted)">${i.caducidad}</span>`;
+    })() : '—';
+    return `<tr>
+      <td><div style="font-weight:600;color:var(--text)">${i.nombre||'—'}</div>${i.lote?`<div style="font-size:.68rem;color:var(--text-dim)">Lote: ${i.lote}</div>`:''}</td>
+      <td><span class="badge badge-blue" style="font-size:.65rem">${i.categoria||'—'}</span></td>
+      <td>
+        <div style="font-family:var(--font-mono);font-weight:700;color:${status==='out'?'var(--red)':status==='low'?'var(--gold)':'var(--text)'}">${stock} ${i.unidad||''}</div>
+        <div class="stock-bar"><div class="stock-fill ${barClass}" style="width:${pct}%"></div></div>
+      </td>
+      <td style="font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)">${i.minStock||0} ${i.unidad||''}</td>
+      <td style="font-size:.78rem;color:var(--text-muted)">${i.unidad||'—'}</td>
+      <td style="font-family:var(--font-mono);font-size:.8rem">${i.costo?fmtMXN(i.costo):'—'}</td>
+      <td>${cadStatus}</td>
+      <td style="font-size:.75rem;color:var(--text-muted)">${i.proveedor||'—'}</td>
+      <td>${statusBadge}</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-ghost btn-sm" onclick="openAjuste('${i.id}')" title="Ajustar stock">📦</button>
+          <button class="btn btn-ghost btn-sm" onclick="editInv('${i.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteInv('${i.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openNewModal() {
+  editId = null;
+  document.getElementById('modalInvTitle').textContent = 'Nuevo Producto';
+  ['f-nombre','f-desc','f-stock','f-minStock','f-costo','f-precio','f-lote','f-proveedor','f-ubicacion','f-notas'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-caducidad').value='';
+  document.getElementById('f-cat').value='Medicamentos';
+  document.getElementById('f-unidad').value='Pieza';
+  openModal('modalInv');
+}
+
+function editInv(id) {
+  editId=id;
+  const i=allInv.find(x=>x.id===id); if(!i) return;
+  document.getElementById('modalInvTitle').textContent='Editar Producto';
+  document.getElementById('f-nombre').value=i.nombre||'';
+  document.getElementById('f-desc').value=i.descripcion||'';
+  document.getElementById('f-cat').value=i.categoria||'Medicamentos';
+  document.getElementById('f-unidad').value=i.unidad||'Pieza';
+  document.getElementById('f-stock').value=i.stock||0;
+  document.getElementById('f-minStock').value=i.minStock||0;
+  document.getElementById('f-costo').value=i.costo||0;
+  document.getElementById('f-precio').value=i.precio||0;
+  document.getElementById('f-caducidad').value=i.caducidad||'';
+  document.getElementById('f-lote').value=i.lote||'';
+  document.getElementById('f-proveedor').value=i.proveedor||'';
+  document.getElementById('f-ubicacion').value=i.ubicacion||'';
+  document.getElementById('f-notas').value=i.notas||'';
+  openModal('modalInv');
+}
+
+async function saveInv() {
+  const nombre=document.getElementById('f-nombre').value.trim();
+  if(!nombre){showToast('El nombre es obligatorio','error');return;}
+  const data={
+    nombre,
+    descripcion:document.getElementById('f-desc').value.trim(),
+    categoria:document.getElementById('f-cat').value,
+    unidad:document.getElementById('f-unidad').value,
+    stock:parseFloat(document.getElementById('f-stock').value)||0,
+    minStock:parseFloat(document.getElementById('f-minStock').value)||0,
+    costo:parseFloat(document.getElementById('f-costo').value)||0,
+    precio:parseFloat(document.getElementById('f-precio').value)||0,
+    caducidad:document.getElementById('f-caducidad').value,
+    lote:document.getElementById('f-lote').value.trim(),
+    proveedor:document.getElementById('f-proveedor').value.trim(),
+    ubicacion:document.getElementById('f-ubicacion').value.trim(),
+    notas:document.getElementById('f-notas').value.trim(),
+  };
+  const btn=document.getElementById('btnSaveInv');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    if(editId) await fsUpdate('inventario',editId,data);
+    else await fsCreate('inventario',data);
+    showToast(editId?'Producto actualizado':'Producto agregado','success');
+    closeModal('modalInv');
+    await loadInventario();
+  }catch(e){showToast('Error: '+e.message,'error');}
+  btn.disabled=false;btn.textContent='💾 Guardar';
+}
+
+function openAjuste(id) {
+  ajusteId=id;
+  const i=allInv.find(x=>x.id===id); if(!i) return;
+  document.getElementById('ajusteTitle').textContent=`Ajustar: ${i.nombre}`;
+  document.getElementById('ajusteNombre').textContent=i.nombre;
+  document.getElementById('ajusteStockActual').textContent=`${i.stock||0} ${i.unidad||''}`;
+  document.getElementById('aj-tipo').value='entrada';
+  document.getElementById('aj-cantidad').value='';
+  document.getElementById('aj-notas').value='';
+  openModal('modalAjuste');
+}
+
+async function saveAjuste() {
+  const cant=parseFloat(document.getElementById('aj-cantidad').value)||0;
+  if(!cant){showToast('Ingresa una cantidad','error');return;}
+  const tipo=document.getElementById('aj-tipo').value;
+  const i=allInv.find(x=>x.id===ajusteId); if(!i) return;
+  let nuevoStock=Number(i.stock||0);
+  if(tipo==='entrada') nuevoStock+=cant;
+  else if(tipo==='salida'||tipo==='merma') nuevoStock=Math.max(0,nuevoStock-cant);
+  else nuevoStock=cant; // ajuste manual
+  const mov={
+    productoId:ajusteId, producto:i.nombre,
+    tipo, cantidad:cant, stockAnterior:Number(i.stock||0),
+    stockNuevo:nuevoStock, notas:document.getElementById('aj-notas').value.trim(),
+    fecha:todayISO(),
+  };
+  const btn=document.getElementById('btnSaveAjuste');
+  btn.disabled=true;btn.textContent='Aplicando...';
+  try{
+    await fsUpdate('inventario',ajusteId,{stock:nuevoStock});
+    await fsCreate('movimientos-inventario',mov);
+    showToast(`Stock actualizado: ${nuevoStock} ${i.unidad||''}`, 'success');
+    closeModal('modalAjuste');
+    await loadInventario();
+  }catch(e){showToast('Error: '+e.message,'error');}
+  btn.disabled=false;btn.textContent='✅ Aplicar ajuste';
+}
+
+async function deleteInv(id) {
+  if(!await confirmDialog('¿Eliminar este producto del inventario?')) return;
+  try{
+    await fsDelete('inventario',id);
+    showToast('Producto eliminado','success');
+    await loadInventario();
+  }catch(e){showToast('Error: '+e.message,'error');}
+}
+
+function exportCSV() {
+  const headers=['Nombre','Categoría','Stock','Stock Mínimo','Unidad','Costo','Precio','Caducidad','Proveedor','Ubicación'];
+  const rows=allInv.map(i=>[i.nombre,i.categoria,i.stock,i.minStock,i.unidad,i.costo,i.precio,i.caducidad,i.proveedor,i.ubicacion].map(v=>`"${v||''}"`).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`inventario_${todayISO()}.csv`;a.click();
+  showToast('Inventario exportado','success');
+}
+</script>
+</body>
+</html>

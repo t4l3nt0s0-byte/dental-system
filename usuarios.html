@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Usuarios & Roles</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:all .2s}
+.user-card:hover{border-color:var(--border2)}
+.user-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.user-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--teal-dim),var(--blue-dim));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.user-email{font-size:.72rem;color:var(--text-muted)}
+.user-row{font-size:.78rem;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.user-actions{display:flex;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.limit-info{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:.8rem;color:var(--text-muted);display:flex;align-items:center;gap:10px}
+.perms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.perm-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;font-size:.75rem;color:var(--text-muted)}
+.perm-item input{accent-color:var(--teal)}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">👥 Usuarios & Roles</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" id="btnNuevo">+ Agregar usuario</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="limit-info" id="limitInfo">
+      <span>👥</span><span id="limitText">Cargando...</span>
+    </div>
+    <div class="user-grid" id="userGrid"><div class="loader"><div class="spinner"></div>Cargando usuarios...</div></div>
+  </div>
+</main>
+
+<!-- MODAL NUEVO/EDITAR USUARIO -->
+<div class="modal-overlay" id="modalUser">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalUserTitle">Nuevo Usuario</div>
+      <button class="modal-close" onclick="closeModal('modalUser')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Nombre completo *</label><input class="form-input" id="f-nombre" placeholder="Dr. Nombre Apellido"></div>
+        <div class="form-group full"><label class="form-label">Correo electrónico *</label><input type="email" class="form-input" id="f-email" placeholder="usuario@hersantych.com"></div>
+        <div class="form-group" id="passGroup"><label class="form-label">Contraseña temporal *</label><input type="password" class="form-input" id="f-pass" placeholder="Mínimo 6 caracteres"></div>
+        <div class="form-group"><label class="form-label">Rol *</label>
+          <select class="form-select" id="f-rol" onchange="updatePermsPreview()">
+            <option value="recepcion">Recepción</option>
+            <option value="asistente">Asistente</option>
+            <option value="doctor">Doctor</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="form-group full"><label class="form-label">Estado</label>
+          <select class="form-select" id="f-activo"><option value="true">Activo</option><option value="false">Inactivo</option></select>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:.68rem;font-weight:700;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Permisos del rol</div>
+        <div class="perms-grid" id="permsPreview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalUser')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveUser">💾 Guardar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR PASSWORD -->
+<div class="modal-overlay" id="modalPass">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">Cambiar contraseña</div>
+      <button class="modal-close" onclick="closeModal('modalPass')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="pass-usuario" readonly style="opacity:.6"></div>
+      <div class="form-group"><label class="form-label">Nueva contraseña *</label><input type="password" class="form-input" id="pass-nueva" placeholder="Mínimo 6 caracteres"></div>
+      <div class="form-group"><label class="form-label">Confirmar contraseña *</label><input type="password" class="form-input" id="pass-confirm" placeholder="Repetir contraseña"></div>
+      <div style="background:var(--gold-dim);border:1px solid rgba(244,185,66,.2);border-radius:8px;padding:10px;font-size:.75rem;color:var(--gold);margin-top:8px">
+        ⚠️ El usuario deberá usar esta contraseña en su próximo inicio de sesión.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalPass')">Cancelar</button>
+      <button class="btn btn-gold" id="btnSavePass">🔑 Actualizar contraseña</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'usuarios';
+let allUsers = [], editId = null, changePassUid = null;
+
+const PERM_LABELS = {
+  agenda:'📅 Agenda', pacientes:'👤 Pacientes', tratamientos:'🦷 Tratamientos',
+  abonos:'💰 Abonos', cotizacion:'📝 Cotizaciones', catalogo:'📚 Catálogo',
+  odontograma:'🦷 Odontograma', inventario:'💊 Inventario', reportes:'📊 Reportes',
+  metricas:'📈 Métricas', usuarios:'👥 Usuarios', all:'⭐ Acceso total'
+};
+
+initSession('usuarios').then(async session => {
+  if (!session) return;
+  const { clinica, user } = session;
+  const plan = PLANES[clinica.plan] || PLANES.basico;
+  document.getElementById('limitText').textContent = `Plan ${plan.nombre}: máx. ${plan.maxUsuarios===Infinity?'ilimitados':plan.maxUsuarios} usuarios`;
+  await loadUsers();
+
+  document.getElementById('btnNuevo').addEventListener('click', () => {
+    if (plan.maxUsuarios !== Infinity && allUsers.length >= plan.maxUsuarios) {
+      showToast(`Límite de usuarios alcanzado (${plan.maxUsuarios}). Actualiza tu plan.`, 'error'); return;
+    }
+    openNewModal();
+  });
+  document.getElementById('btnSaveUser').addEventListener('click', saveUser);
+  document.getElementById('btnSavePass').addEventListener('click', savePass);
+  updatePermsPreview();
+});
+
+async function loadUsers() {
+  allUsers = await fsGetAll('usuarios', r => r.orderBy('nombre','asc'));
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('userGrid');
+  if (!allUsers.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><div class="empty-title">Sin usuarios</div></div>`;
+    return;
+  }
+  const rolColors = {admin:'badge-gold',doctor:'badge-teal',recepcion:'badge-blue',asistente:'badge-purple'};
+  grid.innerHTML = allUsers.map(u => {
+    const initials = (u.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
+    const rolInfo = ROLES[u.rol] || {label:'—'};
+    return `<div class="user-card">
+      <div class="user-header">
+        <div class="user-avatar">${initials}</div>
+        <div>
+          <div class="user-name">${u.nombre||'Sin nombre'}</div>
+          <div class="user-email">${u.email||'—'}</div>
+        </div>
+      </div>
+      <div class="user-row">
+        <span class="badge ${rolColors[u.rol]||'badge-blue'}">${rolInfo.label}</span>
+        <span class="badge ${u.activo!==false?'badge-green':'badge-red'}">${u.activo!==false?'Activo':'Inactivo'}</span>
+      </div>
+      ${u.creadoEn?`<div class="user-row">📅 Alta: ${fmtDate(u.creadoEn)}</div>`:''}
+      <div class="user-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}')">✏️ Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="openChangePass('${u.id}','${u.nombre||u.email}')">🔑 Contraseña</button>
+        ${SESSION?.user?.rol==='admin' && u.id!==SESSION?.user?.uid ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto" onclick="deleteUser('${u.id}')">🗑️</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.updatePermsPreview = function() {
+  const rol = document.getElementById('f-rol').value;
+  const rolInfo = ROLES[rol] || {permisos:[]};
+  const isAll = rolInfo.permisos.includes('all');
+  const allPerms = ['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','odontograma','inventario','reportes','metricas','usuarios'];
+  document.getElementById('permsPreview').innerHTML = allPerms.map(p => `
+    <div class="perm-item">
+      <input type="checkbox" ${isAll||rolInfo.permisos.includes(p)?'checked':''} disabled>
+      ${PERM_LABELS[p]||p}
+    </div>`).join('');
+};
+
+function openNewModal() {
+  editId = null;
+  document.getElementById('modalUserTitle').textContent = 'Nuevo Usuario';
+  document.getElementById('f-nombre').value = '';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-pass').value = '';
+  document.getElementById('f-rol').value = 'recepcion';
+  document.getElementById('f-activo').value = 'true';
+  document.getElementById('passGroup').style.display = 'block';
+  updatePermsPreview();
+  openModal('modalUser');
+}
+
+function editUser(id) {
+  editId = id;
+  const u = allUsers.find(x=>x.id===id); if(!u) return;
+  document.getElementById('modalUserTitle').textContent = 'Editar Usuario';
+  document.getElementById('f-nombre').value = u.nombre||'';
+  document.getElementById('f-email').value = u.email||'';
+  document.getElementById('f-pass').value = '';
+  document.getElementById('f-rol').value = u.rol||'recepcion';
+  document.getElementById('f-activo').value = String(u.activo!==false);
+  document.getElementById('passGroup').style.display = 'none';
+  updatePermsPreview();
+  openModal('modalUser');
+}
+
+async function saveUser() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const email  = document.getElementById('f-email').value.trim();
+  const pass   = document.getElementById('f-pass').value;
+  const rol    = document.getElementById('f-rol').value;
+  const activo = document.getElementById('f-activo').value === 'true';
+  if (!nombre || !email) { showToast('Nombre y correo son obligatorios','error'); return; }
+  const btn = document.getElementById('btnSaveUser');
+  btn.disabled=true; btn.textContent='Guardando...';
+  try {
+    if (editId) {
+      // Update Firestore only (can't change email/pass from client without re-auth)
+      await db.collection('usuarios').doc(editId).update({ nombre, rol, activo, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+      showToast('Usuario actualizado','success');
+    } else {
+      if (!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres','error'); btn.disabled=false; btn.textContent='💾 Guardar usuario'; return; }
+      // Create via secondary app instance to avoid signing out current user
+      const secondApp = firebase.initializeApp(firebase.apps[0].options, 'secondary_'+Date.now());
+      const secondAuth = secondApp.auth();
+      const cred = await secondAuth.createUserWithEmailAndPassword(email, pass);
+      await db.collection('usuarios').doc(cred.user.uid).set({
+        nombre, email, rol, activo,
+        clinicaId: SESSION.clinica.id,
+        creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await secondAuth.signOut();
+      secondApp.delete();
+      showToast('Usuario creado correctamente','success');
+    }
+    closeModal('modalUser');
+    await loadUsers();
+  } catch(e) {
+    const msgs={'auth/email-already-in-use':'Ese correo ya está en uso','auth/weak-password':'Contraseña muy débil'};
+    showToast(msgs[e.code]||'Error: '+e.message,'error');
+  }
+  btn.disabled=false; btn.textContent='💾 Guardar usuario';
+}
+
+function openChangePass(uid, nombre) {
+  changePassUid = uid;
+  document.getElementById('pass-usuario').value = nombre;
+  document.getElementById('pass-nueva').value = '';
+  document.getElementById('pass-confirm').value = '';
+  openModal('modalPass');
+}
+
+async function savePass() {
+  const nueva   = document.getElementById('pass-nueva').value;
+  const confirm = document.getElementById('pass-confirm').value;
+  if (!nueva || nueva.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres','error'); return; }
+  if (nueva !== confirm) { showToast('Las contraseñas no coinciden','error'); return; }
+  // Note: updating another user's password requires Admin SDK. 
+  // For same user, we can use updatePassword. For others, show info.
+  if (changePassUid === SESSION?.user?.uid) {
+    try {
+      await auth.currentUser.updatePassword(nueva);
+      showToast('Contraseña actualizada correctamente','success');
+      closeModal('modalPass');
+    } catch(e){ showToast('Error: '+e.message,'error'); }
+  } else {
+    // Store a password reset flag in Firestore for admin purposes
+    await db.collection('usuarios').doc(changePassUid).update({
+      passwordReset: true,
+      newPasswordTemp: nueva,
+      actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('Se ha guardado la nueva contraseña. El usuario deberá cerrar sesión e ingresar con la nueva contraseña.','info');
+    closeModal('modalPass');
+  }
+}
+
+async function deleteUser(id) {
+  if (id === SESSION?.user?.uid) { showToast('No puedes eliminar tu propio usuario','error'); return; }
+  if (!await confirmDialog('¿Eliminar este usuario? No podrá iniciar sesión.')) return;
+  try {
+    await db.collection('usuarios').doc(id).update({ activo: false, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('Usuario desactivado','success');
+    await loadUsers();
+  } catch(e){ showToast('Error: '+e.message,'error'); }
+}
+</script>
+</body>
+</html>

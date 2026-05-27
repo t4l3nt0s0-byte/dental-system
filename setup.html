@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Configuración Inicial</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--teal-glow:rgba(0,194,168,.25);--gold:#F4B942;--red:#FF5C5C;--blue:#4A9EFF;--text:#E8F0F8;--text-muted:rgba(232,240,248,.50);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,194,168,.08),transparent);pointer-events:none}
+.setup-wrap{width:100%;max-width:560px;position:relative;z-index:1}
+.setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:40px 36px;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.step{display:none}.step.active{display:block}
+.brand{text-align:center;margin-bottom:28px}
+.brand-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--teal),#008F7A);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;box-shadow:0 8px 24px var(--teal-glow)}
+.brand-name{font-family:var(--font-display);font-size:1.5rem}.brand-name span{color:var(--teal)}
+.brand-sub{font-size:.72rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.step-title{font-family:var(--font-display);font-size:1.2rem;font-style:italic;margin-bottom:6px;color:var(--text)}
+.step-sub{font-size:.8rem;color:var(--text-muted);margin-bottom:22px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--font-body);font-size:.88rem;outline:none;transition:border-color .2s}
+.form-input:focus,.form-select:focus{border-color:var(--teal)}
+.form-input::placeholder{color:var(--text-dim)}
+.form-select option{background:var(--surface2)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-next{width:100%;padding:13px;background:var(--teal);color:#060D14;border:none;border-radius:10px;font-family:var(--font-body);font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-next:hover{background:#00d4b8;transform:translateY(-1px)}
+.btn-next:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-back{background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:10px;padding:10px 18px;font-family:var(--font-body);font-size:.82rem;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-back:hover{color:var(--text);border-color:var(--border2)}
+.progress{display:flex;gap:6px;margin-bottom:24px;justify-content:center}
+.prog-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:all .3s}
+.prog-dot.active{background:var(--teal);width:24px;border-radius:4px}
+.prog-dot.done{background:var(--teal)}
+.plan-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px}
+.plan-card{background:var(--surface2);border:2px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
+.plan-card:hover{border-color:var(--border2)}
+.plan-card.selected{border-color:var(--teal);background:var(--teal-dim)}
+.plan-card .plan-icon{font-size:1.4rem;margin-bottom:6px}
+.plan-card .plan-name{font-weight:700;font-size:.82rem;margin-bottom:3px}
+.plan-card .plan-feats{font-size:.65rem;color:var(--text-dim);line-height:1.5}
+.error-box{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.2);border-radius:8px;padding:10px 14px;font-size:.8rem;color:#FF5C5C;margin-top:10px;display:none}
+.error-box.show{display:block}
+.success-state{text-align:center;padding:20px 0}
+.success-icon{font-size:3rem;margin-bottom:16px}
+.success-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic;margin-bottom:8px}
+.success-sub{font-size:.82rem;color:var(--text-muted);margin-bottom:24px}
+.spinner{width:18px;height:18px;border:2px solid rgba(6,13,20,.3);border-top-color:#060D14;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.btn-next.loading .spinner{display:block}.btn-next.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="setup-wrap">
+  <div class="setup-card">
+    <div class="brand">
+      <div class="brand-icon">🦷</div>
+      <div class="brand-name">Hersantych<span> Dental</span></div>
+      <div class="brand-sub">Configuración inicial del sistema</div>
+    </div>
+
+    <div class="progress">
+      <div class="prog-dot active" id="dot0"></div>
+      <div class="prog-dot" id="dot1"></div>
+      <div class="prog-dot" id="dot2"></div>
+    </div>
+
+    <!-- STEP 0: Clínica -->
+    <div class="step active" id="step0">
+      <div class="step-title">Datos del consultorio</div>
+      <div class="step-sub">Ingresa la información básica de tu clínica dental.</div>
+      <div class="form-group"><label class="form-label">Nombre del consultorio *</label><input class="form-input" id="s-clinica" placeholder="Hersantych Dental" value="Hersantych Dental"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="s-tel" placeholder="55 0000 0000"></div>
+        <div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" id="s-ciudad" placeholder="Ciudad de México"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="s-dir" placeholder="Calle, número, colonia"></div>
+      <div class="form-group"><label class="form-label">Correo del consultorio</label><input class="form-input" id="s-email-clinica" type="email" placeholder="contacto@hersantych.com"></div>
+      <button class="btn-next" onclick="goStep(1)"><span class="btn-text">Continuar →</span><div class="spinner"></div></button>
+    </div>
+
+    <!-- STEP 1: Plan -->
+    <div class="step" id="step1">
+      <div class="step-title">Elige el plan</div>
+      <div class="step-sub">Podrás cambiarlo en cualquier momento desde la administración.</div>
+      <div class="plan-cards">
+        <div class="plan-card" data-plan="basico" onclick="selectPlan('basico')">
+          <div class="plan-icon">🔵</div>
+          <div class="plan-name" style="color:#4A9EFF">Básico</div>
+          <div class="plan-feats">1 usuario<br>50 pacientes<br>Funciones esenciales</div>
+        </div>
+        <div class="plan-card selected" data-plan="profesional" onclick="selectPlan('profesional')">
+          <div class="plan-icon">🟢</div>
+          <div class="plan-name" style="color:#00C2A8">Profesional</div>
+          <div class="plan-feats">5 usuarios<br>∞ pacientes<br>Métricas + Odontograma</div>
+        </div>
+        <div class="plan-card" data-plan="premium" onclick="selectPlan('premium')">
+          <div class="plan-icon">🟡</div>
+          <div class="plan-name" style="color:#F4B942">Premium</div>
+          <div class="plan-feats">∞ usuarios<br>∞ pacientes<br>Multi-sucursal + KPI</div>
+        </div>
+      </div>
+      <button class="btn-next" onclick="goStep(2)" style="margin-top:14px"><span class="btn-text">Continuar →</span><div class="spinner"></div></button>
+      <button class="btn-back" onclick="goStep(0)">← Atrás</button>
+    </div>
+
+    <!-- STEP 2: Admin -->
+    <div class="step" id="step2">
+      <div class="step-title">Cuenta del administrador</div>
+      <div class="step-sub">Este será el usuario principal con acceso total al sistema.</div>
+      <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="s-nombre" placeholder="Dr. Nombre Apellido"></div>
+      <div class="form-group"><label class="form-label">Correo electrónico *</label><input class="form-input" id="s-email" type="email" placeholder="admin@hersantych.com"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Contraseña *</label><input class="form-input" id="s-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
+        <div class="form-group"><label class="form-label">Confirmar contraseña *</label><input class="form-input" id="s-pass2" type="password" placeholder="Repetir contraseña"></div>
+      </div>
+      <div class="error-box" id="setupError"></div>
+      <button class="btn-next" id="btnCreate" onclick="createAdmin()"><span class="btn-text">✨ Crear sistema</span><div class="spinner"></div></button>
+      <button class="btn-back" onclick="goStep(1)">← Atrás</button>
+    </div>
+
+    <!-- STEP SUCCESS -->
+    <div class="step" id="stepSuccess">
+      <div class="success-state">
+        <div class="success-icon">🎉</div>
+        <div class="success-title">¡Sistema listo!</div>
+        <div class="success-sub">Tu consultorio <strong id="successClinica"></strong> ha sido configurado correctamente. Inicia sesión para comenzar.</div>
+        <button class="btn-next" onclick="window.location.href='login.html'" style="max-width:220px;margin:0 auto"><span class="btn-text">Ir al inicio de sesión</span><div class="spinner"></div></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
+  authDomain:"dental-add.firebaseapp.com",
+  projectId:"dental-add",
+  storageBucket:"dental-add.firebasestorage.app",
+  messagingSenderId:"1350878692",
+  appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let currentStep = 0;
+let selectedPlan = 'profesional';
+
+window.selectPlan = function(plan) {
+  selectedPlan = plan;
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.toggle('selected', c.dataset.plan === plan));
+};
+
+window.goStep = function(n) {
+  // Validation step 0
+  if (n === 1 && !document.getElementById('s-clinica').value.trim()) {
+    alert('El nombre del consultorio es obligatorio'); return;
+  }
+  document.getElementById('step'+currentStep).classList.remove('active');
+  currentStep = n;
+  const stepEl = document.getElementById('step'+currentStep) || document.getElementById('stepSuccess');
+  if(stepEl) stepEl.classList.add('active');
+  // Update dots
+  for(let i=0;i<3;i++){
+    const d = document.getElementById('dot'+i);
+    if(!d) continue;
+    d.classList.toggle('active', i===n);
+    d.classList.toggle('done', i<n);
+  }
+};
+
+window.createAdmin = async function() {
+  const nombre = document.getElementById('s-nombre').value.trim();
+  const email  = document.getElementById('s-email').value.trim();
+  const pass   = document.getElementById('s-pass').value;
+  const pass2  = document.getElementById('s-pass2').value;
+  const errEl  = document.getElementById('setupError');
+  errEl.classList.remove('show');
+
+  if (!nombre || !email || !pass) { errEl.textContent='Completa todos los campos requeridos'; errEl.classList.add('show'); return; }
+  if (pass !== pass2) { errEl.textContent='Las contraseñas no coinciden'; errEl.classList.add('show'); return; }
+  if (pass.length < 6) { errEl.textContent='La contraseña debe tener al menos 6 caracteres'; errEl.classList.add('show'); return; }
+
+  const btn = document.getElementById('btnCreate');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    // 1. Crear usuario en Firebase Auth
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    const uid = cred.user.uid;
+    const clinicaId = 'clinica_' + uid;
+
+    // 2. Crear documento de clínica
+    await setDoc(doc(db, 'clinicas', clinicaId), {
+      nombre: document.getElementById('s-clinica').value.trim(),
+      telefono: document.getElementById('s-tel').value.trim(),
+      ciudad: document.getElementById('s-ciudad').value.trim(),
+      direccion: document.getElementById('s-dir').value.trim(),
+      emailClinica: document.getElementById('s-email-clinica').value.trim(),
+      plan: selectedPlan,
+      adminUid: uid,
+      creadoEn: serverTimestamp(),
+      activo: true,
+      sucursales: [{ id:'principal', nombre: document.getElementById('s-clinica').value.trim() }]
+    });
+
+    // 3. Crear documento de usuario
+    await setDoc(doc(db, 'usuarios', uid), {
+      nombre, email, rol: 'admin',
+      clinicaId, activo: true,
+      creadoEn: serverTimestamp()
+    });
+
+    // 4. Crear catálogo inicial
+    const catalogoInicial = [
+      {tratamiento:'Consulta',desc:'Valoración y diagnóstico inicial',min:300,max:500,sugerido:400,vigente:true},
+      {tratamiento:'Limpieza',desc:'Profilaxis dental + aplicación de fluoruro',min:500,max:900,sugerido:700,vigente:true},
+      {tratamiento:'Endodoncia',desc:'Tratamiento de conducto radicular completo',min:7000,max:12000,sugerido:9500,vigente:true},
+      {tratamiento:'Resina',desc:'Restauración de composite fotopolimerizable',min:1500,max:3500,sugerido:2500,vigente:true},
+      {tratamiento:'Corona',desc:'Corona de porcelana feldespática / zirconia',min:8000,max:18000,sugerido:13000,vigente:true},
+      {tratamiento:'Extracción Simple',desc:'Extracción dental sin complicaciones',min:600,max:1200,sugerido:900,vigente:true},
+      {tratamiento:'Extracción Quirúrgica',desc:'Con elevación de colgajo y/o remoción ósea',min:1500,max:3000,sugerido:2250,vigente:true},
+      {tratamiento:'Blanqueamiento',desc:'Blanqueamiento dental con lámpara LED',min:2500,max:5000,sugerido:3750,vigente:true},
+      {tratamiento:'Implante',desc:'Implante de titanio grado quirúrgico',min:18000,max:30000,sugerido:24000,vigente:true},
+      {tratamiento:'Ortodoncia',desc:'Aparatología fija completa',min:25000,max:45000,sugerido:35000,vigente:true},
+      {tratamiento:'Poste',desc:'Poste de fibra de vidrio pre-fabricado',min:2500,max:5000,sugerido:3750,vigente:true},
+      {tratamiento:'Placa Nocturna',desc:'Placa oclusal de acrílico',min:1500,max:3000,sugerido:2250,vigente:true},
+      {tratamiento:'Radiografía Periapical',desc:'Radiografía periapical unitaria digital',min:100,max:200,sugerido:150,vigente:true},
+      {tratamiento:'Radiografía Panorámica',desc:'Radiografía panorámica',min:300,max:600,sugerido:450,vigente:true},
+    ];
+    for (const item of catalogoInicial) {
+      await setDoc(doc(db,'clinicas',clinicaId,'catalogo', item.tratamiento.replace(/\s+/g,'-').toLowerCase()), { ...item, creadoEn: serverTimestamp() });
+    }
+
+    document.getElementById('successClinica').textContent = document.getElementById('s-clinica').value.trim();
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('stepSuccess').classList.add('active');
+
+  } catch(e) {
+    const msgs = {
+      'auth/email-already-in-use':'Ese correo ya está registrado. Ve a iniciar sesión.',
+      'auth/weak-password':'La contraseña es demasiado débil',
+      'auth/invalid-email':'Correo electrónico inválido'
+    };
+    errEl.textContent = msgs[e.code] || 'Error: ' + e.message;
+    errEl.classList.add('show');
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>

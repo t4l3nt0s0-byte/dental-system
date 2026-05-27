@@ -2,208 +2,260 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Métricas</title>
+<title>Hersantych Dental · Métricas</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--gold:#F4B942;--gold-dim:rgba(244,185,66,.1);--red:#FF5C5C;--red-dim:rgba(255,92,92,.1);--blue:#4A9EFF;--blue-dim:rgba(74,158,255,.1);--text:#E8F0F8;--text-muted:rgba(232,240,248,.45);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;--r:12px;--r-lg:20px;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px}body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
-.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
-.logo-mark{display:flex;align-items:center;gap:10px}
-.logo-icon{width:38px;height:38px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:20px}
-.logo-text{font-family:var(--font-display);font-size:1.3rem;color:var(--text)}.logo-text span{color:var(--teal)}
-.logo-sub{font-size:.7rem;color:var(--text-muted);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
-.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-.nav-section{font-size:.65rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);padding:12px 12px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text-muted);font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s;border:1px solid transparent}
-.nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
-.nav-item.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.2)}
-.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
-.clinic-info{font-size:.75rem;color:var(--text-muted)}.clinic-name{font-weight:600;color:var(--text);font-size:.875rem;margin-bottom:2px}
-.main{margin-left:240px;min-height:100vh;position:relative;z-index:1}
-.topbar{position:sticky;top:0;background:rgba(6,13,20,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;z-index:50}
-.topbar-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic}
-.btn{padding:9px 20px;border-radius:8px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;font-family:var(--font-body);transition:all .2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
-.btn-primary{background:var(--teal);color:var(--bg)}.btn-primary:hover{background:#00d4b8}
-.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text)}
-.content{padding:32px}
-/* METRICS */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
-.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;position:relative;overflow:hidden;transition:all .2s}
-.kpi-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.15)}
-.kpi-icon{font-size:1.4rem;margin-bottom:10px}
-.kpi-value{font-family:var(--font-mono);font-size:1.8rem;font-weight:700;line-height:1;margin-bottom:5px}
-.kpi-label{font-size:.75rem;color:var(--text-muted)}
-.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.filters-bar{display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px}
-.chart-title{font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px}
-/* BAR CHART */
-.bar-chart{display:flex;flex-direction:column;gap:10px}
-.bar-row{display:flex;align-items:center;gap:12px}
-.bar-label{font-size:.78rem;color:var(--text-muted);min-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bar-wrap{flex:1;height:20px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden;position:relative}
-.bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--teal),var(--blue));transition:width .8s cubic-bezier(.4,0,.2,1)}
-.bar-val{font-family:var(--font-mono);font-size:.75rem;color:var(--text-muted);min-width:70px;text-align:right}
+.chart-title{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+/* BAR */
+.bar-chart{display:flex;flex-direction:column;gap:9px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{font-size:.75rem;color:var(--text-muted);min-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-wrap{flex:1;height:18px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--teal),var(--blue));transition:width .8s cubic-bezier(.4,0,.2,1)}
+.bar-val{font-family:var(--font-mono);font-size:.72rem;color:var(--text-muted);min-width:80px;text-align:right}
 /* DONUT */
-.donut-wrap{display:flex;align-items:center;gap:24px;justify-content:center;margin-top:8px}
-.donut{width:130px;height:130px;flex-shrink:0}
-.donut-legend{display:flex;flex-direction:column;gap:10px}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:.78rem}
+.donut-wrap{display:flex;align-items:center;gap:20px;justify-content:center;margin-top:8px}
+.donut{width:120px;height:120px;flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.76rem}
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.legend-label{color:var(--text-muted)}
-.legend-val{font-family:var(--font-mono);color:var(--text);margin-left:auto;padding-left:8px}
+.legend-label{color:var(--text-muted);flex:1}
+.legend-val{font-family:var(--font-mono);color:var(--text)}
+/* LINE CHART */
+.line-chart{height:140px;position:relative;overflow:hidden}
+.line-chart svg{width:100%;height:100%}
 /* TIMELINE */
-.timeline{display:flex;flex-direction:column;gap:0}
-.tl-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.tl-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .tl-item:last-child{border-bottom:none}
-.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
 .tl-content{flex:1}
-.tl-title{font-size:.85rem;font-weight:500;color:var(--text);margin-bottom:2px}
-.tl-sub{font-size:.72rem;color:var(--text-muted)}
-.tl-amount{font-family:var(--font-mono);font-size:.85rem;color:var(--teal);text-align:right;flex-shrink:0}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.kpi-grid{grid-template-columns:1fr 1fr}.metrics-grid{grid-template-columns:1fr}}
+.tl-title{font-size:.83rem;font-weight:500;color:var(--text);margin-bottom:2px}
+.tl-sub{font-size:.7rem;color:var(--text-muted)}
+.tl-amount{font-family:var(--font-mono);font-size:.83rem;color:var(--teal);flex-shrink:0}
+/* Periodo selector */
+.periodo-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:8px;padding:4px}
+.periodo-tab{padding:5px 14px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text-muted);transition:all .15s}
+.periodo-tab.active{background:var(--teal);color:#060D14}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">🦷</div><div><div class="logo-text">Dental<span>OS</span></div><div class="logo-sub">Sistema integral</div></div></div></div>
-  <nav class="sidebar-nav">
-    <div class="nav-section">Principal</div>
-    <a href="index.html" class="nav-item">📊 Dashboard</a>
-    <a href="agenda.html" class="nav-item">📅 Agenda de Citas</a>
-    <a href="pacientes.html" class="nav-item">👤 Expedientes</a>
-    <div class="nav-section">Clínica</div>
-    <a href="tratamientos.html" class="nav-item">🦷 Tratamientos</a>
-    <a href="abonos.html" class="nav-item">💰 Abonos & Pagos</a>
-    <a href="catalogo.html" class="nav-item">📚 Catálogo & Precios</a>
-    <a href="cotizacion.html" class="nav-item">📝 Cotizaciones</a>
-    <div class="nav-section">Más</div>
-    <a href="ofertas.html" class="nav-item">🎁 Ofertas & Promos</a>
-    <a href="metricas.html" class="nav-item active">📈 Métricas</a>
-    <a href="busqueda.html" class="nav-item">🔍 Búsqueda</a>
-  </nav>
-  <div class="sidebar-footer"><div class="clinic-name">Consultorio Dental</div><div class="clinic-info">Dr. Administrador · v2026</div></div>
-</aside>
-
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
     <div class="topbar-title">📈 Métricas del Consultorio</div>
-    <a href="index.html" class="btn btn-ghost">← Dashboard</a>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportReporte()">📥 Exportar reporte</button>
+      <a href="reportes.html" class="btn btn-ghost btn-sm">📊 Reportes</a>
+    </div>
   </div>
   <div class="content">
-    <div class="kpi-grid" id="kpiGrid"></div>
-    <div class="metrics-grid">
-      <!-- BAR: TRATAMIENTOS -->
-      <div class="chart-card">
-        <div class="chart-title">🦷 Facturación por tratamiento</div>
-        <div class="bar-chart" id="barChart"></div>
+    <div class="filters-bar">
+      <div class="periodo-tabs" id="periodoTabs">
+        <button class="periodo-tab" data-periodo="7">7 días</button>
+        <button class="periodo-tab active" data-periodo="30">30 días</button>
+        <button class="periodo-tab" data-periodo="90">3 meses</button>
+        <button class="periodo-tab" data-periodo="365">1 año</button>
       </div>
-      <!-- DONUT: ESTADO PAGOS -->
+      <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
+        <input type="date" class="form-input" id="fechaDesde" style="width:160px">
+        <span style="color:var(--text-dim);font-size:.8rem">a</span>
+        <input type="date" class="form-input" id="fechaHasta" style="width:160px">
+      </div>
+    </div>
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpiGrid"><div class="loader" style="grid-column:1/-1"><div class="spinner"></div>Calculando métricas...</div></div>
+    <!-- Charts row 1 -->
+    <div class="grid-2">
       <div class="chart-card">
-        <div class="chart-title">💳 Estado de pagos</div>
+        <div class="chart-title">📈 Ingresos diarios</div>
+        <div class="line-chart" id="lineChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">💳 Estado de tratamientos</div>
         <div class="donut-wrap">
-          <svg class="donut" viewBox="0 0 42 42" style="overflow:visible">
-            <circle cx="21" cy="21" r="15.91549" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"></circle>
-            <circle id="donut-liq" cx="21" cy="21" r="15.91549" fill="none" stroke="#00C2A8" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round" style="transition:stroke-dasharray .8s"></circle>
-            <circle id="donut-abo" cx="21" cy="21" r="15.91549" fill="none" stroke="#F4B942" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round" style="transition:stroke-dasharray .8s .2s"></circle>
-            <circle id="donut-pen" cx="21" cy="21" r="15.91549" fill="none" stroke="#FF5C5C" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round" style="transition:stroke-dasharray .8s .4s"></circle>
+          <svg class="donut" viewBox="0 0 42 42" style="overflow:visible" id="donutSVG">
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/>
+            <circle id="d-liq" cx="21" cy="21" r="15.915" fill="none" stroke="#00C2A8" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
+            <circle id="d-abo" cx="21" cy="21" r="15.915" fill="none" stroke="#F4B942" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
+            <circle id="d-pen" cx="21" cy="21" r="15.915" fill="none" stroke="#FF5C5C" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
           </svg>
           <div class="donut-legend" id="donutLegend"></div>
         </div>
       </div>
     </div>
-    <!-- ABONOS TIMELINE -->
+    <!-- Charts row 2 -->
+    <div class="grid-2">
+      <div class="chart-card">
+        <div class="chart-title">🦷 Facturación por tratamiento</div>
+        <div class="bar-chart" id="barChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">💵 Ingresos por forma de pago</div>
+        <div class="bar-chart" id="formaChart"></div>
+      </div>
+    </div>
+    <!-- Timeline -->
     <div class="chart-card">
-      <div class="chart-title">📋 Historial de abonos recientes</div>
-      <div class="timeline" id="timeline"></div>
+      <div class="chart-title">📋 Últimos pagos recibidos</div>
+      <div id="timeline"></div>
     </div>
   </div>
 </main>
 
-<script type="module" src="shared.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
 <script>
-function renderKPIs(){
-  const t=DB.tratamientos;
-  const a=DB.abonos;
-  const p=DB.pacientes;
-  const totalFac=t.reduce((s,x)=>s+Number(x.costo),0);
-  const cobrado=t.reduce((s,x)=>s+Number(x.abonado),0);
-  const pendiente=t.reduce((s,x)=>s+Number(x.saldo),0);
-  const liq=t.filter(x=>x.estado&&x.estado.includes('Liquidado')).length;
-  const colors=['var(--blue)','var(--teal)','var(--gold)','var(--red)'];
-  const kpis=[
-    {icon:'💵',val:fmtMXN(totalFac),label:'Facturación total',color:colors[0]},
-    {icon:'✅',val:fmtMXN(cobrado),label:'Total cobrado',color:colors[1]},
-    {icon:'❗',val:fmtMXN(pendiente),label:'Saldo pendiente',color:colors[2]},
-    {icon:'🦷',val:liq+'/'+t.length,label:'Tratamientos liquidados',color:colors[3]},
-  ];
-  document.getElementById('kpiGrid').innerHTML=kpis.map((k,i)=>`
-    <div class="kpi-card">
-      <div class="kpi-icon">${k.icon}</div>
-      <div class="kpi-value" style="color:${k.color}">${k.val}</div>
-      <div class="kpi-label">${k.label}</div>
-    </div>`).join('');
-}
+window.CURRENT_PAGE = 'metricas';
+let allTrat=[], allAbonos=[], periodo=30;
 
-function renderBarChart(){
-  const t=DB.tratamientos;
-  // Group by tratamiento
-  const map={};
-  t.forEach(x=>{
-    if(!map[x.tratamiento])map[x.tratamiento]={count:0,total:0};
-    map[x.tratamiento].count++;
-    map[x.tratamiento].total+=Number(x.costo);
+initSession('metricas').then(async session=>{
+  if(!session) return;
+  setDateRange(30);
+  await loadData();
+
+  document.getElementById('periodoTabs').addEventListener('click',async e=>{
+    const tab=e.target.closest('.periodo-tab'); if(!tab) return;
+    document.querySelectorAll('.periodo-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    periodo=parseInt(tab.dataset.periodo);
+    setDateRange(periodo);
+    renderAll();
   });
-  const sorted=Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
-  const max=sorted[0]?sorted[0][1].total:1;
-  document.getElementById('barChart').innerHTML=sorted.map(([name,data])=>`
-    <div class="bar-row">
-      <div class="bar-label">${name}</div>
-      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(data.total/max*100)}%"></div></div>
-      <div class="bar-val">${fmtMXN(data.total)}</div>
-    </div>`).join('');
+  document.getElementById('fechaDesde').addEventListener('change', renderAll);
+  document.getElementById('fechaHasta').addEventListener('change', renderAll);
+});
+
+function setDateRange(dias) {
+  const hoy=new Date(), desde=new Date();
+  desde.setDate(hoy.getDate()-dias);
+  document.getElementById('fechaDesde').value=desde.toISOString().slice(0,10);
+  document.getElementById('fechaHasta').value=hoy.toISOString().slice(0,10);
 }
 
-function renderDonut(){
-  const t=DB.tratamientos;
-  const liq=t.filter(x=>x.estado&&x.estado.includes('Liquidado')).length;
-  const abo=t.filter(x=>x.estado&&x.estado.includes('Abonando')).length;
-  const pen=t.filter(x=>x.estado&&x.estado.includes('Pendiente')).length;
-  const total=t.length||1;
-  const pLiq=Math.round(liq/total*100);
-  const pAbo=Math.round(abo/total*100);
-  const pPen=100-pLiq-pAbo;
-  // Offset calculation for donut segments
+async function loadData() {
+  [allTrat,allAbonos]=await Promise.all([fsGetAll('tratamientos'),fsGetAll('abonos')]);
+  renderAll();
+}
+
+function getFiltered() {
+  const desde=document.getElementById('fechaDesde').value;
+  const hasta=document.getElementById('fechaHasta').value;
+  const abonos=allAbonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
+  return {abonos, trat:allTrat};
+}
+
+function renderAll() {
+  const {abonos,trat}=getFiltered();
+  renderKPIs(abonos,trat);
+  renderLineChart(abonos);
+  renderDonut(trat);
+  renderBarChart(trat);
+  renderFormaChart(abonos);
+  renderTimeline(abonos);
+}
+
+function renderKPIs(abonos,trat) {
+  const totalCob=abonos.reduce((s,a)=>s+Number(a.monto||0),0);
+  const totalPend=trat.reduce((s,t)=>s+Number(t.saldo||0),0);
+  const liq=trat.filter(t=>t.estado==='Liquidado').length;
+  const ivaTotal=abonos.filter(a=>a.aplicaIva).reduce((s,a)=>s+Number(a.monto||0)*0.16,0);
+  document.getElementById('kpiGrid').innerHTML=[
+    {icon:'💵',val:fmtMXN(totalCob),label:'Cobrado en período',color:'var(--teal)',accent:'var(--teal)'},
+    {icon:'❗',val:fmtMXN(totalPend),label:'Saldo pendiente total',color:'var(--gold)',accent:'var(--gold)'},
+    {icon:'🧾',val:fmtMXN(ivaTotal),label:'IVA generado',color:'var(--blue)',accent:'var(--blue)'},
+    {icon:'✅',val:`${liq}/${trat.length}`,label:'Tratamientos liquidados',color:'var(--green)',accent:'var(--green)'},
+  ].map(k=>`<div class="kpi-card" style="--accent:${k.accent}"><div class="kpi-icon">${k.icon}</div><div class="kpi-value" style="color:${k.color}">${k.val}</div><div class="kpi-label">${k.label}</div></div>`).join('');
+}
+
+function renderLineChart(abonos) {
+  const desde=document.getElementById('fechaDesde').value;
+  const hasta=document.getElementById('fechaHasta').value;
+  if(!desde||!hasta) return;
+  const dias=[];
+  const d=new Date(desde+'T12:00'),h=new Date(hasta+'T12:00');
+  const maxDias=Math.min(Math.round((h-d)/86400000)+1,60);
+  for(let i=0;i<maxDias;i++){const dd=new Date(d);dd.setDate(d.getDate()+i);dias.push(dd.toISOString().slice(0,10));}
+  const vals=dias.map(f=>abonos.filter(a=>a.fecha===f).reduce((s,a)=>s+Number(a.monto||0),0));
+  const maxVal=Math.max(...vals,1);
+  const w=600,h2=120,pad=4;
+  const pts=vals.map((v,i)=>`${pad+(i/(vals.length-1||1))*(w-pad*2)},${h2-pad-(v/maxVal)*(h2-pad*2)}`).join(' ');
+  document.getElementById('lineChart').innerHTML=`<svg viewBox="0 0 ${w} ${h2}" preserveAspectRatio="none">
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00C2A8" stop-opacity=".3"/><stop offset="100%" stop-color="#00C2A8" stop-opacity="0"/></linearGradient></defs>
+    <polygon points="${pts} ${pad+(vals.length-1)/(vals.length-1||1)*(w-pad*2)},${h2} ${pad},${h2}" fill="url(#lg)"/>
+    <polyline points="${pts}" fill="none" stroke="#00C2A8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${vals.map((v,i)=>v>0?`<circle cx="${pad+(i/(vals.length-1||1))*(w-pad*2)}" cy="${h2-pad-(v/maxVal)*(h2-pad*2)}" r="3" fill="#00C2A8"/>`:'' ).join('')}
+  </svg>`;
+}
+
+function renderDonut(trat) {
+  const liq=trat.filter(t=>t.estado==='Liquidado').length;
+  const abo=trat.filter(t=>t.estado==='Abonando').length;
+  const pen=trat.filter(t=>!t.estado||t.estado==='Pendiente').length;
+  const total=trat.length||1;
+  const pL=Math.round(liq/total*100),pA=Math.round(abo/total*100),pP=100-pL-pA;
   setTimeout(()=>{
-    document.getElementById('donut-liq').setAttribute('stroke-dasharray',`${pLiq} ${100-pLiq}`);
-    document.getElementById('donut-abo').setAttribute('stroke-dasharray',`${pAbo} ${100-pAbo}`);
-    document.getElementById('donut-abo').setAttribute('stroke-dashoffset',25-pLiq);
-    document.getElementById('donut-pen').setAttribute('stroke-dasharray',`${pPen} ${100-pPen}`);
-    document.getElementById('donut-pen').setAttribute('stroke-dashoffset',25-pLiq-pAbo);
+    const dl=document.getElementById('d-liq'),da=document.getElementById('d-abo'),dp=document.getElementById('d-pen');
+    if(dl){dl.setAttribute('stroke-dasharray',`${pL} ${100-pL}`);dl.style.transition='stroke-dasharray .8s';}
+    if(da){da.setAttribute('stroke-dasharray',`${pA} ${100-pA}`);da.setAttribute('stroke-dashoffset',25-pL);da.style.transition='stroke-dasharray .8s .2s';}
+    if(dp){dp.setAttribute('stroke-dasharray',`${pP} ${100-pP}`);dp.setAttribute('stroke-dashoffset',25-pL-pA);dp.style.transition='stroke-dasharray .8s .4s';}
   },100);
-  document.getElementById('donutLegend').innerHTML=`
-    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div><span class="legend-label">Liquidados</span><span class="legend-val">${liq} (${pLiq}%)</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div><span class="legend-label">Abonando</span><span class="legend-val">${abo} (${pAbo}%)</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span class="legend-label">Pendiente</span><span class="legend-val">${pen} (${pPen}%)</span></div>`;
+  document.getElementById('donutLegend').innerHTML=[
+    {color:'var(--teal)',label:'Liquidados',val:`${liq} (${pL}%)`},
+    {color:'var(--gold)',label:'Abonando',val:`${abo} (${pA}%)`},
+    {color:'var(--red)',label:'Pendiente',val:`${pen} (${pP}%)`},
+  ].map(l=>`<div class="legend-item"><div class="legend-dot" style="background:${l.color}"></div><span class="legend-label">${l.label}</span><span class="legend-val">${l.val}</span></div>`).join('');
 }
 
-function renderTimeline(){
-  const recent=[...DB.abonos].reverse().slice(0,8);
-  document.getElementById('timeline').innerHTML=recent.map(a=>`
-    <div class="tl-item">
-      <div class="tl-dot" style="background:var(--teal)"></div>
-      <div class="tl-content">
-        <div class="tl-title">${a.paciente.split(' ').slice(0,3).join(' ')}</div>
-        <div class="tl-sub">${a.tratamiento||a.idTrat} · ${a.forma} · ${a.fecha}</div>
-      </div>
-      <div class="tl-amount">${fmtMXN(a.monto)}</div>
-    </div>`).join('');
+function renderBarChart(trat) {
+  const map={};
+  trat.forEach(t=>{if(!map[t.tratamiento])map[t.tratamiento]={total:0,count:0};map[t.tratamiento].total+=Number(t.costo||0);map[t.tratamiento].count++;});
+  const sorted=Object.entries(map).sort((a,b)=>b[1].total-a[1].total).slice(0,8);
+  const maxV=sorted[0]?sorted[0][1].total:1;
+  document.getElementById('barChart').innerHTML=sorted.map(([n,d])=>`<div class="bar-row"><div class="bar-label">${n}</div><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(d.total/maxV*100)}%"></div></div><div class="bar-val">${fmtMXN(d.total)}</div></div>`).join('')||'<div style="color:var(--text-dim);font-size:.8rem;text-align:center;padding:20px">Sin datos</div>';
 }
 
-renderKPIs();renderBarChart();renderDonut();renderTimeline();
+function renderFormaChart(abonos) {
+  const map={};
+  abonos.forEach(a=>{const f=a.forma||'Otro';map[f]=(map[f]||0)+Number(a.monto||0);});
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  const maxV=sorted[0]?sorted[0][1]:1;
+  const colors=['var(--teal)','var(--blue)','var(--gold)','var(--purple)','var(--green)'];
+  document.getElementById('formaChart').innerHTML=sorted.map(([n,v],i)=>`<div class="bar-row"><div class="bar-label">${n}</div><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(v/maxV*100)}%;background:${colors[i%colors.length]}"></div></div><div class="bar-val">${fmtMXN(v)}</div></div>`).join('')||'<div style="color:var(--text-dim);font-size:.8rem;text-align:center;padding:20px">Sin datos</div>';
+}
+
+function renderTimeline(abonos) {
+  const recent=[...abonos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,10);
+  document.getElementById('timeline').innerHTML=recent.length
+    ?recent.map(a=>`<div class="tl-item"><div class="tl-dot" style="background:var(--teal)"></div><div class="tl-content"><div class="tl-title">${a.paciente?.split(' ').slice(0,3).join(' ')||'—'}</div><div class="tl-sub">${a.tratamiento||'—'} · ${a.forma||'—'} · ${a.fecha||'—'}</div></div><div class="tl-amount">${fmtMXN(a.monto)}</div></div>`).join('')
+    :'<div class="empty-state" style="padding:30px"><div class="empty-icon">📋</div><div class="empty-title">Sin pagos en el período</div></div>';
+}
+
+function exportReporte() {
+  const {abonos,trat}=getFiltered();
+  const totalCob=abonos.reduce((s,a)=>s+Number(a.monto||0),0);
+  const lines=[
+    `Reporte de Métricas - Hersantych Dental`,
+    `Período: ${document.getElementById('fechaDesde').value} a ${document.getElementById('fechaHasta').value}`,
+    ``,`=== KPIs ===`,
+    `Total cobrado: ${fmtMXN(totalCob)}`,
+    `Tratamientos liquidados: ${trat.filter(t=>t.estado==='Liquidado').length}/${trat.length}`,
+    ``,`=== PAGOS ===`,
+    `Fecha,Paciente,Tratamiento,Forma,Monto`,
+    ...abonos.map(a=>[a.fecha,a.paciente,a.tratamiento,a.forma,a.monto].map(v=>`"${v||''}"`).join(','))
+  ];
+  const a=document.createElement('a');
+  a.href='data:text/plain;charset=utf-8,\uFEFF'+encodeURIComponent(lines.join('\n'));
+  a.download=`reporte_metricas_${todayISO()}.csv`; a.click();
+  showToast('Reporte exportado','success');
+}
 </script>
 </body>
 </html>

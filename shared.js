@@ -1,168 +1,315 @@
-/* shared.js — navegación y utilidades compartidas */
-import { db } from "./firebase.js";
-import {
-  collection,
-  addDoc,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// shared.js — Hersantych Dental · Shared UI + Firebase helpers (no-module version for inline use)
+// This file is loaded as a regular script tag and exposes globals via window
 
+// ── Firebase CDN (loaded from HTML) ──────────────────────────
+// All pages must include these script tags before shared.js:
+// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-console.log("Firebase conectado");
-const NAV_HTML = `
-<aside class="sidebar" id="sidebar">
+const FIREBASE_CONFIG = {
+  apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
+  authDomain:"dental-add.firebaseapp.com",
+  projectId:"dental-add",
+  storageBucket:"dental-add.firebasestorage.app",
+  messagingSenderId:"1350878692",
+  appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
+};
+
+// Initialize Firebase (compat mode — no import needed)
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const db   = firebase.firestore();
+const auth = firebase.auth();
+
+// ── PLAN DEFINITIONS ─────────────────────────────────────────
+const PLANES = {
+  basico: {
+    nombre:'Básico', color:'#4A9EFF', maxPacientes:50, maxUsuarios:1,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda'],
+  },
+  profesional: {
+    nombre:'Profesional', color:'#00C2A8', maxPacientes:Infinity, maxUsuarios:5,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios'],
+  },
+  premium: {
+    nombre:'Premium', color:'#F4B942', maxPacientes:Infinity, maxUsuarios:Infinity,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','multisucursal','kpi-avanzado'],
+  }
+};
+
+const ROLES = {
+  admin:     { label:'Administrador', permisos:['all'] },
+  doctor:    { label:'Doctor',        permisos:['agenda','pacientes','tratamientos','odontograma'] },
+  recepcion: { label:'Recepción',     permisos:['agenda','pacientes','cotizacion','abonos'] },
+  asistente: { label:'Asistente',     permisos:['agenda','pacientes'] },
+};
+
+// ── SESSION ───────────────────────────────────────────────────
+let SESSION = null; // { user, clinica }
+
+async function initSession(requiredFeature) {
+  return new Promise((resolve) => {
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) { window.location.href = 'login.html'; resolve(null); return; }
+      try {
+        const uSnap = await db.collection('usuarios').doc(user.uid).get();
+        if (!uSnap.exists) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
+        const uData = uSnap.data();
+        if (uData.activo === false) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
+        const cSnap = await db.collection('clinicas').doc(uData.clinicaId).get();
+        SESSION = { user: { uid: user.uid, email: user.email, ...uData }, clinica: { id: uData.clinicaId, ...cSnap.data() } };
+        // Plan feature guard
+        if (requiredFeature && requiredFeature !== 'any') {
+          const plan = PLANES[SESSION.clinica.plan] || PLANES.basico;
+          if (!plan.features.includes(requiredFeature) && SESSION.user.rol !== 'admin') {
+            showUpgradeBanner(requiredFeature); resolve(null); return;
+          }
+        }
+        // Render sidebar
+        renderSidebar();
+        resolve(SESSION);
+      } catch(e) { console.error('Session error:', e); resolve(null); }
+    });
+  });
+}
+
+function renderSidebar() {
+  if (!SESSION) return;
+  const { clinica, user } = SESSION;
+  const plan = PLANES[clinica.plan] || PLANES.basico;
+  const feats = plan.features;
+
+  function navItem(page, icon, label, feat) {
+    const locked = feat && !feats.includes(feat) && user.rol !== 'admin';
+    const active = window.CURRENT_PAGE === page ? 'active' : '';
+    const cls = locked ? 'nav-item locked' : `nav-item ${active}`;
+    const href = locked ? '#' : `${page}.html`;
+    const onclick = locked ? `event.preventDefault();showToast('Requiere plan ${feat === 'metricas' ? 'Profesional' : 'Premium'}','info')` : '';
+    return `<a href="${href}" class="${cls}" data-page="${page}" ${onclick ? `onclick="${onclick}"` : ''}>${icon} ${label}</a>`;
+  }
+
+  const html = `
   <div class="sidebar-logo">
     <div class="logo-mark">
       <div class="logo-icon">🦷</div>
       <div>
-        <div class="logo-text">Dental<span>OS</span></div>
+        <div class="logo-text">Hersantych<span> Dental</span></div>
         <div class="logo-sub">Sistema integral</div>
       </div>
     </div>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section">Principal</div>
-    <a href="index.html" class="nav-item" data-page="index">📊 Dashboard</a>
-    <a href="agenda.html" class="nav-item" data-page="agenda">📅 Agenda de Citas</a>
-    <a href="pacientes.html" class="nav-item" data-page="pacientes">👤 Expedientes</a>
+    ${navItem('index','📊','Dashboard','any')}
+    ${navItem('agenda','📅','Agenda de Citas','any')}
+    ${navItem('pacientes','👤','Expedientes','any')}
     <div class="nav-section">Clínica</div>
-    <a href="tratamientos.html" class="nav-item" data-page="tratamientos">🦷 Tratamientos</a>
-    <a href="abonos.html" class="nav-item" data-page="abonos">💰 Abonos & Pagos</a>
-    <a href="catalogo.html" class="nav-item" data-page="catalogo">📚 Catálogo & Precios</a>
-    <a href="cotizacion.html" class="nav-item" data-page="cotizacion">📝 Cotizaciones</a>
-    <div class="nav-section">Más</div>
-    <a href="ofertas.html" class="nav-item" data-page="ofertas">🎁 Ofertas & Promos</a>
-    <a href="metricas.html" class="nav-item" data-page="metricas">📈 Métricas</a>
-    <a href="busqueda.html" class="nav-item" data-page="busqueda">🔍 Búsqueda</a>
+    ${navItem('tratamientos','🦷','Tratamientos','any')}
+    ${navItem('abonos','💰','Abonos & Pagos','any')}
+    ${navItem('catalogo','📚','Catálogo & Precios','any')}
+    ${navItem('cotizacion','📝','Cotizaciones','any')}
+    ${navItem('corte-caja','🧾','Corte de Caja','any')}
+    <div class="nav-section">Avanzado</div>
+    ${navItem('odontograma','🦷','Odontograma','odontograma')}
+    ${navItem('inventario','💊','Inventario','inventario')}
+    ${navItem('ofertas','🎁','Ofertas & Promos','ofertas')}
+    ${navItem('metricas','📈','Métricas','metricas')}
+    ${navItem('reportes','📊','Reportes','reportes')}
+    <div class="nav-section">Sistema</div>
+    ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
+    ${navItem('busqueda','🔍','Búsqueda Global','any')}
   </nav>
   <div class="sidebar-footer">
-    <div class="clinic-name">Consultorio Dental</div>
-    <div class="clinic-info">Dr. Administrador · v2026</div>
-  </div>
-</aside>`;
+    <div class="clinic-name">${clinica.nombre || 'Consultorio'}</div>
+    <div class="clinic-info">${user.nombre || user.email} · ${ROLES[user.rol]?.label || 'Usuario'}</div>
+    <span class="plan-badge" style="background:${plan.color}22;color:${plan.color};border:1px solid ${plan.color}44">${plan.nombre}</span>
+    <br><button onclick="logout()" style="background:none;border:none;color:var(--text-dim);font-size:.7rem;cursor:pointer;margin-top:6px;padding:0">🚪 Cerrar sesión</button>
+  </div>`;
 
-// Shared data (localStorage simulation)
-const DB = {
-  pacientes: JSON.parse(localStorage.getItem('dental_pacientes') || 'null') || [
-    {exp:'P-001',nombre:'GARCÍA LÓPEZ MARÍA ELENA',fnac:'15/03/1985',edad:41,genero:'Femenino',tel:'5512345678',email:'maria@mail.com',alergias:'Ninguna',padecimientos:'Ninguna',alta:'01/01/2024',visitas:0},
-    {exp:'P-002',nombre:'LÓPEZ VEGA CARLOS ALBERTO',fnac:'22/07/1990',edad:35,genero:'Masculino',tel:'5598765432',email:'carlos@mail.com',alergias:'Penicilina',padecimientos:'Hipertensión',alta:'15/03/2024',visitas:0},
-    {exp:'P-003',nombre:'HERNÁNDEZ RUIZ MARÍA GUADALUPE',fnac:'30/11/1978',edad:47,genero:'Femenino',tel:'5511223344',email:'mhernandez@mail.com',alergias:'Ninguna',padecimientos:'Diabetes T2',alta:'20/08/2023',visitas:0},
-    {exp:'P-004',nombre:'RAMÍREZ TORRES JOSÉ ANTONIO',fnac:'08/01/1995',edad:31,genero:'Masculino',tel:'5544332211',email:'jose.rt@mail.com',alergias:'Ninguna',padecimientos:'Ninguna',alta:'15/01/2025',visitas:0},
-    {exp:'P-005',nombre:'FLORES DÍAZ ANA SOFÍA',fnac:'25/09/1988',edad:37,genero:'Femenino',tel:'5566778899',email:'ana.flores@mail.com',alergias:'Penicilina',padecimientos:'Ninguna',alta:'01/06/2024',visitas:0},
-  ],
-  tratamientos: JSON.parse(localStorage.getItem('dental_tratamientos') || 'null') || [
-    {id:'T-001',exp:'P-001',paciente:'GARCÍA LÓPEZ MARÍA ELENA',tratamiento:'Endodoncia',desc:'Molar inferior izquierdo',finicio:'01/05/2025',ftermino:'06/05/2025',costo:10000,abonado:200,saldo:9800,estado:'⚠ Abonando',obs:'Completado'},
-    {id:'T-002',exp:'P-002',paciente:'LÓPEZ VEGA CARLOS ALBERTO',tratamiento:'Resina',desc:'Clase II premolar',finicio:'06/05/2025',ftermino:'',costo:2200,abonado:1000,saldo:1200,estado:'⚠ Abonando',obs:'Abono inicial'},
-    {id:'T-003',exp:'P-003',paciente:'HERNÁNDEZ RUIZ MARÍA GUADALUPE',tratamiento:'Corona',desc:'Porcelana molar superior',finicio:'15/04/2025',ftermino:'',costo:12000,abonado:6000,saldo:6000,estado:'⚠ Abonando',obs:'50% anticipo'},
-    {id:'T-004',exp:'P-004',paciente:'RAMÍREZ TORRES JOSÉ ANTONIO',tratamiento:'Limpieza',desc:'Profilaxis + fluoruro',finicio:'04/05/2025',ftermino:'04/05/2025',costo:650,abonado:650,saldo:0,estado:'✅ Liquidado',obs:'Pago contado'},
-    {id:'T-005',exp:'P-005',paciente:'FLORES DÍAZ ANA SOFÍA',tratamiento:'Poste',desc:'Fibra de vidrio',finicio:'05/05/2025',ftermino:'',costo:3800,abonado:93,saldo:3707,estado:'⚠ Abonando',obs:'Pago pendiente'},
-  ],
-  catalogo: [
-    {tratamiento:'Endodoncia',desc:'Tratamiento de conducto radicular completo',min:7000,max:12000,sugerido:9500,vigente:'Sí'},
-    {tratamiento:'Resina',desc:'Restauración de composite fotopolimerizable',min:1500,max:3500,sugerido:2500,vigente:'Sí'},
-    {tratamiento:'Corona',desc:'Corona de porcelana feldespática / zirconia',min:8000,max:18000,sugerido:13000,vigente:'Sí'},
-    {tratamiento:'Poste',desc:'Poste de fibra de vidrio pre-fabricado',min:2500,max:5000,sugerido:3750,vigente:'Sí'},
-    {tratamiento:'Limpieza',desc:'Profilaxis dental + aplicación de fluoruro',min:500,max:900,sugerido:700,vigente:'Sí'},
-    {tratamiento:'Extracción Simple',desc:'Extracción dental sin complicaciones',min:600,max:1200,sugerido:900,vigente:'Sí'},
-    {tratamiento:'Extracción Quirúrgica',desc:'Con elevación de colgajo y/o remoción ósea',min:1500,max:3000,sugerido:2250,vigente:'Sí'},
-    {tratamiento:'Blanqueamiento',desc:'Blanqueamiento dental con lámpara LED',min:2500,max:5000,sugerido:3750,vigente:'Sí'},
-    {tratamiento:'Implante',desc:'Implante de titanio grado quirúrgico',min:18000,max:30000,sugerido:24000,vigente:'Sí'},
-    {tratamiento:'Ortodoncia',desc:'Aparatología fija completa, por mes',min:25000,max:45000,sugerido:35000,vigente:'Sí'},
-    {tratamiento:'Placa Nocturna',desc:'Placa oclusal de acrílico',min:1500,max:3000,sugerido:2250,vigente:'Sí'},
-    {tratamiento:'Consulta',desc:'Valoración y diagnóstico inicial',min:300,max:500,sugerido:400,vigente:'Sí'},
-    {tratamiento:'Radiografía Periapical',desc:'Radiografía periapical unitaria digital',min:100,max:200,sugerido:150,vigente:'Sí'},
-    {tratamiento:'Radiografía Panorámica',desc:'Radiografía panorámica (servicio externo)',min:300,max:600,sugerido:450,vigente:'Sí'},
-  ],
-  abonos: JSON.parse(localStorage.getItem('dental_abonos') || 'null') || [
-    {id:'AB-001',idTrat:'T-001',exp:'P-001',paciente:'GARCÍA LÓPEZ MARÍA ELENA',fecha:'01/05/2025',monto:100,forma:'Efectivo',recibo:'R-050',obs:'1er pago'},
-    {id:'AB-002',idTrat:'T-003',exp:'P-003',paciente:'HERNÁNDEZ RUIZ MARÍA GUADALUPE',fecha:'15/04/2025',monto:6000,forma:'Transferencia',recibo:'R-051',obs:'50% anticipo'},
-    {id:'AB-003',idTrat:'T-001',exp:'P-001',paciente:'GARCÍA LÓPEZ MARÍA ELENA',fecha:'06/05/2025',monto:100,forma:'Tarjeta Crédito',recibo:'R-054',obs:'Pago final'},
-    {id:'AB-004',idTrat:'T-002',exp:'P-002',paciente:'LÓPEZ VEGA CARLOS ALBERTO',fecha:'06/05/2025',monto:1000,forma:'Efectivo',recibo:'R-055',obs:'Abono inicial'},
-    {id:'AB-005',idTrat:'T-004',exp:'P-004',paciente:'RAMÍREZ TORRES JOSÉ ANTONIO',fecha:'04/05/2025',monto:650,forma:'Efectivo',recibo:'R-056',obs:'Pago total'},
-  ],
-  citas: JSON.parse(localStorage.getItem('dental_citas') || 'null') || [
-    {id:'C-001',exp:'P-001',fecha:'06/05/2025',hora:'09:00',paciente:'GARCÍA LÓPEZ MARÍA ELENA',tel:'5512345678',tratamiento:'Extracción Simple',desc:'Molar inf izq',estado:'No Asistió',obs:'Primera cita',rx:'Sí'},
-    {id:'C-002',exp:'P-0200',fecha:new Date().toLocaleDateString('es-MX'),hora:'10:30',paciente:'CHRISTIAN HERNANDEZ SANTIAGO',tel:'58895348',tratamiento:'Extracción Quirúrgica',desc:'Chingo de postes',estado:'Agendado',obs:'Viene en silla de ruedas',rx:'Sí'},
-  ],
-  save(){
-    localStorage.setItem('dental_pacientes',JSON.stringify(this.pacientes));
-    localStorage.setItem('dental_tratamientos',JSON.stringify(this.tratamientos));
-    localStorage.setItem('dental_abonos',JSON.stringify(this.abonos));
-    localStorage.setItem('dental_citas',JSON.stringify(this.citas));
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.innerHTML = html;
+
+  // Mobile hamburger
+  const ham = document.getElementById('hamburger');
+  if (ham) {
+    ham.addEventListener('click', () => sidebar.classList.toggle('open'));
   }
-};
-
-console.log("DB COMENTADA OK");
-
-function fmtMXN(n){return '$'+Number(n).toLocaleString('es-MX');}
-function today(){return new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
-function setActive(page){document.querySelectorAll('.nav-item').forEach(a=>{a.classList.toggle('active',a.dataset.page===page);});}
-
-
-
-export async function leerPacientes() {
-
-  try {
-
-    const querySnapshot = await getDocs(
-      collection(db, "pacientes")
-    );
-
-    let lista = [];
-
-    querySnapshot.forEach((doc) => {
-
-      lista.push({
-        id: doc.id,
-        ...doc.data()
-      });
-
+  // Close sidebar on nav click (mobile)
+  document.querySelectorAll('.nav-item').forEach(a => {
+    a.addEventListener('click', () => {
+      if (window.innerWidth <= 900) sidebar.classList.remove('open');
     });
-
-    console.log("PACIENTES FIREBASE:", lista);
-
-    return lista;
-
-  } catch (error) {
-
-    console.error("Error leyendo pacientes:", error);
-
-    return [];
-
-  }
-
-} // ← ESTA FALTABA
-
-
-
-export async function guardarPaciente(data) {
-
-  try {
-
-    const docRef = await addDoc(
-      collection(db, "pacientes"),
-      data
-    );
-
-    console.log("Paciente guardado:", docRef.id);
-
-    return true;
-
-  } catch (error) {
-
-    console.error("Error guardando:", error);
-
-    return false;
-
-  }
-
+  });
 }
 
+async function logout() {
+  await auth.signOut();
+  window.location.href = 'login.html';
+}
 
+// ── FIRESTORE HELPERS ────────────────────────────────────────
+function clinicaCol(col) {
+  return db.collection('clinicas').doc(SESSION.clinica.id).collection(col);
+}
+function clinicaDoc(col, id) {
+  return db.collection('clinicas').doc(SESSION.clinica.id).collection(col).doc(id);
+}
 
+async function fsGetAll(col, constraints) {
+  let ref = clinicaCol(col);
+  if (constraints) ref = constraints(ref);
+  else ref = ref.orderBy('creadoEn','desc');
+  const snap = await ref.get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
 
+async function fsGet(col, id) {
+  const snap = await clinicaDoc(col, id).get();
+  return snap.exists ? { id: snap.id, ...snap.data() } : null;
+}
 
+async function fsCreate(col, data) {
+  const ref = await clinicaCol(col).add({ ...data, creadoEn: firebase.firestore.FieldValue.serverTimestamp(), actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+  return ref.id;
+}
 
+async function fsUpdate(col, id, data) {
+  await clinicaDoc(col, id).update({ ...data, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+}
 
+async function fsDelete(col, id) {
+  await clinicaDoc(col, id).delete();
+}
 
+async function fsSet(col, id, data) {
+  await clinicaDoc(col, id).set({ ...data, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+}
 
+// ── FORMAT HELPERS ────────────────────────────────────────────
+function fmtMXN(n) {
+  return '$' + Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fmtDateLong(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function fmtDateInput(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toISOString().slice(0,10);
+}
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function IVA(n)    { return Number(n||0)*0.16; }
+function conIVA(n) { return Number(n||0)*1.16; }
 
+// ── TOAST ────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  let el = document.getElementById('_toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_toast';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  const icons = {success:'✅',error:'❌',info:'ℹ️',warning:'⚠️'};
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  el.classList.add('show');
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── WHATSAPP ─────────────────────────────────────────────────
+function whatsapp(tel, msg) {
+  const num = (tel||'').replace(/\D/g,'');
+  const full = num.startsWith('52') ? num : '52'+num;
+  window.open(`https://wa.me/${full}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// ── MODAL HELPERS ────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open');  }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')); }
+// Close on overlay click
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) closeAllModals();
+});
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAllModals();
+});
+
+// ── CONFIRM DIALOG ────────────────────────────────────────────
+function confirmDialog(msg) {
+  return new Promise(resolve => {
+    // Use native confirm for now (can be replaced with custom)
+    resolve(window.confirm(msg));
+  });
+}
+
+// ── PLAN GUARD ────────────────────────────────────────────────
+function hasFeature(feat) {
+  if (!SESSION) return false;
+  if (SESSION.user.rol === 'admin') return true;
+  const plan = PLANES[SESSION.clinica.plan] || PLANES.basico;
+  return plan.features.includes(feat);
+}
+
+function showUpgradeBanner(feat) {
+  const map = {
+    metricas:'Profesional', odontograma:'Profesional', inventario:'Profesional',
+    reportes:'Profesional', usuarios:'Profesional', 'kpi-avanzado':'Premium', multisucursal:'Premium'
+  };
+  const needed = map[feat] || 'Profesional';
+  showToast(`Esta función requiere el plan ${needed}`, 'warning');
+}
+
+// ── LOADING HELPERS ───────────────────────────────────────────
+function showLoader(containerId) {
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = `<div class="loader"><div class="spinner"></div>Cargando...</div>`;
+}
+function showEmpty(containerId, icon, title, sub) {
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;
+}
+
+// ── EXPORT: make everything global ───────────────────────────
+window.SESSION = SESSION;
+window.PLANES  = PLANES;
+window.ROLES   = ROLES;
+window.db      = db;
+window.auth    = auth;
+window.initSession = initSession;
+window.logout  = logout;
+window.clinicaCol = clinicaCol;
+window.clinicaDoc = clinicaDoc;
+window.fsGetAll   = fsGetAll;
+window.fsGet      = fsGet;
+window.fsCreate   = fsCreate;
+window.fsUpdate   = fsUpdate;
+window.fsDelete   = fsDelete;
+window.fsSet      = fsSet;
+window.fmtMXN     = fmtMXN;
+window.fmtDate    = fmtDate;
+window.fmtDateLong= fmtDateLong;
+window.fmtDateInput = fmtDateInput;
+window.todayISO   = todayISO;
+window.IVA        = IVA;
+window.conIVA     = conIVA;
+window.showToast  = showToast;
+window.whatsapp   = whatsapp;
+window.openModal  = openModal;
+window.closeModal = closeModal;
+window.closeAllModals = closeAllModals;
+window.confirmDialog  = confirmDialog;
+window.hasFeature = hasFeature;
+window.showUpgradeBanner = showUpgradeBanner;
+window.showLoader = showLoader;
+window.showEmpty  = showEmpty;
