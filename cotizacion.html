@@ -210,7 +210,8 @@ initSession('any').then(async session => {
 });
 
 async function loadCatalogo() {
-  allCatalogo = await fsGetAll('catalogo', r=>r.where('vigente','==',true).orderBy('tratamiento','asc'));
+  // Carga todo el catálogo sin filtrar por vigente para evitar errores de índice
+  allCatalogo = await fsGetAll('catalogo', r=>r.orderBy('tratamiento','asc'));
   const sel = document.getElementById('f-addTrat');
   sel.innerHTML = '<option value="">Seleccionar del catálogo...</option>' + allCatalogo.map(c=>`<option value="${c.id}">${c.tratamiento} — ${fmtMXN(c.sugerido||0)}</option>`).join('');
 }
