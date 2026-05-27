@@ -58,11 +58,16 @@ async function initSession(requiredFeature) {
         if (uData.activo === false) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
         const cSnap = await db.collection('clinicas').doc(uData.clinicaId).get();
         SESSION = { user: { uid: user.uid, email: user.email, ...uData }, clinica: { id: uData.clinicaId, ...cSnap.data() } };
-        // Plan feature guard
+        // Plan feature guard — admin siempre pasa, otros usuarios verifican plan
         if (requiredFeature && requiredFeature !== 'any') {
-          const plan = PLANES[SESSION.clinica.plan] || PLANES.basico;
-          if (!plan.features.includes(requiredFeature) && SESSION.user.rol !== 'admin') {
-            showUpgradeBanner(requiredFeature); resolve(null); return;
+          const isAdmin = uData.rol === 'admin';
+          if (!isAdmin) {
+            const planKey = cSnap.data()?.plan || 'basico';
+            const plan = PLANES[planKey] || PLANES.basico;
+            if (!plan.features.includes(requiredFeature)) {
+              window.location.href = `upgrade.html?feat=${requiredFeature}`;
+              resolve(null); return;
+            }
           }
         }
         // Render sidebar
@@ -76,15 +81,21 @@ async function initSession(requiredFeature) {
 function renderSidebar() {
   if (!SESSION) return;
   const { clinica, user } = SESSION;
-  const plan = PLANES[clinica.plan] || PLANES.basico;
+  // Siempre leer el plan fresco de SESSION.clinica.plan
+  const planKey = clinica.plan || 'basico';
+  const plan = PLANES[planKey] || PLANES.basico;
   const feats = plan.features;
+  const isAdmin = user.rol === 'admin';
 
   function navItem(page, icon, label, feat) {
-    const locked = feat && !feats.includes(feat) && user.rol !== 'admin';
+    // Admin siempre tiene acceso a todo sin importar el plan
+    // Para otros roles: verificar que la feature esté en el plan
+    const locked = feat && feat !== 'any' && !feats.includes(feat) && !isAdmin;
     const active = window.CURRENT_PAGE === page ? 'active' : '';
     const cls = locked ? 'nav-item locked' : `nav-item ${active}`;
     const href = locked ? '#' : `${page}.html`;
-    const onclick = locked ? `event.preventDefault();showToast('Requiere plan ${feat === 'metricas' ? 'Profesional' : 'Premium'}','info')` : '';
+    const planNecesario = ['metricas','odontograma','inventario','reportes','usuarios','ofertas'].includes(feat) ? 'Profesional' : 'Premium';
+    const onclick = locked ? `event.preventDefault();showToast('Requiere plan ${planNecesario}','info')` : '';
     return `<a href="${href}" class="${cls}" data-page="${page}" ${onclick ? `onclick="${onclick}"` : ''}>${icon} ${label}</a>`;
   }
 
@@ -256,8 +267,11 @@ function confirmDialog(msg) {
 // ── PLAN GUARD ────────────────────────────────────────────────
 function hasFeature(feat) {
   if (!SESSION) return false;
+  // Admin siempre tiene acceso a todo
   if (SESSION.user.rol === 'admin') return true;
-  const plan = PLANES[SESSION.clinica.plan] || PLANES.basico;
+  // Para otros roles verificar plan actual
+  const planKey = SESSION.clinica.plan || 'basico';
+  const plan = PLANES[planKey] || PLANES.basico;
   return plan.features.includes(feat);
 }
 
