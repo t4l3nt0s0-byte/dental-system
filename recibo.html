@@ -259,6 +259,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'recibo';
 let allPacientes=[], allAbonos=[], allTrat=[], fiscalData={}, reciboNum=1;
@@ -489,7 +490,7 @@ async function guardarRecibo(){
   }catch(e){showToast('Error: '+e.message,'error');}
 }
 
-function imprimirRecibo(){
+function imprimirRecibo_OLD_UNUSED(){
   const preview=document.getElementById('reciboPreview').outerHTML;
   const pw=window.open('','_blank');
   pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">

@@ -110,6 +110,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'corte-caja';
 let abonosDia = [], clinicaData = null;
@@ -221,29 +222,7 @@ async function loadHistorial() {
     </div>`).join('');
 }
 
-function printTicket() {
-  const ticket = document.getElementById('ticketPreview').outerHTML;
-  const pw = window.open('','_blank');
-  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-      *{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:20px;display:flex;justify-content:center}
-      .ticket{max-width:320px;width:100%;background:#fff;color:#111;font-family:'DM Sans',sans-serif}
-      .ticket-header{background:#060D14;padding:18px;text-align:center;color:#fff}
-      .ticket-logo{font-size:1.4rem;margin-bottom:6px}
-      .ticket-clinic{font-family:'Instrument Serif',serif;font-size:1.1rem;font-style:italic;color:#00C2A8;margin-bottom:2px}
-      .ticket-body{padding:16px}
-      .ticket-row{display:flex;justify-content:space-between;font-size:.78rem;padding:5px 0;border-bottom:1px dashed #eee;color:#555}
-      .ticket-row:last-child{border-bottom:none}
-      .ticket-row.total{font-weight:700;color:#111;font-size:.9rem;border-top:2px solid #eee;border-bottom:none;padding-top:10px;margin-top:5px}
-      .ticket-row.total span:last-child{color:#00C2A8}
-      .ticket-footer{background:#f5f5f5;padding:12px;text-align:center;font-size:.68rem;color:#999}
-      .ticket-sep{border:none;border-top:2px dashed #ddd;margin:10px 0}
-      @media print{@page{margin:5mm}}
-    </style>
-  </head><body>${ticket}<script>window.onload=()=>window.print()<\/script></body></html>`);
-  pw.document.close();
-}
+// printTicket definida en print-helper.js
 
 function exportCSV() {
   const fecha = document.getElementById('fechaCorte').value;

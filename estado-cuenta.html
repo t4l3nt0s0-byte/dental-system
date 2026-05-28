@@ -104,6 +104,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'estado-cuenta';
 let allPacientes=[], clinicaData=null, selectedPx=null;
@@ -242,46 +243,7 @@ async function loadEdoCuenta(pxId){
   }
 }
 
-function imprimirEdo(){
-  const card=document.getElementById('edoCard');
-  if(!card){showToast('Selecciona un paciente primero','error');return;}
-  const pw=window.open('','_blank');
-  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <title>Estado de Cuenta · ${selectedPx?.nombre||''}</title>
-    <style>
-      *{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:20px;font-family:'DM Sans',sans-serif;display:flex;justify-content:center}
-      .edo-card{max-width:620px;width:100%;background:#fff;color:#111;border:1px solid #eee;border-radius:8px;overflow:hidden}
-      .edo-header{background:linear-gradient(135deg,#060D14,#0C1622);padding:24px;text-align:center}
-      .edo-clinic{font-family:'Instrument Serif',serif;font-size:1.1rem;font-style:italic;color:#00C2A8;margin-bottom:2px}
-      .edo-clinic-sub{font-size:.65rem;color:rgba(255,255,255,.4)}
-      .edo-title-bar{background:#00C2A8;padding:8px 20px;text-align:center;font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#060D14}
-      .edo-body{padding:20px 24px}
-      .edo-px-section{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #eee}
-      .edo-px-name{font-size:1.05rem;font-weight:700;color:#111;margin-bottom:4px}
-      .edo-px-sub{font-size:.72rem;color:#666}
-      .edo-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
-      .edo-kpi{background:#f8f9fa;border-radius:6px;padding:10px;text-align:center;border:1px solid #eee}
-      .edo-kpi-val{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;margin-bottom:2px}
-      .edo-kpi-label{font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.05em}
-      .edo-table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:.78rem}
-      .edo-table th{background:#f5f7fa;padding:7px 10px;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#666;text-align:left;border-bottom:2px solid #e2e8f0}
-      .edo-table td{padding:9px 10px;border-bottom:1px solid #f0f0f0;color:#333;vertical-align:top}
-      .edo-badge{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:.6rem;font-weight:700}
-      .edo-badge-green{background:#dcfce7;color:#16a34a}.edo-badge-gold{background:#fef3c7;color:#d97706}.edo-badge-red{background:#fee2e2;color:#dc2626}
-      .edo-abono-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:.75rem}
-      .edo-abono-fecha{color:#999;min-width:80px;font-family:'JetBrains Mono',monospace}
-      .edo-abono-desc{color:#555;flex:1}.edo-abono-monto{font-family:'JetBrains Mono',monospace;font-weight:600;color:#16a34a}
-      .edo-saldo-box{background:linear-gradient(135deg,#f8fffe,#f0fffb);border:2px solid #00C2A8;border-radius:8px;padding:16px;margin-top:16px}
-      .edo-saldo-row{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:6px;color:#555}
-      .edo-saldo-grand{display:flex;justify-content:space-between;font-size:1rem;font-weight:700;color:#111;border-top:1px solid #ccc;padding-top:10px;margin-top:6px}
-      .edo-saldo-grand.liquidado span:last-child{color:#16a34a}.edo-saldo-grand.pendiente span:last-child{font-family:'JetBrains Mono',monospace;color:#dc2626}
-      .edo-footer{background:#f8f9fa;padding:12px 20px;text-align:center;font-size:.65rem;color:#999;border-top:1px solid #eee;line-height:1.6}
-      @media print{@page{margin:8mm}body{padding:0}.edo-card{border:none;border-radius:0}}
-    </style>
-  </head><body>${card.outerHTML}<script>window.onload=()=>window.print()<\/script></body></html>`);
-  pw.document.close();
-}
+// imprimirEdo definida en print-helper.js
 </script>
 </body>
 </html>

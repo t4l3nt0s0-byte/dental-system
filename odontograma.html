@@ -143,6 +143,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'odontograma';
 
@@ -441,29 +442,7 @@ function renderStats() {
   ).join('');
 }
 
-function printOdo() {
-  const odoEl = document.querySelector('.odo-wrap');
-  const pw = window.open('','_blank');
-  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <title>Odontograma</title>
-    <style>
-      body{background:#fff;padding:20px;font-family:'DM Sans',sans-serif;color:#111}
-      .teeth-row{display:flex;justify-content:center;gap:4px;margin-bottom:4px}
-      .tooth{width:38px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px}
-      .tooth-num{font-size:.55rem;font-weight:700;color:#999}
-      .tooth-svg{width:28px;height:32px}
-      .quad-labels{display:flex;justify-content:center;gap:8px;margin-bottom:4px;font-size:.6rem;color:#999;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
-    </style>
-  </head><body>
-    <h2 style="font-family:'Instrument Serif',serif;margin-bottom:4px">Odontograma · Hersantych Dental</h2>
-    <p style="font-size:.8rem;color:#666;margin-bottom:16px">${document.getElementById('odoSub').textContent} · ${todayISO()}</p>
-    ${document.getElementById('odontograma').innerHTML}
-    <p style="margin-top:16px;font-size:.8rem;color:#666"><strong>Notas:</strong> ${document.getElementById('odoNotas').value||'Sin notas'}</p>
-    <script>window.onload=()=>window.print()<\/script>
-  </body></html>`);
-  pw.document.close();
-}
+// printOdo definida en print-helper.js
 </script>
 </body>
 </html>
