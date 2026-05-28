@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Recibo de Pago</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.recibo-layout{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+/* BUILDER */
+.builder{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin-bottom:16px}
+.builder-title{font-family:var(--font-display);font-size:1rem;font-style:italic;margin-bottom:16px;color:var(--text)}
+/* RECIBO PREVIEW */
+.recibo-wrap{position:sticky;top:80px}
+.recibo{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);color:#111;font-family:'DM Sans',sans-serif;max-width:420px}
+.recibo-header{background:linear-gradient(135deg,#060D14,#0C1622);padding:28px 24px;text-align:center;position:relative}
+.recibo-logo-img{width:60px;height:60px;border-radius:12px;object-fit:contain;margin:0 auto 10px;display:block;background:#fff;padding:4px}
+.recibo-logo-emoji{font-size:2.2rem;margin-bottom:8px;display:block;text-align:center}
+.recibo-clinic{font-family:'Instrument Serif',serif;font-size:1.3rem;font-style:italic;color:#00C2A8;margin-bottom:3px}
+.recibo-clinic-sub{font-size:.7rem;color:rgba(255,255,255,.5);line-height:1.5}
+.recibo-badge{position:absolute;top:16px;right:16px;background:rgba(0,194,168,.2);border:1px solid rgba(0,194,168,.3);border-radius:100px;padding:4px 12px;font-size:.65rem;font-weight:700;color:#00C2A8;letter-spacing:.08em}
+.recibo-body{padding:22px 24px}
+.recibo-num{text-align:center;margin-bottom:18px}
+.recibo-num-label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#999;margin-bottom:4px}
+.recibo-num-val{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;color:#111}
+.recibo-num-fecha{font-size:.72rem;color:#666;margin-top:2px}
+.recibo-sep{border:none;border-top:1px dashed #ddd;margin:14px 0}
+.recibo-section{margin-bottom:14px}
+.recibo-section-title{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#999;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #f0f0f0}
+.recibo-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;font-size:.8rem}
+.recibo-row-label{color:#666;flex:1}
+.recibo-row-val{color:#111;font-weight:500;text-align:right;max-width:220px;word-break:break-word}
+.recibo-row-mono{font-family:'JetBrains Mono',monospace;font-size:.8rem}
+.recibo-total-box{background:#f8fffe;border:2px solid #00C2A8;border-radius:8px;padding:14px 16px;margin:14px 0}
+.recibo-total-row{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:5px;color:#555}
+.recibo-total-row.grand{font-size:1.05rem;font-weight:700;color:#111;border-top:1px solid #ddd;padding-top:8px;margin-top:4px;margin-bottom:0}
+.recibo-total-row.grand span:last-child{color:#00C2A8;font-family:'JetBrains Mono',monospace}
+.recibo-forma{display:inline-flex;align-items:center;gap:6px;background:#f0fffe;border:1px solid #00C2A820;border-radius:100px;padding:5px 14px;font-size:.75rem;font-weight:600;color:#00856e;margin:8px 0}
+.recibo-firma{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px}
+.firma-box{border-top:1px solid #ddd;padding-top:8px;text-align:center;font-size:.65rem;color:#999}
+.recibo-footer{background:#f8f9fa;padding:14px 24px;text-align:center;font-size:.68rem;color:#999;line-height:1.6;border-top:1px solid #eee}
+.recibo-footer strong{color:#555}
+.recibo-sello{position:absolute;top:50%;right:20px;transform:translateY(-50%) rotate(-15deg);font-size:2.5rem;opacity:.08;pointer-events:none}
+/* CONFIG FISCAL */
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* ACTIONS */
+.recibo-actions{display:flex;gap:8px;margin-top:14px}
+@media(max-width:1100px){.recibo-layout{grid-template-columns:1fr}.recibo-wrap{position:static}.recibo{max-width:100%}}
+@media print{
+  body{background:#fff}
+  .main,.sidebar,.topbar,.hamburger,.recibo-layout>div:first-child,.recibo-actions{display:none!important}
+  .recibo-wrap{position:static!important}
+  .recibo{box-shadow:none;border-radius:0;max-width:100%}
+}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🧾 Recibo de Pago</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" id="btnConfig">⚙️ Datos fiscales</button>
+      <button class="btn btn-primary" onclick="imprimirRecibo()">🖨️ Imprimir / PDF</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="recibo-layout">
+      <!-- BUILDER -->
+      <div>
+        <!-- Selector de abono -->
+        <div class="builder">
+          <div class="builder-title">💰 Seleccionar pago</div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Paciente</label>
+            <select class="form-select" id="f-paciente" onchange="loadAbonosPx()">
+              <option value="">Seleccionar paciente...</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Pago a recibir</label>
+            <select class="form-select" id="f-abono" onchange="fillFromAbono()">
+              <option value="">Seleccionar pago...</option>
+            </select>
+          </div>
+          <div style="font-size:.72rem;color:var(--text-dim);text-align:center;padding:8px 0">— o —</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:6px">Llenar manualmente</div>
+        </div>
+
+        <!-- Datos del recibo -->
+        <div class="builder">
+          <div class="builder-title">📋 Datos del recibo</div>
+          <div class="form-grid" style="margin-bottom:0">
+            <div class="form-group full">
+              <label class="form-label">Nombre del paciente *</label>
+              <input class="form-input" id="r-paciente" placeholder="Nombre completo" oninput="updateRecibo()">
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Tratamiento / Concepto *</label>
+              <input class="form-input" id="r-concepto" placeholder="Endodoncia, Corona, Limpieza..." oninput="updateRecibo()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha del pago</label>
+              <input type="date" class="form-input" id="r-fecha" oninput="updateRecibo()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">N° de recibo</label>
+              <input class="form-input" id="r-numero" placeholder="R-001" oninput="updateRecibo()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monto pagado (MXN) *</label>
+              <input type="number" class="form-input" id="r-monto" placeholder="0.00" min="0" step="0.01" oninput="updateRecibo()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">¿Aplica IVA?</label>
+              <select class="form-select" id="r-iva" onchange="updateRecibo()">
+                <option value="no">Sin IVA</option>
+                <option value="si">Con IVA (16%)</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Forma de pago</label>
+              <select class="form-select" id="r-forma" onchange="updateRecibo()">
+                <option>Efectivo</option><option>Transferencia</option>
+                <option>Tarjeta de Crédito</option><option>Tarjeta de Débito</option>
+                <option>Cheque</option><option>Otro</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Observaciones</label>
+              <textarea class="form-textarea" id="r-obs" placeholder="Notas adicionales en el recibo..." rows="2" oninput="updateRecibo()"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saldo restante -->
+        <div class="builder">
+          <div class="builder-title">📊 Saldo del tratamiento</div>
+          <div id="saldoInfo" style="font-size:.82rem;color:var(--text-muted)">Selecciona un pago para ver el saldo</div>
+        </div>
+      </div>
+
+      <!-- PREVIEW -->
+      <div class="recibo-wrap">
+        <div class="recibo" id="reciboPreview">
+          <div class="recibo-header">
+            <div class="recibo-badge">RECIBO DE PAGO</div>
+            <div id="rv-logo" class="recibo-logo-emoji">🦷</div>
+            <div class="recibo-clinic" id="rv-clinica">Hersantych Dental</div>
+            <div class="recibo-clinic-sub" id="rv-sub"></div>
+          </div>
+          <div class="recibo-body">
+            <div class="recibo-num">
+              <div class="recibo-num-label">Folio</div>
+              <div class="recibo-num-val" id="rv-numero">#R-001</div>
+              <div class="recibo-num-fecha" id="rv-fecha"></div>
+            </div>
+            <hr class="recibo-sep">
+            <!-- DATOS FISCALES -->
+            <div class="recibo-section" id="rv-fiscal-section">
+              <div class="recibo-section-title">Datos fiscales del emisor</div>
+              <div id="rv-fiscal"></div>
+            </div>
+            <hr class="recibo-sep">
+            <!-- PACIENTE -->
+            <div class="recibo-section">
+              <div class="recibo-section-title">Paciente</div>
+              <div class="recibo-row"><span class="recibo-row-label">Nombre</span><span class="recibo-row-val" id="rv-paciente">—</span></div>
+            </div>
+            <!-- CONCEPTO -->
+            <div class="recibo-section">
+              <div class="recibo-section-title">Concepto</div>
+              <div class="recibo-row"><span class="recibo-row-label">Servicio</span><span class="recibo-row-val" id="rv-concepto">—</span></div>
+              <div class="recibo-row" id="rv-obs-row" style="display:none"><span class="recibo-row-label">Notas</span><span class="recibo-row-val" id="rv-obs" style="font-style:italic;color:#666"></span></div>
+            </div>
+            <!-- TOTALES -->
+            <div class="recibo-total-box" style="position:relative">
+              <div class="recibo-sello">✓</div>
+              <div class="recibo-total-row"><span>Subtotal</span><span class="recibo-row-mono" id="rv-subtotal">$0.00</span></div>
+              <div class="recibo-total-row" id="rv-iva-row" style="display:none"><span>IVA (16%)</span><span class="recibo-row-mono" id="rv-iva-amt">$0.00</span></div>
+              <div class="recibo-total-row grand"><span>TOTAL PAGADO</span><span id="rv-total">$0.00</span></div>
+            </div>
+            <div style="text-align:center">
+              <span class="recibo-forma" id="rv-forma">💵 Efectivo</span>
+            </div>
+            <!-- SALDO -->
+            <div id="rv-saldo-section" style="display:none;margin-top:12px">
+              <div class="recibo-section-title">Estado del tratamiento</div>
+              <div class="recibo-row"><span class="recibo-row-label">Costo total</span><span class="recibo-row-mono" id="rv-costo-total">—</span></div>
+              <div class="recibo-row"><span class="recibo-row-label">Total abonado</span><span class="recibo-row-mono" id="rv-total-abonado" style="color:#00856e">—</span></div>
+              <div class="recibo-row"><span class="recibo-row-label">Saldo pendiente</span><span class="recibo-row-mono" id="rv-saldo-pend" style="color:#dc2626">—</span></div>
+            </div>
+            <!-- FIRMA -->
+            <div class="recibo-firma">
+              <div class="firma-box">
+                <div style="height:30px"></div>
+                Firma del paciente
+              </div>
+              <div class="firma-box">
+                <div style="height:30px"></div>
+                <span id="rv-doctor">Dr. Administrador</span>
+              </div>
+            </div>
+          </div>
+          <div class="recibo-footer" id="rv-footer">
+            <strong>Hersantych Dental</strong><br>
+            Este recibo es comprobante oficial de pago
+          </div>
+        </div>
+        <div class="recibo-actions">
+          <button class="btn btn-primary" style="flex:1" onclick="imprimirRecibo()">🖨️ Imprimir / PDF</button>
+          <button class="btn btn-ghost btn-sm" id="btnGuardarRecibo">💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL DATOS FISCALES -->
+<div class="modal-overlay" id="modalFiscal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Datos fiscales del consultorio</div>
+      <button class="modal-close" onclick="closeModal('modalFiscal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--blue-dim);border:1px solid rgba(74,158,255,.2);border-radius:8px;padding:12px;font-size:.78rem;color:var(--blue);margin-bottom:16px">
+        💡 Estos datos aparecerán en todos los recibos. Se guardan en tu clínica en Firebase.
+      </div>
+      <div class="config-grid">
+        <div class="form-group"><label class="form-label">Razón social / Nombre</label><input class="form-input" id="fc-razon" placeholder="Hersantych Dental S.A. de C.V."></div>
+        <div class="form-group"><label class="form-label">RFC</label><input class="form-input" id="fc-rfc" placeholder="XXXX000000XX0"></div>
+        <div class="form-group"><label class="form-label">Cédula profesional</label><input class="form-input" id="fc-cedula" placeholder="Núm. de cédula profesional"></div>
+        <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="fc-especialidad" placeholder="Cirujano Dentista"></div>
+        <div class="form-group full"><label class="form-label">Dirección fiscal</label><input class="form-input" id="fc-direccion" placeholder="Calle, número, colonia, C.P., ciudad"></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="fc-tel" placeholder="55 0000 0000"></div>
+        <div class="form-group"><label class="form-label">Correo</label><input type="email" class="form-input" id="fc-email" placeholder="contacto@consultorio.com"></div>
+        <div class="form-group"><label class="form-label">Régimen fiscal</label>
+          <select class="form-select" id="fc-regimen">
+            <option>Régimen Simplificado de Confianza (RESICO)</option>
+            <option>Régimen de Actividades Empresariales</option>
+            <option>Régimen de Honorarios</option>
+            <option>Persona Moral - Régimen General</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">URL del logo (opcional)</label><input class="form-input" id="fc-logo" placeholder="https://... o dejar vacío para usar 🦷"></div>
+        <div class="form-group"><label class="form-label">Leyenda del recibo</label><input class="form-input" id="fc-leyenda" placeholder="Gracias por su preferencia"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalFiscal')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveFiscal">💾 Guardar datos fiscales</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'recibo';
+let allPacientes=[], allAbonos=[], allTrat=[], fiscalData={}, reciboNum=1;
+
+initSession('any').then(async session=>{
+  if(!session) return;
+  const {clinica,user}=session;
+
+  // Cargar datos fiscales guardados
+  const cSnap=await db.collection('clinicas').doc(clinica.id).get();
+  fiscalData=cSnap.data()?.fiscal||{};
+  fiscalData.nombre=fiscalData.nombre||clinica.nombre||'Hersantych Dental';
+  fiscalData.tel=fiscalData.tel||clinica.telefono||'';
+  fiscalData.email=fiscalData.email||clinica.emailClinica||'';
+  fiscalData.direccion=fiscalData.direccion||clinica.direccion||'';
+
+  // Número de recibo
+  const recibos=await fsGetAll('recibos',r=>r.orderBy('creadoEn','desc').limit(1));
+  reciboNum=(recibos[0]?.numero||0)+1;
+
+  renderFiscalPreview();
+  document.getElementById('r-fecha').value=todayISO();
+  document.getElementById('r-numero').value='R-'+String(reciboNum).padStart(3,'0');
+  document.getElementById('rv-numero').textContent='#R-'+String(reciboNum).padStart(3,'0');
+  document.getElementById('rv-doctor').textContent=user.nombre||'Dr. Administrador';
+  updateRecibo();
+
+  await Promise.all([loadPacientes(),loadAbonos(),loadTrat()]);
+
+  // Abono desde URL
+  const abonoId=new URLSearchParams(location.search).get('abono');
+  const pxId=new URLSearchParams(location.search).get('px');
+  if(abonoId) fillFromAbonoId(abonoId);
+  if(pxId){
+    document.getElementById('f-paciente').value=pxId;
+    loadAbonosPx();
+  }
+
+  document.getElementById('btnConfig').addEventListener('click',openFiscal);
+  document.getElementById('btnSaveFiscal').addEventListener('click',saveFiscal);
+  document.getElementById('btnGuardarRecibo').addEventListener('click',guardarRecibo);
+});
+
+async function loadPacientes(){
+  allPacientes=await fsGetAll('pacientes',r=>r.orderBy('nombre','asc'));
+  const sel=document.getElementById('f-paciente');
+  sel.innerHTML='<option value="">Seleccionar paciente...</option>'+
+    allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
+}
+async function loadAbonos(){
+  allAbonos=await fsGetAll('abonos');
+}
+async function loadTrat(){
+  allTrat=await fsGetAll('tratamientos');
+}
+
+window.loadAbonosPx=function(){
+  const expId=document.getElementById('f-paciente').value;
+  const sel=document.getElementById('f-abono');
+  const pxAbonos=allAbonos.filter(a=>a.expId===expId);
+  sel.innerHTML='<option value="">Seleccionar pago...</option>'+
+    pxAbonos.map(a=>`<option value="${a.id}">${a.fecha||'—'} · ${a.tratamiento||'—'} · ${fmtMXN(a.monto)}</option>`).join('');
+  if(expId){
+    const px=allPacientes.find(p=>p.id===expId);
+    if(px){document.getElementById('r-paciente').value=px.nombre||'';updateRecibo();}
+  }
+};
+
+window.fillFromAbono=function(){
+  const id=document.getElementById('f-abono').value;
+  if(!id) return;
+  fillFromAbonoId(id);
+};
+
+function fillFromAbonoId(id){
+  const a=allAbonos.find(x=>x.id===id); if(!a) return;
+  document.getElementById('r-paciente').value=a.paciente||'';
+  document.getElementById('r-concepto').value=a.tratamiento||'';
+  document.getElementById('r-fecha').value=a.fecha||todayISO();
+  document.getElementById('r-monto').value=a.monto||0;
+  document.getElementById('r-iva').value=a.aplicaIva?'si':'no';
+  document.getElementById('r-forma').value=a.forma||'Efectivo';
+  document.getElementById('r-obs').value=a.concepto||'';
+  if(a.recibo) document.getElementById('r-numero').value=a.recibo;
+  // Saldo del tratamiento
+  const trat=allTrat.find(t=>t.id===a.tratId);
+  if(trat){
+    const saldoEl=document.getElementById('saldoInfo');
+    saldoEl.innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-family:var(--font-mono);font-weight:700;color:var(--blue)">${fmtMXN(trat.costo)}</div>
+          <div style="font-size:.65rem;color:var(--text-dim)">Costo total</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-family:var(--font-mono);font-weight:700;color:var(--teal)">${fmtMXN(trat.abonado)}</div>
+          <div style="font-size:.65rem;color:var(--text-dim)">Total abonado</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-family:var(--font-mono);font-weight:700;color:${Number(trat.saldo)>0?'var(--red)':'var(--green)'}">${fmtMXN(trat.saldo)}</div>
+          <div style="font-size:.65rem;color:var(--text-dim)">Saldo pendiente</div>
+        </div>
+      </div>`;
+    // Show in recibo
+    document.getElementById('rv-saldo-section').style.display='block';
+    document.getElementById('rv-costo-total').textContent=fmtMXN(trat.costo);
+    document.getElementById('rv-total-abonado').textContent=fmtMXN(trat.abonado);
+    document.getElementById('rv-saldo-pend').textContent=fmtMXN(trat.saldo);
+  }
+  updateRecibo();
+}
+
+function renderFiscalPreview(){
+  // Header
+  if(fiscalData.logo){
+    document.getElementById('rv-logo').outerHTML=`<img id="rv-logo" src="${fiscalData.logo}" class="recibo-logo-img" onerror="this.outerHTML='<div id=\\'rv-logo\\' class=\\'recibo-logo-emoji\\'>🦷</div>'">`;
+  }
+  document.getElementById('rv-clinica').textContent=fiscalData.nombre||'Hersantych Dental';
+  const subParts=[fiscalData.especialidad,fiscalData.tel,fiscalData.email].filter(Boolean);
+  document.getElementById('rv-sub').textContent=subParts.join(' · ');
+  document.getElementById('rv-footer').innerHTML=`<strong>${fiscalData.nombre||'Hersantych Dental'}</strong><br>${fiscalData.leyenda||'Gracias por su preferencia'}<br>${fiscalData.direccion||''}`;
+
+  // Datos fiscales en el cuerpo
+  const rows=[
+    fiscalData.razon?['Razón social',fiscalData.razon]:null,
+    fiscalData.rfc?['RFC',fiscalData.rfc]:null,
+    fiscalData.cedula?['Cédula profesional',fiscalData.cedula]:null,
+    fiscalData.regimen?['Régimen fiscal',fiscalData.regimen]:null,
+    fiscalData.direccion?['Dirección',fiscalData.direccion]:null,
+  ].filter(Boolean);
+  const sec=document.getElementById('rv-fiscal-section');
+  if(rows.length){
+    document.getElementById('rv-fiscal').innerHTML=rows.map(([l,v])=>`<div class="recibo-row"><span class="recibo-row-label">${l}</span><span class="recibo-row-val">${v}</span></div>`).join('');
+    sec.style.display='block';
+  } else { sec.style.display='none'; }
+}
+
+window.updateRecibo=function(){
+  const monto=parseFloat(document.getElementById('r-monto').value)||0;
+  const iva=document.getElementById('r-iva').value==='si';
+  const ivaAmt=iva?monto*0.16:0;
+  const total=monto+ivaAmt;
+  const forma=document.getElementById('r-forma').value;
+  const formaIcons={Efectivo:'💵',Transferencia:'🏦','Tarjeta de Crédito':'💳','Tarjeta de Débito':'💳',Cheque:'📋',Otro:'🔖'};
+
+  document.getElementById('rv-paciente').textContent=document.getElementById('r-paciente').value||'—';
+  document.getElementById('rv-concepto').textContent=document.getElementById('r-concepto').value||'—';
+  document.getElementById('rv-numero').textContent='#'+(document.getElementById('r-numero').value||'R-001');
+  const obs=document.getElementById('r-obs').value.trim();
+  document.getElementById('rv-obs-row').style.display=obs?'flex':'none';
+  document.getElementById('rv-obs').textContent=obs;
+
+  const fecha=document.getElementById('r-fecha').value;
+  if(fecha){
+    const d=new Date(fecha+'T12:00');
+    document.getElementById('rv-fecha').textContent=d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  }
+
+  document.getElementById('rv-subtotal').textContent=fmtMXN(monto);
+  const ivaRow=document.getElementById('rv-iva-row');
+  ivaRow.style.display=iva?'flex':'none';
+  document.getElementById('rv-iva-amt').textContent=fmtMXN(ivaAmt);
+  document.getElementById('rv-total').textContent=fmtMXN(total);
+  document.getElementById('rv-forma').innerHTML=`${formaIcons[forma]||'💰'} ${forma}`;
+};
+
+function openFiscal(){
+  // Pre-fill
+  document.getElementById('fc-razon').value=fiscalData.razon||fiscalData.nombre||'';
+  document.getElementById('fc-rfc').value=fiscalData.rfc||'';
+  document.getElementById('fc-cedula').value=fiscalData.cedula||'';
+  document.getElementById('fc-especialidad').value=fiscalData.especialidad||'';
+  document.getElementById('fc-direccion').value=fiscalData.direccion||'';
+  document.getElementById('fc-tel').value=fiscalData.tel||'';
+  document.getElementById('fc-email').value=fiscalData.email||'';
+  document.getElementById('fc-regimen').value=fiscalData.regimen||'Régimen Simplificado de Confianza (RESICO)';
+  document.getElementById('fc-logo').value=fiscalData.logo||'';
+  document.getElementById('fc-leyenda').value=fiscalData.leyenda||'Gracias por su preferencia';
+  openModal('modalFiscal');
+}
+
+async function saveFiscal(){
+  fiscalData={
+    nombre:document.getElementById('fc-razon').value.trim()||SESSION.clinica.nombre,
+    razon:document.getElementById('fc-razon').value.trim(),
+    rfc:document.getElementById('fc-rfc').value.trim().toUpperCase(),
+    cedula:document.getElementById('fc-cedula').value.trim(),
+    especialidad:document.getElementById('fc-especialidad').value.trim(),
+    direccion:document.getElementById('fc-direccion').value.trim(),
+    tel:document.getElementById('fc-tel').value.trim(),
+    email:document.getElementById('fc-email').value.trim(),
+    regimen:document.getElementById('fc-regimen').value,
+    logo:document.getElementById('fc-logo').value.trim(),
+    leyenda:document.getElementById('fc-leyenda').value.trim(),
+  };
+  const btn=document.getElementById('btnSaveFiscal');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    await db.collection('clinicas').doc(SESSION.clinica.id).update({fiscal:fiscalData,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+    showToast('Datos fiscales guardados','success');
+    closeModal('modalFiscal');
+    renderFiscalPreview();
+  }catch(e){showToast('Error: '+e.message,'error');}
+  btn.disabled=false;btn.textContent='💾 Guardar datos fiscales';
+}
+
+async function guardarRecibo(){
+  const monto=parseFloat(document.getElementById('r-monto').value)||0;
+  if(!monto){showToast('El monto es obligatorio','error');return;}
+  const iva=document.getElementById('r-iva').value==='si';
+  const data={
+    numero:reciboNum,
+    paciente:document.getElementById('r-paciente').value.trim(),
+    concepto:document.getElementById('r-concepto').value.trim(),
+    fecha:document.getElementById('r-fecha').value,
+    monto,iva,
+    ivaAmt:iva?monto*0.16:0,
+    total:iva?monto*1.16:monto,
+    forma:document.getElementById('r-forma').value,
+    observaciones:document.getElementById('r-obs').value.trim(),
+    folio:document.getElementById('r-numero').value,
+  };
+  try{
+    await fsCreate('recibos',data);
+    showToast('Recibo guardado correctamente','success');
+    reciboNum++;
+    document.getElementById('r-numero').value='R-'+String(reciboNum).padStart(3,'0');
+  }catch(e){showToast('Error: '+e.message,'error');}
+}
+
+function imprimirRecibo(){
+  const preview=document.getElementById('reciboPreview').outerHTML;
+  const pw=window.open('','_blank');
+  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Recibo de Pago</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{background:#fff;display:flex;justify-content:center;padding:20px;font-family:'DM Sans',sans-serif}
+      .recibo{max-width:420px;width:100%;background:#fff;color:#111;border:1px solid #eee;border-radius:8px;overflow:hidden}
+      .recibo-header{background:linear-gradient(135deg,#060D14,#0C1622);padding:28px 24px;text-align:center;position:relative}
+      .recibo-badge{position:absolute;top:16px;right:16px;background:rgba(0,194,168,.2);border:1px solid rgba(0,194,168,.3);border-radius:100px;padding:4px 12px;font-size:.65rem;font-weight:700;color:#00C2A8;letter-spacing:.08em}
+      .recibo-logo-emoji{font-size:2.2rem;margin-bottom:8px;display:block;text-align:center}
+      .recibo-logo-img{width:60px;height:60px;border-radius:12px;object-fit:contain;margin:0 auto 10px;display:block;background:#fff;padding:4px}
+      .recibo-clinic{font-family:'Instrument Serif',serif;font-size:1.3rem;font-style:italic;color:#00C2A8;margin-bottom:3px}
+      .recibo-clinic-sub{font-size:.7rem;color:rgba(255,255,255,.5);line-height:1.5}
+      .recibo-body{padding:22px 24px}
+      .recibo-num{text-align:center;margin-bottom:18px}
+      .recibo-num-label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#999;margin-bottom:4px}
+      .recibo-num-val{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;color:#111}
+      .recibo-num-fecha{font-size:.72rem;color:#666;margin-top:2px}
+      .recibo-sep{border:none;border-top:1px dashed #ddd;margin:14px 0}
+      .recibo-section{margin-bottom:14px}
+      .recibo-section-title{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#999;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #f0f0f0}
+      .recibo-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;font-size:.8rem}
+      .recibo-row-label{color:#666;flex:1}
+      .recibo-row-val{color:#111;font-weight:500;text-align:right;max-width:220px;word-break:break-word}
+      .recibo-row-mono{font-family:'JetBrains Mono',monospace;font-size:.8rem}
+      .recibo-total-box{background:#f8fffe;border:2px solid #00C2A8;border-radius:8px;padding:14px 16px;margin:14px 0;position:relative}
+      .recibo-total-row{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:5px;color:#555}
+      .recibo-total-row.grand{font-size:1.05rem;font-weight:700;color:#111;border-top:1px solid #ddd;padding-top:8px;margin-top:4px;margin-bottom:0}
+      .recibo-total-row.grand span:last-child{color:#00C2A8;font-family:'JetBrains Mono',monospace}
+      .recibo-sello{position:absolute;top:50%;right:20px;transform:translateY(-50%) rotate(-15deg);font-size:2.5rem;opacity:.08;pointer-events:none}
+      .recibo-forma{display:inline-flex;align-items:center;gap:6px;background:#f0fffe;border:1px solid #00C2A820;border-radius:100px;padding:5px 14px;font-size:.75rem;font-weight:600;color:#00856e;margin:8px 0}
+      .recibo-firma{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px}
+      .firma-box{border-top:1px solid #ddd;padding-top:8px;text-align:center;font-size:.65rem;color:#999}
+      .recibo-footer{background:#f8f9fa;padding:14px 24px;text-align:center;font-size:.68rem;color:#999;line-height:1.6;border-top:1px solid #eee}
+      .recibo-footer strong{color:#555}
+      @media print{@page{margin:8mm}body{padding:0}.recibo{border:none;border-radius:0}}
+    </style>
+  </head><body>${preview}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  pw.document.close();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Estado de Cuenta</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.edo-layout{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start}
+.edo-sidebar{position:sticky;top:80px}
+/* ESTADO CARD */
+.edo-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);color:#111;font-family:'DM Sans',sans-serif}
+.edo-header{background:linear-gradient(135deg,#060D14,#0C1622);padding:24px;text-align:center}
+.edo-clinic{font-family:'Instrument Serif',serif;font-size:1.1rem;font-style:italic;color:#00C2A8;margin-bottom:2px}
+.edo-clinic-sub{font-size:.65rem;color:rgba(255,255,255,.4)}
+.edo-title-bar{background:#00C2A8;padding:8px 20px;text-align:center;font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#060D14}
+.edo-body{padding:20px 24px}
+.edo-px-section{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #eee}
+.edo-px-name{font-size:1.05rem;font-weight:700;color:#111;margin-bottom:4px}
+.edo-px-sub{font-size:.72rem;color:#666}
+.edo-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.edo-kpi{background:#f8f9fa;border-radius:6px;padding:10px;text-align:center;border:1px solid #eee}
+.edo-kpi-val{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;margin-bottom:2px}
+.edo-kpi-label{font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.05em}
+/* TABLA TRATAMIENTOS */
+.edo-table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:.78rem}
+.edo-table th{background:#f5f7fa;padding:7px 10px;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#666;text-align:left;border-bottom:2px solid #e2e8f0}
+.edo-table td{padding:9px 10px;border-bottom:1px solid #f0f0f0;color:#333;vertical-align:top}
+.edo-table tr:last-child td{border-bottom:none}
+.edo-badge{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:.6rem;font-weight:700}
+.edo-badge-green{background:#dcfce7;color:#16a34a}
+.edo-badge-gold{background:#fef3c7;color:#d97706}
+.edo-badge-red{background:#fee2e2;color:#dc2626}
+/* ABONOS */
+.edo-abono-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:.75rem}
+.edo-abono-row:last-child{border-bottom:none}
+.edo-abono-fecha{color:#999;min-width:80px;font-family:'JetBrains Mono',monospace}
+.edo-abono-desc{color:#555;flex:1}
+.edo-abono-monto{font-family:'JetBrains Mono',monospace;font-weight:600;color:#16a34a}
+/* SALDO FINAL */
+.edo-saldo-box{background:linear-gradient(135deg,#f8fffe,#f0fffb);border:2px solid #00C2A8;border-radius:8px;padding:16px;margin-top:16px}
+.edo-saldo-row{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:6px;color:#555}
+.edo-saldo-grand{display:flex;justify-content:space-between;font-size:1rem;font-weight:700;color:#111;border-top:1px solid #ccc;padding-top:10px;margin-top:6px}
+.edo-saldo-grand span:last-child{font-family:'JetBrains Mono',monospace}
+.edo-saldo-grand.liquidado span:last-child{color:#16a34a}
+.edo-saldo-grand.pendiente span:last-child{color:#dc2626}
+/* FOOTER */
+.edo-footer{background:#f8f9fa;padding:12px 20px;text-align:center;font-size:.65rem;color:#999;border-top:1px solid #eee;line-height:1.6}
+/* WA BUTTON */
+.wa-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-top:14px}
+@media(max-width:900px){.edo-layout{grid-template-columns:1fr}.edo-sidebar{position:static}}
+@media print{
+  body{background:#fff}
+  .main,.sidebar,.topbar,.hamburger,.edo-layout>div:first-child{display:none!important}
+  .edo-card{box-shadow:none;border-radius:0}
+  @page{margin:10mm}
+}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📄 Estado de Cuenta</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="imprimirEdo()">🖨️ Imprimir / PDF</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="edo-layout">
+      <!-- SELECTOR -->
+      <div class="edo-sidebar">
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-family:var(--font-display);font-size:.95rem;font-style:italic;margin-bottom:14px">Seleccionar paciente</div>
+          <div class="form-group" style="margin-bottom:10px">
+            <div class="search-wrap"><span class="search-icon">🔍</span><input class="search-input" id="searchPx" placeholder="Buscar paciente..."></div>
+          </div>
+          <div id="pxList" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:3px"></div>
+        </div>
+        <!-- WA -->
+        <div class="wa-section" id="waSection" style="display:none">
+          <div style="font-size:.7rem;font-weight:700;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">💬 Enviar por WhatsApp</div>
+          <div id="waMensaje" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.75rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5"></div>
+          <button class="btn btn-primary btn-sm" style="width:100%;background:#25D366;color:#fff" id="btnWA">💬 Enviar estado de cuenta</button>
+        </div>
+      </div>
+
+      <!-- ESTADO DE CUENTA -->
+      <div>
+        <div id="edoWrap">
+          <div class="empty-state" style="padding:60px">
+            <div class="empty-icon">📄</div>
+            <div class="empty-title">Selecciona un paciente</div>
+            <div class="empty-sub">El estado de cuenta aparecerá aquí</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'estado-cuenta';
+let allPacientes=[], clinicaData=null, selectedPx=null;
+
+initSession('any').then(async session=>{
+  if(!session) return;
+  clinicaData=session.clinica;
+  const cSnap=await db.collection('clinicas').doc(clinicaData.id).get();
+  clinicaData.fiscal=cSnap.data()?.fiscal||{};
+
+  allPacientes=await fsGetAll('pacientes',r=>r.orderBy('nombre','asc'));
+  renderPxList(allPacientes);
+
+  document.getElementById('searchPx').addEventListener('input',function(){
+    const q=this.value.toLowerCase();
+    renderPxList(allPacientes.filter(p=>p.nombre?.toLowerCase().includes(q)||p.tel?.includes(q)||p.expediente?.toLowerCase().includes(q)));
+  });
+
+  // URL param
+  const pxId=new URLSearchParams(location.search).get('px');
+  if(pxId) loadEdoCuenta(pxId);
+});
+
+function renderPxList(list){
+  const el=document.getElementById('pxList');
+  el.innerHTML=list.map(p=>{
+    const initials=(p.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
+    return`<div onclick="loadEdoCuenta('${p.id}')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid transparent" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''" id="px-item-${p.id}">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--teal-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--teal);flex-shrink:0">${initials}</div>
+      <div style="min-width:0">
+        <div style="font-size:.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nombre||'—'}</div>
+        <div style="font-size:.65rem;color:var(--text-dim)">${p.expediente||p.id}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadEdoCuenta(pxId){
+  selectedPx=allPacientes.find(p=>p.id===pxId); if(!selectedPx) return;
+  document.querySelectorAll('[id^="px-item-"]').forEach(el=>{
+    el.style.background=el.id===`px-item-${pxId}`?'var(--teal-dim)':'';
+    el.style.border=el.id===`px-item-${pxId}`?'1px solid rgba(0,194,168,.3)':'1px solid transparent';
+  });
+
+  const [trats,abonos]=await Promise.all([
+    fsGetAll('tratamientos',r=>r.where('expId','==',pxId)),
+    fsGetAll('abonos',r=>r.where('expId','==',pxId)),
+  ]);
+
+  const totalCosto=trats.reduce((s,t)=>s+Number(t.costo||0),0);
+  const totalCob=trats.reduce((s,t)=>s+Number(t.abonado||0),0);
+  const totalSaldo=trats.reduce((s,t)=>s+Number(t.saldo||0),0);
+  const hoy=new Date().toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'});
+  const f=clinicaData.fiscal||{};
+  const clinicaNombre=f.nombre||clinicaData.nombre||'Hersantych Dental';
+  const estadoClass={Liquidado:'edo-badge-green',Abonando:'edo-badge-gold',Pendiente:'edo-badge-red',Cancelado:'edo-badge-red'};
+
+  document.getElementById('edoWrap').innerHTML=`
+    <div class="edo-card" id="edoCard">
+      <div class="edo-header">
+        <div class="edo-clinic">${clinicaNombre}</div>
+        <div class="edo-clinic-sub">${[f.especialidad,f.tel,f.email].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div class="edo-title-bar">Estado de Cuenta · Generado: ${hoy}</div>
+      <div class="edo-body">
+        <!-- Paciente -->
+        <div class="edo-px-section">
+          <div class="edo-px-name">${selectedPx.nombre||'—'}</div>
+          <div class="edo-px-sub">Expediente: ${selectedPx.expediente||selectedPx.id} · Tel: ${selectedPx.tel||'—'}</div>
+          ${selectedPx.alergias&&selectedPx.alergias!=='Ninguna'?`<div style="margin-top:5px;font-size:.7rem;color:#d97706;background:#fef3c7;border-radius:4px;padding:3px 8px;display:inline-block">⚠️ Alergia: ${selectedPx.alergias}</div>`:''}
+        </div>
+        <!-- KPIs -->
+        <div class="edo-kpis">
+          <div class="edo-kpi"><div class="edo-kpi-val" style="color:#2563eb">${fmtMXN(totalCosto)}</div><div class="edo-kpi-label">Facturación</div></div>
+          <div class="edo-kpi"><div class="edo-kpi-val" style="color:#16a34a">${fmtMXN(totalCob)}</div><div class="edo-kpi-label">Pagado</div></div>
+          <div class="edo-kpi"><div class="edo-kpi-val" style="color:${totalSaldo>0?'#dc2626':'#16a34a'}">${fmtMXN(totalSaldo)}</div><div class="edo-kpi-label">Saldo</div></div>
+        </div>
+        <!-- Tratamientos -->
+        ${trats.length?`
+        <div style="font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#999;margin-bottom:8px">Tratamientos</div>
+        <table class="edo-table">
+          <thead><tr><th>Tratamiento</th><th>Inicio</th><th>Costo</th><th>Pagado</th><th>Saldo</th><th>Estado</th></tr></thead>
+          <tbody>${trats.map(t=>`<tr>
+            <td><div style="font-weight:600;color:#111">${t.tratamiento||'—'}</div>${t.descripcion?`<div style="font-size:.65rem;color:#999">${t.descripcion}</div>`:''}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#666">${t.fechaInicio||'—'}</td>
+            <td style="font-family:'JetBrains Mono',monospace">${fmtMXN(t.costo)}</td>
+            <td style="font-family:'JetBrains Mono',monospace;color:#16a34a">${fmtMXN(t.abonado)}</td>
+            <td style="font-family:'JetBrains Mono',monospace;color:${Number(t.saldo)>0?'#dc2626':'#16a34a'};font-weight:700">${fmtMXN(t.saldo)}</td>
+            <td><span class="edo-badge ${estadoClass[t.estado]||'edo-badge-gold'}">${t.estado||'—'}</span></td>
+          </tr>`).join('')}</tbody>
+        </table>`:'<div style="color:#999;font-size:.8rem;padding:10px 0">Sin tratamientos registrados</div>'}
+
+        <!-- Abonos -->
+        ${abonos.length?`
+        <div style="font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#999;margin-bottom:8px;margin-top:14px">Historial de pagos</div>
+        <div>${[...abonos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(a=>`
+          <div class="edo-abono-row">
+            <span class="edo-abono-fecha">${a.fecha||'—'}</span>
+            <span class="edo-abono-desc">${a.tratamiento||'—'} · ${a.forma||'—'}${a.concepto?' · '+a.concepto:''}</span>
+            <span class="edo-abono-monto">+${fmtMXN(a.monto)}</span>
+          </div>`).join('')}</div>`:''}
+
+        <!-- Saldo final -->
+        <div class="edo-saldo-box">
+          <div class="edo-saldo-row"><span>Total facturado</span><span style="font-family:'JetBrains Mono',monospace">${fmtMXN(totalCosto)}</span></div>
+          <div class="edo-saldo-row"><span>Total pagado</span><span style="font-family:'JetBrains Mono',monospace;color:#16a34a">${fmtMXN(totalCob)}</span></div>
+          <div class="edo-saldo-grand ${totalSaldo>0?'pendiente':'liquidado'}">
+            <span>${totalSaldo>0?'SALDO PENDIENTE':'✅ CUENTA LIQUIDADA'}</span>
+            <span>${fmtMXN(totalSaldo)}</span>
+          </div>
+        </div>
+
+        ${f.rfc||f.cedula?`
+        <div style="margin-top:14px;padding:10px;background:#f8f9fa;border-radius:6px;font-size:.65rem;color:#999;line-height:1.6">
+          ${f.razon?`<strong>${f.razon}</strong><br>`:''}
+          ${f.rfc?`RFC: ${f.rfc} · `:''}${f.cedula?`Cédula: ${f.cedula}<br>`:''}
+          ${f.regimen?`Régimen: ${f.regimen}`:''}
+        </div>`:''}
+      </div>
+      <div class="edo-footer">
+        <strong>${clinicaNombre}</strong>${f.direccion?`<br>${f.direccion}`:''}${f.tel?` · Tel: ${f.tel}`:''}
+        <br>Este documento es un estado de cuenta no oficial. Para factura fiscal solicítela por separado.
+      </div>
+    </div>`;
+
+  // WhatsApp
+  if(selectedPx.tel){
+    const msg=totalSaldo>0
+      ? `Hola ${selectedPx.nombre?.split(' ')[0]||''}! 👋\n\nTe enviamos tu estado de cuenta de *${clinicaNombre}*:\n\n💵 Total facturado: ${fmtMXN(totalCosto)}\n✅ Total pagado: ${fmtMXN(totalCob)}\n❗ Saldo pendiente: *${fmtMXN(totalSaldo)}*\n\nPor favor pasa por tu consultorio o comunícate con nosotros para ponerse al corriente. 😊`
+      : `Hola ${selectedPx.nombre?.split(' ')[0]||''}! 👋\n\n✅ Tu cuenta en *${clinicaNombre}* está *completamente liquidada*.\n\n¡Gracias por tu puntualidad en los pagos! 🙌`;
+    document.getElementById('waMensaje').textContent=msg;
+    document.getElementById('waSection').style.display='block';
+    document.getElementById('btnWA').onclick=()=>whatsapp(selectedPx.tel,msg);
+  } else {
+    document.getElementById('waSection').style.display='none';
+  }
+}
+
+function imprimirEdo(){
+  const card=document.getElementById('edoCard');
+  if(!card){showToast('Selecciona un paciente primero','error');return;}
+  const pw=window.open('','_blank');
+  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Estado de Cuenta · ${selectedPx?.nombre||''}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:20px;font-family:'DM Sans',sans-serif;display:flex;justify-content:center}
+      .edo-card{max-width:620px;width:100%;background:#fff;color:#111;border:1px solid #eee;border-radius:8px;overflow:hidden}
+      .edo-header{background:linear-gradient(135deg,#060D14,#0C1622);padding:24px;text-align:center}
+      .edo-clinic{font-family:'Instrument Serif',serif;font-size:1.1rem;font-style:italic;color:#00C2A8;margin-bottom:2px}
+      .edo-clinic-sub{font-size:.65rem;color:rgba(255,255,255,.4)}
+      .edo-title-bar{background:#00C2A8;padding:8px 20px;text-align:center;font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#060D14}
+      .edo-body{padding:20px 24px}
+      .edo-px-section{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #eee}
+      .edo-px-name{font-size:1.05rem;font-weight:700;color:#111;margin-bottom:4px}
+      .edo-px-sub{font-size:.72rem;color:#666}
+      .edo-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+      .edo-kpi{background:#f8f9fa;border-radius:6px;padding:10px;text-align:center;border:1px solid #eee}
+      .edo-kpi-val{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;margin-bottom:2px}
+      .edo-kpi-label{font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.05em}
+      .edo-table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:.78rem}
+      .edo-table th{background:#f5f7fa;padding:7px 10px;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#666;text-align:left;border-bottom:2px solid #e2e8f0}
+      .edo-table td{padding:9px 10px;border-bottom:1px solid #f0f0f0;color:#333;vertical-align:top}
+      .edo-badge{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:.6rem;font-weight:700}
+      .edo-badge-green{background:#dcfce7;color:#16a34a}.edo-badge-gold{background:#fef3c7;color:#d97706}.edo-badge-red{background:#fee2e2;color:#dc2626}
+      .edo-abono-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:.75rem}
+      .edo-abono-fecha{color:#999;min-width:80px;font-family:'JetBrains Mono',monospace}
+      .edo-abono-desc{color:#555;flex:1}.edo-abono-monto{font-family:'JetBrains Mono',monospace;font-weight:600;color:#16a34a}
+      .edo-saldo-box{background:linear-gradient(135deg,#f8fffe,#f0fffb);border:2px solid #00C2A8;border-radius:8px;padding:16px;margin-top:16px}
+      .edo-saldo-row{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:6px;color:#555}
+      .edo-saldo-grand{display:flex;justify-content:space-between;font-size:1rem;font-weight:700;color:#111;border-top:1px solid #ccc;padding-top:10px;margin-top:6px}
+      .edo-saldo-grand.liquidado span:last-child{color:#16a34a}.edo-saldo-grand.pendiente span:last-child{font-family:'JetBrains Mono',monospace;color:#dc2626}
+      .edo-footer{background:#f8f9fa;padding:12px 20px;text-align:center;font-size:.65rem;color:#999;border-top:1px solid #eee;line-height:1.6}
+      @media print{@page{margin:8mm}body{padding:0}.edo-card{border:none;border-radius:0}}
+    </style>
+  </head><body>${card.outerHTML}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  pw.document.close();
+}
+</script>
+</body>
+</html>

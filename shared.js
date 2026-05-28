@@ -129,6 +129,9 @@ function renderSidebar() {
     <div class="nav-section">Sistema</div>
     ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
     ${navItem('expediente','📋','Expediente Completo','expediente')}
+    ${navItem('recibo','🧾','Recibo de Pago','any')}
+    ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}
+    ${navItem('recordatorios','💬','Recordatorios WA','any')}
     ${navItem('busqueda','🔍','Búsqueda Global','any')}
   </nav>
   <div class="sidebar-footer">

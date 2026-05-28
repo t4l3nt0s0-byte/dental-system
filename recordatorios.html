@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Recordatorios WhatsApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:24px}
+.rec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;position:relative;overflow:hidden;transition:all .2s}
+.rec-card:hover{border-color:var(--border2)}
+.rec-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.rec-card.tipo-cita::before{background:var(--teal)}
+.rec-card.tipo-pago::before{background:var(--gold)}
+.rec-card.tipo-cumple::before{background:var(--purple)}
+.rec-card.tipo-seguimiento::before{background:var(--blue)}
+.rec-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.rec-icon{font-size:1.8rem;flex-shrink:0}
+.rec-info{flex:1}
+.rec-nombre{font-size:.92rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.rec-paciente{font-size:.75rem;color:var(--text-muted);margin-bottom:4px}
+.rec-fecha{font-size:.7rem;color:var(--text-dim);font-family:var(--font-mono)}
+.rec-msg-preview{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.75rem;color:var(--text-muted);line-height:1.5;margin-bottom:12px;position:relative}
+.rec-msg-preview::before{content:'"';position:absolute;top:4px;left:8px;font-size:1.2rem;color:var(--border2)}
+.rec-actions{display:flex;gap:8px;align-items:center}
+.rec-count{font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);margin-left:auto}
+/* FILTROS */
+.filter-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.tipo-btn{padding:6px 14px;border-radius:100px;font-size:.75rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);transition:all .15s}
+.tipo-btn:hover{color:var(--text)}
+.tipo-btn.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.3)}
+/* TEMPLATE EDITOR */
+.template-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px}
+.template-title{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.template-desc{font-size:.72rem;color:var(--text-muted);margin-bottom:12px}
+.variables{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.var-chip{background:var(--teal-dim);color:var(--teal);border:1px solid rgba(0,194,168,.2);border-radius:4px;padding:2px 8px;font-size:.65rem;font-family:var(--font-mono);cursor:pointer;transition:all .15s}
+.var-chip:hover{background:var(--teal);color:#060D14}
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:center}
+.stat-val{font-family:var(--font-mono);font-size:1.4rem;font-weight:700;margin-bottom:4px}
+.stat-label{font-size:.68rem;color:var(--text-muted)}
+/* ENVIO MASIVO */
+.masivo-card{background:linear-gradient(135deg,rgba(37,211,102,.08),rgba(37,211,102,.03));border:1px solid rgba(37,211,102,.2);border-radius:var(--r-lg);padding:20px;margin-bottom:20px}
+.wa-green{color:#25D366}
+@media(max-width:900px){.stats-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">💬 Recordatorios WhatsApp</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showTab('plantillas')">⚙️ Plantillas</button>
+      <button class="btn btn-primary" style="background:#25D366" onclick="showTab('masivo')">📢 Envío masivo</button>
+    </div>
+  </div>
+  <div class="content">
+    <!-- TABS -->
+    <div class="tabs" style="margin-bottom:20px">
+      <button class="tab active" onclick="showTab('pendientes')">🔔 Pendientes de enviar</button>
+      <button class="tab" onclick="showTab('citas')">📅 Citas de hoy/mañana</button>
+      <button class="tab" onclick="showTab('adeudos')">💰 Adeudos</button>
+      <button class="tab" onclick="showTab('cumples')">🎂 Cumpleaños</button>
+      <button class="tab" onclick="showTab('plantillas')">📝 Plantillas</button>
+      <button class="tab" onclick="showTab('masivo')">📢 Masivo</button>
+    </div>
+
+    <!-- TAB: PENDIENTES -->
+    <div class="tab-panel active" id="tab-pendientes">
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card"><div class="spinner" style="margin:8px auto"></div></div>
+        <div class="stat-card"></div><div class="stat-card"></div><div class="stat-card"></div>
+      </div>
+      <div class="rec-grid" id="pendientesGrid">
+        <div class="loader" style="grid-column:1/-1"><div class="spinner"></div>Cargando recordatorios...</div>
+      </div>
+    </div>
+
+    <!-- TAB: CITAS -->
+    <div class="tab-panel" id="tab-citas">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button class="tipo-btn active" onclick="filterCitas('hoy',this)">📅 Hoy</button>
+        <button class="tipo-btn" onclick="filterCitas('manana',this)">📅 Mañana</button>
+        <button class="tipo-btn" onclick="filterCitas('semana',this)">📅 Esta semana</button>
+      </div>
+      <div class="rec-grid" id="citasGrid"><div class="loader"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- TAB: ADEUDOS -->
+    <div class="tab-panel" id="tab-adeudos">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button class="tipo-btn active" onclick="filterAdeudos('todos',this)">Todos</button>
+        <button class="tipo-btn" onclick="filterAdeudos('mayor5k',this)">Mayor $5,000</button>
+        <button class="tipo-btn" onclick="filterAdeudos('mayor1k',this)">Mayor $1,000</button>
+      </div>
+      <div class="rec-grid" id="adeudosGrid"><div class="loader"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- TAB: CUMPLEAÑOS -->
+    <div class="tab-panel" id="tab-cumples">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button class="tipo-btn active" onclick="filterCumples('hoy',this)">🎂 Hoy</button>
+        <button class="tipo-btn" onclick="filterCumples('semana',this)">📅 Esta semana</button>
+        <button class="tipo-btn" onclick="filterCumples('mes',this)">📅 Este mes</button>
+      </div>
+      <div class="rec-grid" id="cumplesGrid"><div class="loader"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- TAB: PLANTILLAS -->
+    <div class="tab-panel" id="tab-plantillas">
+      <div style="background:var(--blue-dim);border:1px solid rgba(74,158,255,.2);border-radius:8px;padding:12px 14px;font-size:.78rem;color:var(--blue);margin-bottom:16px">
+        💡 Personaliza los mensajes. Haz clic en una variable para insertarla en el texto.
+      </div>
+      <div id="plantillasContainer"></div>
+    </div>
+
+    <!-- TAB: MASIVO -->
+    <div class="tab-panel" id="tab-masivo">
+      <div class="masivo-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <span style="font-size:1.5rem">📢</span>
+          <div>
+            <div style="font-weight:700;color:var(--text);margin-bottom:2px">Envío masivo por WhatsApp</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">Selecciona un grupo de pacientes y envía un mensaje personalizado a todos</div>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-bottom:14px">
+          <div class="form-group">
+            <label class="form-label">Destinatarios</label>
+            <select class="form-select" id="masivo-grupo" onchange="loadMasivoPreview()">
+              <option value="todos">Todos los pacientes con teléfono</option>
+              <option value="adeudo">Pacientes con saldo pendiente</option>
+              <option value="cita-hoy">Con cita hoy</option>
+              <option value="cita-manana">Con cita mañana</option>
+              <option value="cumple-hoy">Cumpleaños hoy</option>
+              <option value="cumple-mes">Cumpleaños este mes</option>
+              <option value="sin-cita-30">Sin cita en 30+ días</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pacientes seleccionados</label>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--teal);text-align:center" id="masivo-count">—</div>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Mensaje</label>
+            <textarea class="form-textarea" id="masivo-msg" rows="4" placeholder="Escribe el mensaje que se enviará a todos..."></textarea>
+            <div class="form-hint">Variables disponibles: {nombre} {clinica} {fecha} {saldo}</div>
+          </div>
+        </div>
+        <div id="masivo-lista" style="max-height:300px;overflow-y:auto;margin-bottom:14px"></div>
+        <button class="btn btn-primary" style="background:#25D366;width:100%;font-size:.9rem" id="btnEnviarMasivo">
+          💬 Iniciar envío masivo (abre WhatsApp por cada paciente)
+        </button>
+        <div style="font-size:.7rem;color:var(--text-dim);text-align:center;margin-top:8px">
+          ⚠️ Se abrirá WhatsApp Web una vez por cada paciente. Permite las ventanas emergentes.
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL EDITAR PLANTILLA -->
+<div class="modal-overlay" id="modalPlantilla">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalPlantTitle">Editar plantilla</div>
+      <button class="modal-close" onclick="closeModal('modalPlantilla')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Variables disponibles (clic para insertar)</label>
+        <div class="variables" id="modalVars"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mensaje</label>
+        <textarea class="form-textarea" id="plant-msg" rows="6"></textarea>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:10px">
+        <div style="font-size:.65rem;color:var(--text-dim);margin-bottom:6px;font-weight:700;letter-spacing:.1em;text-transform:uppercase">Vista previa</div>
+        <div id="plant-preview" style="font-size:.8rem;color:var(--text-muted);line-height:1.6;white-space:pre-wrap"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalPlantilla')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSavePlant">💾 Guardar plantilla</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'recordatorios';
+let allPacientes=[], allTrat=[], allCitas=[], allAbonos=[], clinicaNombre='', plantillas={}, editPlantKey=null;
+
+// PLANTILLAS POR DEFECTO
+const PLANT_DEFAULT = {
+  recordatorio_cita: `Hola {nombre}! 👋\n\nTe recordamos que tienes una cita en *{clinica}* el día *{fecha}* a las *{hora}*.\n\n📍 {direccion}\n\nPor favor confirma tu asistencia respondiendo este mensaje. ¡Te esperamos! 🦷`,
+  confirmacion_cita: `Hola {nombre}! ✅\n\nTu cita en *{clinica}* está confirmada para el *{fecha}* a las *{hora}*.\n\nRecuerda llegar 10 minutos antes. ¡Nos vemos! 😊`,
+  recordatorio_pago: `Hola {nombre}! 💰\n\nTe recordamos que tienes un saldo pendiente de *{saldo}* en *{clinica}* por concepto de {tratamiento}.\n\nCualquier duda, comunícate con nosotros. ¡Gracias! 🙏`,
+  cumpleanos: `¡Feliz cumpleaños {nombre}! 🎂🎉\n\nEl equipo de *{clinica}* te desea un maravilloso día y muchos años más con una sonrisa perfecta! 😁🦷\n\n¡Que los cumplas muy feliz!`,
+  seguimiento: `Hola {nombre}! 🦷\n\nQueremos saber cómo estás después de tu última visita a *{clinica}*.\n\n¿Cómo te has sentido? Si tienes alguna molestia o duda, no dudes en contactarnos. 😊`,
+  sin_cita: `Hola {nombre}! 👋\n\nHace tiempo que no te vemos en *{clinica}*. Tu salud dental es importante para nosotros.\n\n¿Te gustaría agendar una revisión? 📅 Contáctanos para programar tu cita. ¡Te esperamos! 🦷`,
+};
+
+const PLANT_META = {
+  recordatorio_cita:  { titulo:'📅 Recordatorio de cita',     tipo:'cita',   vars:['nombre','clinica','fecha','hora','direccion'] },
+  confirmacion_cita:  { titulo:'✅ Confirmación de cita',      tipo:'cita',   vars:['nombre','clinica','fecha','hora'] },
+  recordatorio_pago:  { titulo:'💰 Recordatorio de pago',      tipo:'pago',   vars:['nombre','clinica','saldo','tratamiento'] },
+  cumpleanos:         { titulo:'🎂 Felicitación de cumpleaños', tipo:'cumple', vars:['nombre','clinica'] },
+  seguimiento:        { titulo:'🔄 Seguimiento post-consulta',  tipo:'seguimiento', vars:['nombre','clinica'] },
+  sin_cita:           { titulo:'📅 Paciente sin cita reciente', tipo:'cita',   vars:['nombre','clinica'] },
+};
+
+initSession('any').then(async session=>{
+  if(!session) return;
+  clinicaNombre=session.clinica.nombre||'Hersantych Dental';
+  // Cargar plantillas guardadas
+  const cSnap=await db.collection('clinicas').doc(session.clinica.id).get();
+  plantillas={...PLANT_DEFAULT,...(cSnap.data()?.plantillas||{})};
+
+  await Promise.all([loadPacientes(),loadTrat(),loadCitas(),loadAbonos()]);
+  renderStats();
+  renderPendientes();
+  renderCitas('hoy');
+  renderAdeudos('todos');
+  renderCumples('hoy');
+  renderPlantillas();
+  loadMasivoPreview();
+
+  document.getElementById('btnEnviarMasivo').addEventListener('click',enviarMasivo);
+  document.getElementById('masivo-msg').addEventListener('input',renderMasivoLista);
+});
+
+async function loadPacientes(){ allPacientes=await fsGetAll('pacientes',r=>r.orderBy('nombre','asc')); }
+async function loadTrat(){ allTrat=await fsGetAll('tratamientos'); }
+async function loadCitas(){ allCitas=await fsGetAll('citas'); }
+async function loadAbonos(){ allAbonos=await fsGetAll('abonos'); }
+
+function renderStats(){
+  const hoy=todayISO();
+  const manana=new Date(); manana.setDate(manana.getDate()+1);
+  const mananaISO=manana.toISOString().slice(0,10);
+  const citasHoy=allCitas.filter(c=>c.fecha===hoy).length;
+  const adeudos=allTrat.filter(t=>Number(t.saldo||0)>0).length;
+  const cumpleHoy=allPacientes.filter(p=>p.fnac&&p.fnac.slice(5)===hoy.slice(5)).length;
+  const conTel=allPacientes.filter(p=>p.tel).length;
+  document.getElementById('statsRow').innerHTML=[
+    {val:citasHoy,label:'📅 Citas hoy',color:'var(--teal)'},
+    {val:adeudos,label:'💰 Con adeudo',color:'var(--gold)'},
+    {val:cumpleHoy,label:'🎂 Cumplen hoy',color:'var(--purple)'},
+    {val:conTel,label:'📱 Con teléfono',color:'var(--blue)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-val" style="color:${s.color}">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+}
+
+function buildMsg(key, data){
+  return (plantillas[key]||PLANT_DEFAULT[key]||'')
+    .replace(/{nombre}/g, data.nombre||'Paciente')
+    .replace(/{clinica}/g, clinicaNombre)
+    .replace(/{fecha}/g, data.fecha||'')
+    .replace(/{hora}/g, data.hora||'')
+    .replace(/{saldo}/g, data.saldo||'')
+    .replace(/{tratamiento}/g, data.tratamiento||'')
+    .replace(/{direccion}/g, SESSION?.clinica?.direccion||'nuestra clínica');
+}
+
+function recCard(config){
+  return `<div class="rec-card tipo-${config.tipo}">
+    <div class="rec-header">
+      <div class="rec-icon">${config.icon}</div>
+      <div class="rec-info">
+        <div class="rec-nombre">${config.titulo}</div>
+        <div class="rec-paciente">👤 ${config.paciente}</div>
+        <div class="rec-fecha">${config.fecha||''}</div>
+      </div>
+    </div>
+    <div class="rec-msg-preview">${config.msg}</div>
+    <div class="rec-actions">
+      ${config.tel
+        ? `<button class="btn btn-primary btn-sm" style="background:#25D366;color:#fff" onclick="enviarWA('${config.tel}',\`${config.msg.replace(/`/g,"'")}\`)">💬 Enviar WA</button>`
+        : `<span style="font-size:.72rem;color:var(--red)">⚠️ Sin teléfono</span>`}
+      ${config.extra||''}
+    </div>
+  </div>`;
+}
+
+function renderPendientes(){
+  const hoy=todayISO();
+  const manana=new Date(); manana.setDate(manana.getDate()+1);
+  const mananaISO=manana.toISOString().slice(0,10);
+  const cards=[];
+
+  // Citas de hoy sin confirmar
+  allCitas.filter(c=>c.fecha===hoy&&c.estado==='Agendado'&&c.tel).forEach(c=>{
+    const msg=buildMsg('recordatorio_cita',{nombre:c.paciente?.split(' ')[0]||'',fecha:c.fecha,hora:c.hora||''});
+    cards.push(recCard({tipo:'cita',icon:'📅',titulo:'Confirmar cita de hoy',paciente:c.paciente||'—',fecha:`Hoy · ${c.hora||''}`,msg,tel:c.tel}));
+  });
+  // Citas de mañana
+  allCitas.filter(c=>c.fecha===mananaISO&&c.tel).forEach(c=>{
+    const msg=buildMsg('recordatorio_cita',{nombre:c.paciente?.split(' ')[0]||'',fecha:'mañana',hora:c.hora||''});
+    cards.push(recCard({tipo:'cita',icon:'📅',titulo:'Recordatorio cita mañana',paciente:c.paciente||'—',fecha:`Mañana · ${c.hora||''}`,msg,tel:c.tel}));
+  });
+  // Adeudos mayores
+  allTrat.filter(t=>Number(t.saldo||0)>2000).slice(0,5).forEach(t=>{
+    const px=allPacientes.find(p=>p.id===t.expId);
+    if(!px?.tel) return;
+    const msg=buildMsg('recordatorio_pago',{nombre:px.nombre?.split(' ')[0]||'',saldo:fmtMXN(t.saldo),tratamiento:t.tratamiento||''});
+    cards.push(recCard({tipo:'pago',icon:'💰',titulo:'Recordatorio de pago',paciente:px.nombre||'—',fecha:`Saldo: ${fmtMXN(t.saldo)}`,msg,tel:px.tel}));
+  });
+  // Cumpleaños hoy
+  allPacientes.filter(p=>p.fnac&&p.fnac.slice(5)===hoy.slice(5)&&p.tel).forEach(p=>{
+    const msg=buildMsg('cumpleanos',{nombre:p.nombre?.split(' ')[0]||''});
+    cards.push(recCard({tipo:'cumple',icon:'🎂',titulo:'Felicitación de cumpleaños',paciente:p.nombre||'—',fecha:'¡Hoy es su cumpleaños!',msg,tel:p.tel}));
+  });
+
+  const grid=document.getElementById('pendientesGrid');
+  grid.innerHTML=cards.length
+    ? cards.join('')
+    : `<div class="empty-state" style="grid-column:1/-1;padding:50px"><div class="empty-icon">✅</div><div class="empty-title">Sin recordatorios pendientes</div><div class="empty-sub">No hay citas sin confirmar, adeudos importantes ni cumpleaños hoy</div></div>`;
+}
+
+window.filterCitas=function(rango,btn){
+  document.querySelectorAll('#tab-citas .tipo-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCitas(rango);
+};
+
+function renderCitas(rango){
+  const hoy=todayISO();
+  const manana=new Date(); manana.setDate(manana.getDate()+1);
+  const mananaISO=manana.toISOString().slice(0,10);
+  const semana=new Date(); semana.setDate(semana.getDate()+7);
+  const semanaISO=semana.toISOString().slice(0,10);
+  let citas=[];
+  if(rango==='hoy') citas=allCitas.filter(c=>c.fecha===hoy);
+  else if(rango==='manana') citas=allCitas.filter(c=>c.fecha===mananaISO);
+  else citas=allCitas.filter(c=>c.fecha>=hoy&&c.fecha<=semanaISO);
+  citas=citas.sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  const grid=document.getElementById('citasGrid');
+  grid.innerHTML=citas.length
+    ? citas.map(c=>{
+        const esHoy=c.fecha===hoy;
+        const key=esHoy?'recordatorio_cita':'recordatorio_cita';
+        const msg=buildMsg(key,{nombre:c.paciente?.split(' ')[0]||'',fecha:esHoy?'hoy':c.fecha,hora:c.hora||''});
+        const estadoClass={Confirmado:'badge-teal',Completado:'badge-green',Cancelado:'badge-red','No Asistió':'badge-purple',Agendado:'badge-gold'};
+        return recCard({
+          tipo:'cita',icon:'📅',
+          titulo:`${c.tratamiento||'Cita'} · ${c.fecha} ${c.hora?'a las '+c.hora:''}`,
+          paciente:c.paciente||'—',fecha:c.fecha,msg,tel:c.tel,
+          extra:`<span class="badge ${estadoClass[c.estado]||'badge-gold'}" style="font-size:.62rem">${c.estado||'Agendado'}</span>`
+        });
+      }).join('')
+    : `<div class="empty-state" style="grid-column:1/-1;padding:40px"><div class="empty-icon">📅</div><div class="empty-title">Sin citas en este rango</div></div>`;
+}
+
+window.filterAdeudos=function(filtro,btn){
+  document.querySelectorAll('#tab-adeudos .tipo-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAdeudos(filtro);
+};
+
+function renderAdeudos(filtro){
+  let trats=allTrat.filter(t=>Number(t.saldo||0)>0);
+  if(filtro==='mayor5k') trats=trats.filter(t=>Number(t.saldo)>5000);
+  else if(filtro==='mayor1k') trats=trats.filter(t=>Number(t.saldo)>1000);
+  trats=trats.sort((a,b)=>Number(b.saldo)-Number(a.saldo));
+  const grid=document.getElementById('adeudosGrid');
+  grid.innerHTML=trats.length
+    ? trats.map(t=>{
+        const px=allPacientes.find(p=>p.id===t.expId);
+        const msg=buildMsg('recordatorio_pago',{nombre:(px?.nombre||t.paciente||'').split(' ')[0],saldo:fmtMXN(t.saldo),tratamiento:t.tratamiento||''});
+        return recCard({
+          tipo:'pago',icon:'💰',
+          titulo:`${t.tratamiento||'—'} · Saldo: ${fmtMXN(t.saldo)}`,
+          paciente:t.paciente||'—',
+          fecha:`Abonado: ${fmtMXN(t.abonado)} de ${fmtMXN(t.costo)}`,
+          msg,tel:px?.tel||'',
+          extra:`<a href="estado-cuenta.html?px=${t.expId}" class="btn btn-ghost btn-sm">📄 Estado de cuenta</a>`
+        });
+      }).join('')
+    : `<div class="empty-state" style="grid-column:1/-1;padding:40px"><div class="empty-icon">✅</div><div class="empty-title">Sin adeudos pendientes</div></div>`;
+}
+
+window.filterCumples=function(rango,btn){
+  document.querySelectorAll('#tab-cumples .tipo-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCumples(rango);
+};
+
+function renderCumples(rango){
+  const hoy=todayISO();
+  const mesActual=hoy.slice(0,7);
+  const semana=new Date(); semana.setDate(semana.getDate()+7);
+  let pxs=[];
+  if(rango==='hoy') pxs=allPacientes.filter(p=>p.fnac&&p.fnac.slice(5)===hoy.slice(5));
+  else if(rango==='semana'){
+    pxs=allPacientes.filter(p=>{
+      if(!p.fnac) return false;
+      const cumple=new Date(new Date().getFullYear()+'-'+p.fnac.slice(5));
+      return cumple>=new Date(hoy)&&cumple<=semana;
+    });
+  } else pxs=allPacientes.filter(p=>p.fnac&&p.fnac.slice(0,7).slice(5)===mesActual.slice(5));
+  const grid=document.getElementById('cumplesGrid');
+  grid.innerHTML=pxs.length
+    ? pxs.map(p=>{
+        const msg=buildMsg('cumpleanos',{nombre:p.nombre?.split(' ')[0]||''});
+        const edad=p.fnac?Math.floor((new Date()-new Date(p.fnac))/31557600000):null;
+        return recCard({tipo:'cumple',icon:'🎂',titulo:'Felicitación de cumpleaños',paciente:p.nombre||'—',fecha:edad?`Cumple ${edad+1} años`:'',msg,tel:p.tel||''});
+      }).join('')
+    : `<div class="empty-state" style="grid-column:1/-1;padding:40px"><div class="empty-icon">🎂</div><div class="empty-title">Sin cumpleaños en este rango</div></div>`;
+}
+
+function renderPlantillas(){
+  const container=document.getElementById('plantillasContainer');
+  container.innerHTML=Object.entries(PLANT_META).map(([key,meta])=>`
+    <div class="template-card">
+      <div class="template-title">${meta.titulo} <span class="badge badge-${meta.tipo==='cita'?'teal':meta.tipo==='pago'?'gold':'purple'}" style="font-size:.62rem">${meta.tipo}</span></div>
+      <div class="template-desc">Variables: ${meta.vars.map(v=>`<code style="font-size:.7rem;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--teal)">{${v}}</code>`).join(' ')}</div>
+      <textarea class="form-textarea" id="plant-${key}" style="font-size:.78rem" rows="3">${plantillas[key]||PLANT_DEFAULT[key]}</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost btn-sm" onclick="savePlantilla('${key}')">💾 Guardar</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetPlantilla('${key}')">↺ Restaurar</button>
+      </div>
+    </div>`).join('');
+}
+
+window.savePlantilla=async function(key){
+  plantillas[key]=document.getElementById('plant-'+key).value;
+  try{
+    await db.collection('clinicas').doc(SESSION.clinica.id).update({plantillas,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+    showToast('Plantilla guardada','success');
+    renderPendientes();renderCitas('hoy');renderAdeudos('todos');renderCumples('hoy');
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+window.resetPlantilla=function(key){
+  plantillas[key]=PLANT_DEFAULT[key];
+  document.getElementById('plant-'+key).value=PLANT_DEFAULT[key];
+  showToast('Plantilla restaurada al valor original','info');
+};
+
+window.enviarWA=function(tel,msg){
+  whatsapp(tel,msg);
+  showToast('WhatsApp abierto','success');
+};
+
+// MASIVO
+window.loadMasivoPreview=function(){ renderMasivoLista(); };
+
+function getMasivoDestinatarios(){
+  const grupo=document.getElementById('masivo-grupo').value;
+  const hoy=todayISO();
+  const manana=new Date(); manana.setDate(manana.getDate()+1);
+  const mananaISO=manana.toISOString().slice(0,10);
+  const hace30=new Date(); hace30.setDate(hace30.getDate()-30);
+  const hace30ISO=hace30.toISOString().slice(0,10);
+  if(grupo==='todos') return allPacientes.filter(p=>p.tel);
+  if(grupo==='adeudo'){
+    const expsConAdeudo=new Set(allTrat.filter(t=>Number(t.saldo||0)>0).map(t=>t.expId));
+    return allPacientes.filter(p=>p.tel&&expsConAdeudo.has(p.id));
+  }
+  if(grupo==='cita-hoy'){
+    const expsCitaHoy=new Set(allCitas.filter(c=>c.fecha===hoy&&c.expId).map(c=>c.expId));
+    return allPacientes.filter(p=>p.tel&&expsCitaHoy.has(p.id));
+  }
+  if(grupo==='cita-manana'){
+    const expsCitaManana=new Set(allCitas.filter(c=>c.fecha===mananaISO&&c.expId).map(c=>c.expId));
+    return allPacientes.filter(p=>p.tel&&expsCitaManana.has(p.id));
+  }
+  if(grupo==='cumple-hoy') return allPacientes.filter(p=>p.tel&&p.fnac&&p.fnac.slice(5)===hoy.slice(5));
+  if(grupo==='cumple-mes'){
+    const mesActual=hoy.slice(5,7);
+    return allPacientes.filter(p=>p.tel&&p.fnac&&p.fnac.slice(5,7)===mesActual);
+  }
+  if(grupo==='sin-cita-30'){
+    const expsConCitaReciente=new Set(allCitas.filter(c=>c.fecha>=hace30ISO).map(c=>c.expId).filter(Boolean));
+    return allPacientes.filter(p=>p.tel&&!expsConCitaReciente.has(p.id));
+  }
+  return allPacientes.filter(p=>p.tel);
+}
+
+function renderMasivoLista(){
+  const dest=getMasivoDestinatarios();
+  document.getElementById('masivo-count').textContent=dest.length+' pacientes';
+  const msg=document.getElementById('masivo-msg').value;
+  const lista=document.getElementById('masivo-lista');
+  if(!dest.length){lista.innerHTML='<div style="text-align:center;color:var(--text-dim);font-size:.78rem;padding:10px">Sin destinatarios para este grupo</div>';return;}
+  lista.innerHTML=`
+    <div style="font-size:.65rem;font-weight:700;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Destinatarios (${dest.length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${dest.slice(0,20).map(p=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:3px 10px;font-size:.72rem;color:var(--text-muted)">${p.nombre?.split(' ').slice(0,2).join(' ')||'—'}</div>`).join('')}
+      ${dest.length>20?`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:3px 10px;font-size:.72rem;color:var(--teal)">+${dest.length-20} más</div>`:''}
+    </div>`;
+}
+
+async function enviarMasivo(){
+  const dest=getMasivoDestinatarios();
+  const msgTemplate=document.getElementById('masivo-msg').value.trim();
+  if(!msgTemplate){showToast('Escribe un mensaje primero','error');return;}
+  if(!dest.length){showToast('Sin destinatarios','error');return;}
+  if(!confirm(`¿Enviar mensaje a ${dest.length} pacientes? Se abrirá WhatsApp ${dest.length} veces.`)) return;
+  let enviados=0;
+  for(const px of dest){
+    const msg=msgTemplate
+      .replace(/{nombre}/g,px.nombre?.split(' ')[0]||'Paciente')
+      .replace(/{clinica}/g,clinicaNombre)
+      .replace(/{fecha}/g,todayISO())
+      .replace(/{saldo}/g,fmtMXN(allTrat.filter(t=>t.expId===px.id).reduce((s,t)=>s+Number(t.saldo||0),0)));
+    whatsapp(px.tel,msg);
+    enviados++;
+    await new Promise(r=>setTimeout(r,800));
+  }
+  showToast(`${enviados} mensajes enviados correctamente`,'success');
+}
+
+window.showTab=function(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',t.getAttribute('onclick').includes("'"+name+"'")));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+};
+</script>
+</body>
+</html>
