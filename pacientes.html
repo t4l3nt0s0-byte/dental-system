@@ -192,6 +192,7 @@ function renderGrid() {
       ${p.padecimientos&&p.padecimientos!=='Ninguno'?`<div class="px-row"><span class="icon">🏥</span><span>${p.padecimientos}</span></div>`:''}
       <div class="px-actions">
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editPaciente('${p.id}')">✏️ Editar</button>
+        <a href="expediente.html?px=${p.id}" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">📋 Expediente</a>
         <a href="tratamientos.html?exp=${p.id}" class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">🦷 Tratamientos</a>
         ${p.tel ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();whatsapp('${p.tel}','Hola ${p.nombre?.split(' ')[0]||''}')">💬</button>` : ''}
         <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️</button>
@@ -340,7 +341,8 @@ async function verPaciente(id) {
     <button class="btn btn-ghost" onclick="closeModal('modalVer')">Cerrar</button>
     ${p.tel ? `<button class="btn btn-ghost" onclick="whatsapp('${p.tel}','Hola ${p.nombre?.split(' ')[0]||''}')">💬 WhatsApp</button>` : ''}
     <button class="btn btn-ghost" onclick="closeModal('modalVer');editPaciente('${p.id}')">✏️ Editar</button>
-    <a href="tratamientos.html?exp=${p.id}" class="btn btn-primary">🦷 Ver tratamientos</a>`;
+    <a href="expediente.html?px=${p.id}" class="btn btn-primary">📋 Expediente completo</a>
+    <a href="tratamientos.html?exp=${p.id}" class="btn btn-ghost">🦷 Tratamientos</a>`;
   openModal('modalVer');
 }
 

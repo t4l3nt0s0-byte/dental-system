@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Expediente Completo</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* LAYOUT */
+.exp-layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+.exp-sidebar{position:sticky;top:80px}
+
+/* PERFIL CARD */
+.perfil-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px}
+.perfil-header{background:linear-gradient(135deg,#0C1622,#111E2E);padding:24px;text-align:center;position:relative}
+.perfil-header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,194,168,.15),transparent)}
+.perfil-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--teal),#008F7A);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;margin:0 auto 12px;border:3px solid rgba(0,194,168,.3);box-shadow:0 4px 20px rgba(0,194,168,.2)}
+.perfil-nombre{font-family:var(--font-display);font-size:1.05rem;font-style:italic;color:var(--text);margin-bottom:3px}
+.perfil-exp{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim)}
+.perfil-body{padding:16px}
+.perfil-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:.78rem}
+.perfil-row:last-child{border-bottom:none}
+.perfil-label{color:var(--text-dim)}
+.perfil-val{color:var(--text);font-weight:500;text-align:right;max-width:160px;word-break:break-word}
+.alerta-med{background:rgba(244,185,66,.08);border:1px solid rgba(244,185,66,.2);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:.75rem;color:var(--gold);display:flex;gap:8px;align-items:flex-start}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text-muted);transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--surface);color:var(--teal);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* SECCIÓN TÍTULOS */
+.sec-title{font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.sec-title a,.sec-title button{font-size:.7rem;font-weight:500;color:var(--text-muted);text-decoration:none;letter-spacing:0;text-transform:none;background:none;border:none;cursor:pointer}
+.sec-title a:hover,.sec-title button:hover{color:var(--teal)}
+
+/* RESUMEN FINANCIERO */
+.fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.fin-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
+.fin-val{font-family:var(--font-mono);font-size:1.1rem;font-weight:700;margin-bottom:3px}
+.fin-label{font-size:.68rem;color:var(--text-muted)}
+
+/* TIMELINE CITAS */
+.cita-timeline{display:flex;flex-direction:column;gap:0}
+.ct-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);position:relative}
+.ct-item:last-child{border-bottom:none}
+.ct-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;border:2px solid}
+.ct-content{flex:1}
+.ct-fecha{font-family:var(--font-mono);font-size:.75rem;color:var(--text-muted);margin-bottom:2px}
+.ct-trat{font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.ct-obs{font-size:.72rem;color:var(--text-muted)}
+
+/* RX SECTION */
+.rx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.rx-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:all .2s}
+.rx-card:hover{border-color:rgba(0,194,168,.3)}
+.rx-icon{font-size:2rem;margin-bottom:8px;text-align:center}
+.rx-nombre{font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:3px}
+.rx-fecha{font-size:.7rem;color:var(--text-muted);margin-bottom:3px}
+.rx-tipo{font-size:.68rem;margin-bottom:10px}
+.rx-notas{font-size:.72rem;color:var(--text-muted);font-style:italic;margin-bottom:10px;line-height:1.4}
+.rx-actions{display:flex;gap:6px}
+.rx-empty{text-align:center;padding:40px;color:var(--text-muted)}
+.rx-empty-icon{font-size:3rem;margin-bottom:12px;opacity:.4}
+.drive-hint{background:var(--blue-dim);border:1px solid rgba(74,158,255,.2);border-radius:8px;padding:12px 14px;font-size:.78rem;color:var(--blue);margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+
+/* ODONTOGRAMA MINI */
+.odo-mini{display:flex;flex-direction:column;gap:6px}
+.odo-row{display:flex;justify-content:center;gap:3px}
+.odo-tooth{width:22px;height:26px;border-radius:4px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.45rem;color:var(--text-dim);cursor:pointer;transition:all .15s;position:relative;flex-direction:column;gap:1px}
+.odo-tooth:hover{border-color:var(--teal);background:var(--teal-dim)}
+.odo-tooth.s-caries{background:rgba(255,92,92,.3);border-color:var(--red)}
+.odo-tooth.s-obturado{background:rgba(0,194,168,.3);border-color:var(--teal)}
+.odo-tooth.s-corona{background:rgba(244,185,66,.3);border-color:var(--gold)}
+.odo-tooth.s-ausente{background:rgba(74,158,255,.2);border-color:var(--blue)}
+.odo-tooth.s-implante{background:rgba(52,211,153,.3);border-color:var(--green)}
+.odo-tooth.s-endodoncia{background:rgba(255,154,60,.3);border-color:#FF9A3C}
+.odo-num{font-size:.42rem;color:var(--text-dim);line-height:1}
+
+/* NOTAS CLÍNICAS */
+.nota-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px}
+.nota-header{display:flex;justify-content:space-between;margin-bottom:6px}
+.nota-fecha{font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim)}
+.nota-autor{font-size:.68rem;color:var(--teal)}
+.nota-texto{font-size:.82rem;color:var(--text-muted);line-height:1.5}
+
+/* PREMIUM BADGE */
+.premium-only{background:linear-gradient(135deg,var(--gold-dim),rgba(244,185,66,.05));border:1px solid rgba(244,185,66,.2);border-radius:8px;padding:6px 12px;font-size:.68rem;color:var(--gold);display:inline-flex;align-items:center;gap:6px}
+
+@media(max-width:900px){.exp-layout{grid-template-columns:1fr}.exp-sidebar{position:static}.fin-grid{grid-template-columns:1fr 1fr}.tabs{gap:4px}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📋 Expediente Completo</div>
+    <div class="topbar-actions">
+      <span class="premium-only">⭐ Plan Premium</span>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+      <a href="pacientes.html" class="btn btn-ghost btn-sm">← Pacientes</a>
+    </div>
+  </div>
+  <div class="content" id="mainContent">
+    <!-- Selector de paciente si no hay ID en URL -->
+    <div id="selectorWrap" style="display:none">
+      <div class="card" style="max-width:500px;margin:40px auto;text-align:center;padding:32px">
+        <div style="font-size:2.5rem;margin-bottom:12px">📋</div>
+        <div style="font-family:var(--font-display);font-size:1.2rem;font-style:italic;margin-bottom:16px">Selecciona un paciente</div>
+        <select class="form-select" id="selectorPx" style="margin-bottom:12px">
+          <option value="">Buscar paciente...</option>
+        </select>
+        <button class="btn btn-primary" onclick="irExpediente()">Ver expediente →</button>
+      </div>
+    </div>
+    <!-- EXPEDIENTE -->
+    <div id="expWrap" style="display:none">
+      <div class="exp-layout">
+        <!-- SIDEBAR PERFIL -->
+        <div class="exp-sidebar">
+          <div class="perfil-card">
+            <div class="perfil-header">
+              <div class="perfil-avatar" id="pAvatar"></div>
+              <div class="perfil-nombre" id="pNombre"></div>
+              <div class="perfil-exp" id="pExp"></div>
+            </div>
+            <div class="perfil-body" id="pBody"></div>
+          </div>
+          <!-- Acciones rápidas -->
+          <div class="card" style="padding:14px">
+            <div style="font-size:.65rem;font-weight:700;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Acciones rápidas</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button class="btn btn-primary btn-sm" id="btnNuevaCita">📅 Agendar cita</button>
+              <button class="btn btn-ghost btn-sm" id="btnNuevoTrat">🦷 Nuevo tratamiento</button>
+              <button class="btn btn-ghost btn-sm" id="btnNuevoPago">💰 Registrar pago</button>
+              <button class="btn btn-ghost btn-sm" id="btnCotizar">📝 Generar cotización</button>
+              <button class="btn btn-ghost btn-sm" id="btnWA">💬 WhatsApp</button>
+              <button class="btn btn-ghost btn-sm" id="btnOdo">🦷 Ver odontograma</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div>
+          <!-- TABS -->
+          <div class="tabs">
+            <button class="tab active" onclick="showTab('resumen')">📊 Resumen</button>
+            <button class="tab" onclick="showTab('tratamientos')">🦷 Tratamientos</button>
+            <button class="tab" onclick="showTab('pagos')">💰 Pagos</button>
+            <button class="tab" onclick="showTab('citas')">📅 Citas</button>
+            <button class="tab" onclick="showTab('odontograma')">🦷 Odontograma</button>
+            <button class="tab" onclick="showTab('rx')">📷 RX / Imágenes</button>
+            <button class="tab" onclick="showTab('notas')">📝 Notas clínicas</button>
+          </div>
+
+          <!-- TAB: RESUMEN -->
+          <div class="tab-panel active" id="tab-resumen">
+            <div class="fin-grid" id="finGrid"></div>
+            <div class="sec-title">🦷 Últimos tratamientos</div>
+            <div id="resumenTrat"></div>
+            <div class="sec-title" style="margin-top:18px">📅 Próximas citas</div>
+            <div id="resumenCitas"></div>
+            <div class="sec-title" style="margin-top:18px">💰 Últimos pagos</div>
+            <div id="resumenPagos"></div>
+          </div>
+
+          <!-- TAB: TRATAMIENTOS -->
+          <div class="tab-panel" id="tab-tratamientos">
+            <div class="sec-title">🦷 Historial de tratamientos
+              <button onclick="window.location.href='tratamientos.html?exp='+PX_ID">+ Nuevo tratamiento</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tratamiento</th><th>Inicio</th><th>Término</th><th>Costo</th><th>Abonado</th><th>Saldo</th><th>Estado</th></tr></thead>
+                <tbody id="tratBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB: PAGOS -->
+          <div class="tab-panel" id="tab-pagos">
+            <div class="sec-title">💰 Historial de pagos
+              <button onclick="window.location.href='abonos.html'">+ Registrar pago</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha</th><th>Tratamiento</th><th>Forma</th><th>Monto</th><th>IVA</th><th>Total</th><th>Concepto</th></tr></thead>
+                <tbody id="pagosBody"></tbody>
+              </table>
+            </div>
+            <div class="fin-grid" style="margin-top:16px" id="pagosTotales"></div>
+          </div>
+
+          <!-- TAB: CITAS -->
+          <div class="tab-panel" id="tab-citas">
+            <div class="sec-title">📅 Historial de citas
+              <button onclick="window.location.href='agenda.html'">+ Agendar cita</button>
+            </div>
+            <div class="cita-timeline" id="citasTimeline"></div>
+          </div>
+
+          <!-- TAB: ODONTOGRAMA -->
+          <div class="tab-panel" id="tab-odontograma">
+            <div class="sec-title">🦷 Odontograma del paciente
+              <a id="linkOdoCompleto" href="#">Ver odontograma completo →</a>
+            </div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px">
+              <div style="font-size:.68rem;color:var(--text-dim);text-align:center;margin-bottom:14px;letter-spacing:.08em;text-transform:uppercase">Vista previa · Notación FDI</div>
+              <div class="odo-mini" id="odoMini"></div>
+              <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+                <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(255,92,92,.3);border:1px solid var(--red)"></div>Caries</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(0,194,168,.3);border:1px solid var(--teal)"></div>Obturado</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(244,185,66,.3);border:1px solid var(--gold)"></div>Corona</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(74,158,255,.2);border:1px solid var(--blue)"></div>Ausente</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(52,211,153,.3);border:1px solid var(--green)"></div>Implante</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(255,154,60,.3);border:1px solid #FF9A3C"></div>Endodoncia</div>
+              </div>
+            </div>
+            <div id="odoNotas" style="font-size:.82rem;color:var(--text-muted);padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)"></div>
+          </div>
+
+          <!-- TAB: RX / IMÁGENES -->
+          <div class="tab-panel" id="tab-rx">
+            <div class="sec-title">📷 Radiografías e Imágenes
+              <button onclick="openModalRx()">+ Agregar RX</button>
+            </div>
+            <div class="drive-hint">
+              <span>💡</span>
+              <div>Las RX se almacenan en <strong>Google Drive</strong>. Crea una carpeta por paciente, sube las imágenes y pega el link aquí. El sistema las organiza con fecha, tipo y notas del doctor.</div>
+            </div>
+            <div class="rx-grid" id="rxGrid"></div>
+          </div>
+
+          <!-- TAB: NOTAS CLÍNICAS -->
+          <div class="tab-panel" id="tab-notas">
+            <div class="sec-title">📝 Notas clínicas
+              <button onclick="openModalNota()">+ Nueva nota</button>
+            </div>
+            <div id="notasList"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL AGREGAR RX -->
+<div class="modal-overlay" id="modalRx">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalRxTitle">Agregar RX / Imagen</div>
+      <button class="modal-close" onclick="closeModal('modalRx')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drive-hint" style="margin-bottom:14px">
+        <span>📌</span>
+        <div>
+          <strong>¿Cómo obtener el link de Google Drive?</strong><br>
+          1. Sube la imagen a Google Drive<br>
+          2. Haz clic derecho → "Obtener enlace"<br>
+          3. Cambia el acceso a "Cualquiera con el enlace"<br>
+          4. Copia y pega el link aquí
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Nombre / Descripción *</label>
+          <input class="form-input" id="rx-nombre" placeholder="RX Panorámica · Mayo 2026">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de imagen</label>
+          <select class="form-select" id="rx-tipo">
+            <option>Radiografía Periapical</option>
+            <option>Radiografía Panorámica</option>
+            <option>Radiografía Bitewing</option>
+            <option>Radiografía Oclusal</option>
+            <option>Fotografía Intraoral</option>
+            <option>Fotografía Extraoral</option>
+            <option>Tomografía CBCT</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de la imagen</label>
+          <input type="date" class="form-input" id="rx-fecha">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Link de Google Drive *</label>
+          <input class="form-input" id="rx-link" placeholder="https://drive.google.com/file/d/...">
+          <div class="form-hint">Asegúrate que el acceso sea "Cualquiera con el enlace"</div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Pieza(s) dental(es)</label>
+          <input class="form-input" id="rx-pieza" placeholder="Ej: 16, 17, 18 — Molar superior derecho">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Observaciones del doctor</label>
+          <textarea class="form-textarea" id="rx-notas" placeholder="Hallazgos radiográficos, diagnóstico, observaciones..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalRx')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveRx">💾 Guardar RX</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTA CLÍNICA -->
+<div class="modal-overlay" id="modalNota">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalNotaTitle">Nueva Nota Clínica</div>
+      <button class="modal-close" onclick="closeModal('modalNota')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tipo de nota</label>
+        <select class="form-select" id="nota-tipo">
+          <option>Evolución clínica</option>
+          <option>Diagnóstico</option>
+          <option>Plan de tratamiento</option>
+          <option>Indicaciones al paciente</option>
+          <option>Medicación prescrita</option>
+          <option>Consentimiento informado</option>
+          <option>Nota de urgencia</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nota *</label>
+        <textarea class="form-textarea" id="nota-texto" placeholder="Escribe la nota clínica..." rows="5"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalNota')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveNota">💾 Guardar nota</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'expediente';
+let PX_ID = null, PX_DATA = null, editRxId = null, editNotaId = null;
+
+const UPPER_RIGHT=[18,17,16,15,14,13,12,11];
+const UPPER_LEFT=[21,22,23,24,25,26,27,28];
+const LOWER_LEFT=[31,32,33,34,35,36,37,38];
+const LOWER_RIGHT=[48,47,46,45,44,43,42,41];
+const STATUS_COLORS={sano:'',caries:'s-caries',obturado:'s-obturado',corona:'s-corona',ausente:'s-ausente',implante:'s-implante',endodoncia:'s-endodoncia'};
+
+initSession('kpi-avanzado').then(async session => {
+  if (!session) return;
+
+  PX_ID = new URLSearchParams(location.search).get('px');
+
+  if (!PX_ID) {
+    // Mostrar selector
+    document.getElementById('selectorWrap').style.display = 'block';
+    const pxList = await fsGetAll('pacientes', r=>r.orderBy('nombre','asc'));
+    const sel = document.getElementById('selectorPx');
+    sel.innerHTML = '<option value="">Seleccionar paciente...</option>' +
+      pxList.map(p=>`<option value="${p.id}">${p.nombre||p.id} (${p.expediente||p.id})</option>`).join('');
+  } else {
+    await loadExpediente();
+  }
+
+  document.getElementById('btnSaveRx').addEventListener('click', saveRx);
+  document.getElementById('btnSaveNota').addEventListener('click', saveNota);
+  document.getElementById('rx-fecha').value = todayISO();
+});
+
+window.irExpediente = function() {
+  const id = document.getElementById('selectorPx').value;
+  if (!id) { showToast('Selecciona un paciente','error'); return; }
+  window.location.href = `expediente.html?px=${id}`;
+};
+
+async function loadExpediente() {
+  document.getElementById('selectorWrap').style.display = 'none';
+  document.getElementById('expWrap').style.display = 'block';
+
+  // Load all data in parallel
+  const [px, trats, abonos, citas, odo, rxList, notas] = await Promise.all([
+    fsGet('pacientes', PX_ID),
+    fsGetAll('tratamientos', r=>r.where('expId','==',PX_ID)),
+    fsGetAll('abonos', r=>r.where('expId','==',PX_ID)),
+    fsGetAll('citas', r=>r.where('expId','==',PX_ID)),
+    db.collection('clinicas').doc(SESSION.clinica.id).collection('odontogramas').doc(PX_ID).get().then(s=>s.exists?s.data():null),
+    fsGetAll('rx', r=>r.where('expId','==',PX_ID)),
+    fsGetAll('notas-clinicas', r=>r.where('expId','==',PX_ID)),
+  ]);
+
+  if (!px) { showToast('Paciente no encontrado','error'); return; }
+  PX_DATA = px;
+
+  renderPerfil(px);
+  renderBotones(px);
+  renderResumen(px, trats, abonos, citas);
+  renderTratamientos(trats);
+  renderPagos(abonos, trats);
+  renderCitas(citas);
+  renderOdontograma(odo);
+  renderRX(rxList);
+  renderNotas(notas);
+
+  document.title = `Expediente · ${px.nombre||'Paciente'} · Hersantych Dental`;
+}
+
+function renderPerfil(px) {
+  const initials = (px.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
+  const edad = px.fnac ? Math.floor((new Date()-new Date(px.fnac))/31557600000) : px.edad||'—';
+  document.getElementById('pAvatar').textContent = initials;
+  document.getElementById('pNombre').textContent = px.nombre||'Sin nombre';
+  document.getElementById('pExp').textContent = px.expediente||PX_ID;
+  const rows = [
+    ['👤 Género', px.genero||'—'],
+    ['🎂 Edad', edad ? edad+' años' : '—'],
+    ['📱 Teléfono', px.tel||'—'],
+    ['✉️ Correo', px.email||'—'],
+    ['🩸 Sangre', px.sangre||'—'],
+    ['📅 Alta', px.alta||'—'],
+  ];
+  let html = rows.map(([l,v])=>`<div class="perfil-row"><span class="perfil-label">${l}</span><span class="perfil-val">${v}</span></div>`).join('');
+  if (px.alergias && px.alergias !== 'Ninguna') {
+    html += `<div class="alerta-med">⚠️ <div><strong>Alergia:</strong> ${px.alergias}</div></div>`;
+  }
+  if (px.padecimientos && px.padecimientos !== 'Ninguno') {
+    html += `<div class="alerta-med" style="background:rgba(255,92,92,.08);border-color:rgba(255,92,92,.2);color:var(--red)">🏥 <div><strong>Padecimiento:</strong> ${px.padecimientos}</div></div>`;
+  }
+  document.getElementById('pBody').innerHTML = html;
+}
+
+function renderBotones(px) {
+  document.getElementById('btnNuevaCita').onclick = ()=>window.location.href=`agenda.html`;
+  document.getElementById('btnNuevoTrat').onclick = ()=>window.location.href=`tratamientos.html?exp=${PX_ID}`;
+  document.getElementById('btnNuevoPago').onclick = ()=>window.location.href=`abonos.html`;
+  document.getElementById('btnCotizar').onclick = ()=>window.location.href=`cotizacion.html`;
+  document.getElementById('btnOdo').onclick = ()=>window.location.href=`odontograma.html?px=${PX_ID}`;
+  document.getElementById('linkOdoCompleto').href = `odontograma.html?px=${PX_ID}`;
+  if (px.tel) {
+    document.getElementById('btnWA').onclick = ()=>whatsapp(px.tel, `Hola ${px.nombre?.split(' ')[0]||''}, le contactamos de Hersantych Dental.`);
+  } else {
+    document.getElementById('btnWA').disabled = true;
+    document.getElementById('btnWA').style.opacity = '.4';
+  }
+}
+
+function renderResumen(px, trats, abonos, citas) {
+  const totalCosto = trats.reduce((s,t)=>s+Number(t.costo||0),0);
+  const totalCob   = trats.reduce((s,t)=>s+Number(t.abonado||0),0);
+  const totalSaldo = trats.reduce((s,t)=>s+Number(t.saldo||0),0);
+  document.getElementById('finGrid').innerHTML = [
+    {val:fmtMXN(totalCosto), label:'💵 Facturación total', color:'var(--blue)'},
+    {val:fmtMXN(totalCob),   label:'✅ Total cobrado',     color:'var(--teal)'},
+    {val:fmtMXN(totalSaldo), label:'❗ Saldo pendiente',   color:totalSaldo>0?'var(--red)':'var(--green)'},
+  ].map(k=>`<div class="fin-card"><div class="fin-val" style="color:${k.color}">${k.val}</div><div class="fin-label">${k.label}</div></div>`).join('');
+
+  // Últimos tratamientos
+  const estadoClass={Liquidado:'badge-green',Abonando:'badge-gold',Pendiente:'badge-red',Cancelado:'badge-purple'};
+  const lastTrats = [...trats].sort((a,b)=>(b.fechaInicio||'').localeCompare(a.fechaInicio||'')).slice(0,3);
+  document.getElementById('resumenTrat').innerHTML = lastTrats.length
+    ? `<div class="table-wrap"><table><thead><tr><th>Tratamiento</th><th>Inicio</th><th>Costo</th><th>Estado</th></tr></thead><tbody>
+        ${lastTrats.map(t=>`<tr><td style="font-weight:600;color:var(--text)">${t.tratamiento||'—'}</td><td style="font-family:var(--font-mono);font-size:.75rem">${t.fechaInicio||'—'}</td><td style="font-family:var(--font-mono)">${fmtMXN(t.costo)}</td><td><span class="badge ${estadoClass[t.estado]||'badge-blue'}" style="font-size:.65rem">${t.estado||'—'}</span></td></tr>`).join('')}
+      </tbody></table></div>`
+    : '<div style="color:var(--text-dim);font-size:.8rem;padding:10px">Sin tratamientos registrados</div>';
+
+  // Próximas citas
+  const hoy = todayISO();
+  const proxCitas = citas.filter(c=>c.fecha>=hoy).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).slice(0,3);
+  document.getElementById('resumenCitas').innerHTML = proxCitas.length
+    ? proxCitas.map(c=>`<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="font-family:var(--font-mono);color:var(--teal);min-width:90px">${c.fecha||'—'} ${c.hora||''}</span><span style="color:var(--text)">${c.tratamiento||'Cita'}</span><span class="badge badge-gold" style="font-size:.62rem;margin-left:auto">${c.estado||'Agendado'}</span></div>`).join('')
+    : '<div style="color:var(--text-dim);font-size:.8rem;padding:10px">Sin citas próximas</div>';
+
+  // Últimos pagos
+  const lastPagos = [...abonos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,3);
+  document.getElementById('resumenPagos').innerHTML = lastPagos.length
+    ? lastPagos.map(a=>`<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="font-family:var(--font-mono);color:var(--text-muted);min-width:90px">${a.fecha||'—'}</span><span style="color:var(--text-muted)">${a.tratamiento||'—'} · ${a.forma||'—'}</span><span style="font-family:var(--font-mono);color:var(--teal);margin-left:auto">${fmtMXN(a.monto)}</span></div>`).join('')
+    : '<div style="color:var(--text-dim);font-size:.8rem;padding:10px">Sin pagos registrados</div>';
+}
+
+function renderTratamientos(trats) {
+  const estadoClass={Liquidado:'badge-green',Abonando:'badge-gold',Pendiente:'badge-red',Cancelado:'badge-purple'};
+  const sorted = [...trats].sort((a,b)=>(b.fechaInicio||'').localeCompare(a.fechaInicio||''));
+  document.getElementById('tratBody').innerHTML = sorted.length
+    ? sorted.map(t=>`<tr>
+        <td><div style="font-weight:600;color:var(--text)">${t.tratamiento||'—'}</div><div style="font-size:.7rem;color:var(--text-dim)">${t.descripcion||''}</div></td>
+        <td style="font-family:var(--font-mono);font-size:.75rem">${t.fechaInicio||'—'}</td>
+        <td style="font-family:var(--font-mono);font-size:.75rem">${t.fechaTermino||'—'}</td>
+        <td style="font-family:var(--font-mono)">${fmtMXN(t.costo)}</td>
+        <td style="font-family:var(--font-mono);color:var(--green)">${fmtMXN(t.abonado)}</td>
+        <td style="font-family:var(--font-mono);color:${Number(t.saldo)>0?'var(--red)':'var(--green)'}">${fmtMXN(t.saldo)}</td>
+        <td><span class="badge ${estadoClass[t.estado]||'badge-blue'}" style="font-size:.65rem">${t.estado||'—'}</span></td>
+      </tr>`).join('')
+    : `<tr><td colspan="7"><div class="empty-state" style="padding:28px"><div class="empty-icon">🦷</div><div class="empty-title">Sin tratamientos</div></div></td></tr>`;
+}
+
+function renderPagos(abonos, trats) {
+  const sorted = [...abonos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  document.getElementById('pagosBody').innerHTML = sorted.length
+    ? sorted.map(a=>{
+        const iv=a.aplicaIva?Number(a.monto||0)*0.16:0;
+        const tot=a.aplicaIva?Number(a.monto||0)*1.16:Number(a.monto||0);
+        return`<tr>
+          <td style="font-family:var(--font-mono);font-size:.75rem">${a.fecha||'—'}</td>
+          <td>${a.tratamiento||'—'}</td>
+          <td><span class="badge badge-blue" style="font-size:.62rem">${a.forma||'—'}</span></td>
+          <td style="font-family:var(--font-mono);color:var(--teal)">${fmtMXN(a.monto)}</td>
+          <td style="font-family:var(--font-mono);font-size:.75rem">${a.aplicaIva?fmtMXN(iv):'—'}</td>
+          <td style="font-family:var(--font-mono);font-weight:700">${fmtMXN(tot)}</td>
+          <td style="font-size:.75rem;color:var(--text-muted)">${a.concepto||'—'}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="7"><div class="empty-state" style="padding:28px"><div class="empty-icon">💰</div><div class="empty-title">Sin pagos</div></div></td></tr>`;
+
+  const total=abonos.reduce((s,a)=>s+Number(a.monto||0),0);
+  const iva=abonos.filter(a=>a.aplicaIva).reduce((s,a)=>s+Number(a.monto||0)*0.16,0);
+  document.getElementById('pagosTotales').innerHTML=`
+    <div class="fin-card"><div class="fin-val" style="color:var(--teal)">${fmtMXN(total)}</div><div class="fin-label">Total pagado</div></div>
+    <div class="fin-card"><div class="fin-val" style="color:var(--blue)">${fmtMXN(iva)}</div><div class="fin-label">IVA generado</div></div>
+    <div class="fin-card"><div class="fin-val" style="color:var(--text)">${abonos.length}</div><div class="fin-label">Transacciones</div></div>`;
+}
+
+function renderCitas(citas) {
+  const sorted=[...citas].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const estadoColors={Confirmado:'var(--teal)',Completado:'var(--green)',Cancelado:'var(--red)','No Asistió':'var(--purple)',Agendado:'var(--gold)'};
+  document.getElementById('citasTimeline').innerHTML = sorted.length
+    ? sorted.map(c=>`<div class="ct-item">
+        <div class="ct-dot" style="background:${estadoColors[c.estado]||'var(--gold)'};border-color:${estadoColors[c.estado]||'var(--gold)'}"></div>
+        <div class="ct-content">
+          <div class="ct-fecha">${c.fecha||'—'} ${c.hora?'a las '+c.hora:''}</div>
+          <div class="ct-trat">${c.tratamiento||'Sin tratamiento especificado'}</div>
+          ${c.descripcion?`<div class="ct-obs">${c.descripcion}</div>`:''}
+        </div>
+        <span class="badge" style="font-size:.62rem;background:${estadoColors[c.estado]||'var(--gold)'}22;color:${estadoColors[c.estado]||'var(--gold)'}">${c.estado||'Agendado'}</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:28px"><div class="empty-icon">📅</div><div class="empty-title">Sin citas registradas</div></div>';
+}
+
+function renderOdontograma(odo) {
+  const dientes = odo?.dientes || {};
+  const renderRow = (nums) => nums.map(n=>{
+    const d=dientes[n]||{};
+    const cls=STATUS_COLORS[d.status]||'';
+    return`<div class="odo-tooth ${cls}" title="Pieza ${n}: ${d.status||'sano'}${d.notas?' — '+d.notas:''}"><span class="odo-num">${n}</span></div>`;
+  }).join('');
+  document.getElementById('odoMini').innerHTML=`
+    <div style="text-align:center;font-size:.58rem;color:var(--text-dim);margin-bottom:4px">Superior</div>
+    <div class="odo-row">${renderRow(UPPER_RIGHT)}${renderRow(UPPER_LEFT)}</div>
+    <div style="height:6px;border-top:1px dashed rgba(255,255,255,.06);margin:2px 10px"></div>
+    <div class="odo-row">${renderRow(LOWER_RIGHT)}${renderRow(LOWER_LEFT)}</div>
+    <div style="text-align:center;font-size:.58rem;color:var(--text-dim);margin-top:4px">Inferior</div>`;
+  document.getElementById('odoNotas').innerHTML = odo?.notas
+    ? `<strong style="font-size:.7rem;color:var(--text-dim)">📝 Notas del odontograma:</strong><br>${odo.notas}`
+    : '<span style="color:var(--text-dim);font-size:.78rem">Sin notas en el odontograma. <a href="odontograma.html?px='+PX_ID+'" style="color:var(--teal)">Abrir odontograma completo →</a></span>';
+}
+
+function renderRX(rxList) {
+  const sorted=[...rxList].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const tipoIcons={'Radiografía Periapical':'🦷','Radiografía Panorámica':'🦷','Radiografía Bitewing':'📐','Radiografía Oclusal':'🔭','Fotografía Intraoral':'📸','Fotografía Extraoral':'📷','Tomografía CBCT':'🖥️','Otro':'📄'};
+  const grid=document.getElementById('rxGrid');
+  if(!sorted.length){
+    grid.innerHTML=`<div class="rx-empty" style="grid-column:1/-1"><div class="rx-empty-icon">📷</div><div style="font-weight:600;color:var(--text);margin-bottom:6px">Sin imágenes registradas</div><div style="font-size:.78rem">Agrega la primera RX o imagen de este paciente</div><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openModalRx()">+ Agregar RX</button></div>`;
+    return;
+  }
+  grid.innerHTML=sorted.map(rx=>{
+    const icon=tipoIcons[rx.tipo]||'📄';
+    const linkId=rx.link?.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
+    const previewUrl=linkId?`https://drive.google.com/thumbnail?id=${linkId}&sz=w200`:null;
+    return`<div class="rx-card">
+      ${previewUrl
+        ? `<div style="width:100%;height:100px;border-radius:6px;overflow:hidden;margin-bottom:10px;background:var(--surface);border:1px solid var(--border)"><img src="${previewUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<div style=\\'text-align:center;padding:30px;font-size:1.5rem\\'>${icon}</div>'" alt="RX"></div>`
+        : `<div class="rx-icon">${icon}</div>`}
+      <div class="rx-nombre">${rx.nombre||'—'}</div>
+      <div class="rx-fecha">📅 ${rx.fecha||'—'}</div>
+      <div class="rx-tipo"><span class="badge badge-blue" style="font-size:.62rem">${rx.tipo||'—'}</span>${rx.pieza?` · Pieza(s): ${rx.pieza}`:''}</div>
+      ${rx.notas?`<div class="rx-notas">"${rx.notas}"</div>`:''}
+      <div class="rx-actions">
+        ${rx.link?`<a href="${rx.link}" target="_blank" class="btn btn-primary btn-sm">👁️ Ver en Drive</a>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="editRx('${rx.id}')">✏️</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteRx('${rx.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderNotas(notas) {
+  const sorted=[...notas].sort((a,b)=>(b.creadoEn?.seconds||0)-(a.creadoEn?.seconds||0));
+  document.getElementById('notasList').innerHTML=sorted.length
+    ? sorted.map(n=>`<div class="nota-item">
+        <div class="nota-header">
+          <span class="badge badge-teal" style="font-size:.62rem">${n.tipo||'Nota'}</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="nota-fecha">${n.fecha||'—'}</span>
+            <span class="nota-autor">${n.autor||'—'}</span>
+            <button class="btn btn-ghost btn-sm" style="padding:2px 8px" onclick="editNota('${n.id}')">✏️</button>
+            <button class="btn btn-ghost btn-sm" style="padding:2px 8px;color:var(--red)" onclick="deleteNota('${n.id}')">🗑️</button>
+          </div>
+        </div>
+        <div class="nota-texto">${n.texto||'—'}</div>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:28px"><div class="empty-icon">📝</div><div class="empty-title">Sin notas clínicas</div><div class="empty-sub">Agrega la primera nota de este paciente</div></div>';
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+window.showTab = function(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',t.getAttribute('onclick').includes("'"+name+"'")));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+};
+
+// ── RX CRUD ──────────────────────────────────────────────────
+window.openModalRx = function() {
+  editRxId=null;
+  document.getElementById('modalRxTitle').textContent='Agregar RX / Imagen';
+  ['rx-nombre','rx-link','rx-pieza','rx-notas'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('rx-tipo').value='Radiografía Periapical';
+  document.getElementById('rx-fecha').value=todayISO();
+  openModal('modalRx');
+};
+
+window.editRx = async function(id) {
+  editRxId=id;
+  const rx=await fsGet('rx',id); if(!rx) return;
+  document.getElementById('modalRxTitle').textContent='Editar RX';
+  document.getElementById('rx-nombre').value=rx.nombre||'';
+  document.getElementById('rx-tipo').value=rx.tipo||'Radiografía Periapical';
+  document.getElementById('rx-fecha').value=rx.fecha||todayISO();
+  document.getElementById('rx-link').value=rx.link||'';
+  document.getElementById('rx-pieza').value=rx.pieza||'';
+  document.getElementById('rx-notas').value=rx.notas||'';
+  openModal('modalRx');
+};
+
+async function saveRx() {
+  const nombre=document.getElementById('rx-nombre').value.trim();
+  const link=document.getElementById('rx-link').value.trim();
+  if(!nombre){showToast('El nombre es obligatorio','error');return;}
+  if(!link){showToast('El link de Google Drive es obligatorio','error');return;}
+  if(!link.includes('drive.google.com')&&!link.includes('docs.google.com')){
+    showToast('El link debe ser de Google Drive','error');return;
+  }
+  const data={
+    expId:PX_ID, paciente:PX_DATA?.nombre||'—',
+    nombre, tipo:document.getElementById('rx-tipo').value,
+    fecha:document.getElementById('rx-fecha').value,
+    link, pieza:document.getElementById('rx-pieza').value.trim(),
+    notas:document.getElementById('rx-notas').value.trim(),
+    autor:SESSION.user.nombre||SESSION.user.email,
+  };
+  const btn=document.getElementById('btnSaveRx');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    if(editRxId) await fsUpdate('rx',editRxId,data);
+    else await fsCreate('rx',data);
+    showToast(editRxId?'RX actualizada':'RX guardada','success');
+    closeModal('modalRx');
+    const rxList=await fsGetAll('rx',r=>r.where('expId','==',PX_ID));
+    renderRX(rxList);
+  }catch(e){showToast('Error: '+e.message,'error');}
+  btn.disabled=false;btn.textContent='💾 Guardar RX';
+}
+
+window.deleteRx = async function(id) {
+  if(!await confirmDialog('¿Eliminar esta RX del sistema? El archivo en Drive no será eliminado.')) return;
+  try{
+    await fsDelete('rx',id);
+    showToast('RX eliminada','success');
+    const rxList=await fsGetAll('rx',r=>r.where('expId','==',PX_ID));
+    renderRX(rxList);
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+// ── NOTAS CRUD ───────────────────────────────────────────────
+window.openModalNota = function() {
+  editNotaId=null;
+  document.getElementById('modalNotaTitle').textContent='Nueva Nota Clínica';
+  document.getElementById('nota-tipo').value='Evolución clínica';
+  document.getElementById('nota-texto').value='';
+  openModal('modalNota');
+};
+
+window.editNota = async function(id) {
+  editNotaId=id;
+  const n=await fsGet('notas-clinicas',id); if(!n) return;
+  document.getElementById('modalNotaTitle').textContent='Editar Nota';
+  document.getElementById('nota-tipo').value=n.tipo||'Evolución clínica';
+  document.getElementById('nota-texto').value=n.texto||'';
+  openModal('modalNota');
+};
+
+async function saveNota() {
+  const texto=document.getElementById('nota-texto').value.trim();
+  if(!texto){showToast('La nota no puede estar vacía','error');return;}
+  const data={
+    expId:PX_ID, paciente:PX_DATA?.nombre||'—',
+    tipo:document.getElementById('nota-tipo').value,
+    texto, fecha:todayISO(),
+    autor:SESSION.user.nombre||SESSION.user.email,
+  };
+  const btn=document.getElementById('btnSaveNota');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    if(editNotaId) await fsUpdate('notas-clinicas',editNotaId,data);
+    else await fsCreate('notas-clinicas',data);
+    showToast(editNotaId?'Nota actualizada':'Nota guardada','success');
+    closeModal('modalNota');
+    const notas=await fsGetAll('notas-clinicas',r=>r.where('expId','==',PX_ID));
+    renderNotas(notas);
+  }catch(e){showToast('Error: '+e.message,'error');}
+  btn.disabled=false;btn.textContent='💾 Guardar nota';
+}
+
+window.deleteNota = async function(id) {
+  if(!await confirmDialog('¿Eliminar esta nota clínica?')) return;
+  try{
+    await fsDelete('notas-clinicas',id);
+    showToast('Nota eliminada','success');
+    const notas=await fsGetAll('notas-clinicas',r=>r.where('expId','==',PX_ID));
+    renderNotas(notas);
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+</script>
+</body>
+</html>
