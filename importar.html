@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Importar Pacientes</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.import-layout{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+.step-indicator{display:flex;gap:0;margin-bottom:24px}
+.step-item{flex:1;text-align:center;position:relative}
+.step-item::after{content:'';position:absolute;top:16px;left:50%;width:100%;height:2px;background:var(--border);z-index:0}
+.step-item:last-child::after{display:none}
+.step-dot{width:32px;height:32px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--text-dim);margin:0 auto 6px;position:relative;z-index:1;transition:all .3s}
+.step-item.active .step-dot{background:var(--teal);border-color:var(--teal);color:#060D14}
+.step-item.done .step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.step-item.done::after{background:var(--green)}
+.step-label{font-size:.65rem;color:var(--text-dim);font-weight:600;letter-spacing:.05em}
+.step-item.active .step-label{color:var(--teal)}
+.step-item.done .step-label{color:var(--green)}
+.step-panel{display:none}.step-panel.active{display:block}
+/* DROPZONE */
+.dropzone{border:2px dashed var(--border);border-radius:var(--r-lg);padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.dropzone:hover,.dropzone.drag-over{border-color:var(--teal);background:var(--teal-dim)}
+.dropzone-icon{font-size:3rem;margin-bottom:12px;opacity:.6}
+.dropzone-title{font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:6px}
+.dropzone-sub{font-size:.78rem;color:var(--text-muted);margin-bottom:16px}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+/* TEMPLATE */
+.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.template-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;cursor:pointer;transition:all .15s;text-decoration:none;display:block}
+.template-btn:hover{border-color:var(--teal);background:var(--teal-dim);color:var(--teal)}
+.template-btn .t-icon{font-size:1.5rem;margin-bottom:6px}
+.template-btn .t-name{font-size:.78rem;font-weight:600;color:var(--text)}
+.template-btn .t-sub{font-size:.65rem;color:var(--text-muted)}
+/* MAPPER */
+.mapper-table{width:100%;border-collapse:collapse}
+.mapper-table th{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.mapper-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:.82rem;vertical-align:middle}
+.mapper-table td:first-child{color:var(--teal);font-family:var(--font-mono);font-size:.75rem}
+.mapper-table td .sample{font-size:.68rem;color:var(--text-dim);margin-top:2px}
+.mapper-select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--font-body);font-size:.78rem;outline:none;width:100%}
+.mapper-select:focus{border-color:var(--teal)}
+/* PREVIEW */
+.preview-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.prev-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.prev-val{font-family:var(--font-mono);font-size:1.1rem;font-weight:700;margin-bottom:3px}
+.prev-label{font-size:.65rem;color:var(--text-muted)}
+.preview-row-ok{background:rgba(52,211,153,.05)}
+.preview-row-warn{background:rgba(244,185,66,.05)}
+.preview-row-err{background:rgba(255,92,92,.05)}
+/* PROGRESS */
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:10px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:4px;transition:width .3s}
+.import-log{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;max-height:200px;overflow-y:auto;font-size:.72rem;font-family:var(--font-mono);color:var(--text-muted)}
+.log-ok{color:var(--green)}.log-warn{color:var(--gold)}.log-err{color:var(--red)}
+@media(max-width:900px){.import-layout{grid-template-columns:1fr}.preview-stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📥 Importar Pacientes</div>
+    <div class="topbar-actions">
+      <a href="pacientes.html" class="btn btn-ghost btn-sm">← Expedientes</a>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- STEPS -->
+    <div class="step-indicator">
+      <div class="step-item active" id="si-0"><div class="step-dot">1</div><div class="step-label">Subir archivo</div></div>
+      <div class="step-item" id="si-1"><div class="step-dot">2</div><div class="step-label">Mapear columnas</div></div>
+      <div class="step-item" id="si-2"><div class="step-dot">3</div><div class="step-label">Vista previa</div></div>
+      <div class="step-item" id="si-3"><div class="step-dot">4</div><div class="step-label">Importar</div></div>
+    </div>
+
+    <!-- STEP 0: SUBIR ARCHIVO -->
+    <div class="step-panel active" id="step0">
+      <div class="import-layout">
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div style="font-family:var(--font-display);font-size:1rem;font-style:italic;margin-bottom:14px">📋 Formatos aceptados</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:.8rem;color:var(--text-muted)">
+              <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✅</span> CSV (.csv) — separado por comas</div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✅</span> Excel (.xlsx) — hoja de cálculo</div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✅</span> Excel (.xls) — formato antiguo</div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--blue)">ℹ️</span> Máx. 5,000 pacientes por importación</div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-family:var(--font-display);font-size:1rem;font-style:italic;margin-bottom:10px">📄 Descargar plantilla</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:12px">Usa estas plantillas para asegurarte que el formato sea correcto</div>
+            <div class="template-grid">
+              <a class="template-btn" onclick="downloadTemplate('csv')">
+                <div class="t-icon">📄</div>
+                <div class="t-name">Plantilla CSV</div>
+                <div class="t-sub">Texto separado por comas</div>
+              </a>
+              <a class="template-btn" onclick="downloadTemplate('xlsx')">
+                <div class="t-icon">📊</div>
+                <div class="t-name">Plantilla Excel</div>
+                <div class="t-sub">Archivo .xlsx</div>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" onchange="handleFile(event)">
+            <div class="dropzone-icon">📂</div>
+            <div class="dropzone-title">Arrastra tu archivo aquí</div>
+            <div class="dropzone-sub">o haz clic para seleccionar desde tu computadora</div>
+            <button class="btn btn-primary" type="button" onclick="document.getElementById('fileInput').click()">Seleccionar archivo</button>
+          </div>
+          <div id="fileInfo" style="display:none" class="card" style="margin-top:14px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:1.5rem">📄</span>
+              <div style="flex:1">
+                <div id="fileName" style="font-weight:600;color:var(--text);font-size:.88rem"></div>
+                <div id="fileStats" style="font-size:.72rem;color:var(--text-muted);margin-top:2px"></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="resetImport()">✕ Cambiar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1: MAPEAR COLUMNAS -->
+    <div class="step-panel" id="step1">
+      <div class="card" style="margin-bottom:14px">
+        <div style="font-family:var(--font-display);font-size:1rem;font-style:italic;margin-bottom:6px">🗂️ Mapear columnas</div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:16px">Indica qué columna de tu archivo corresponde a cada campo del sistema</div>
+        <div class="table-wrap">
+          <table class="mapper-table">
+            <thead><tr><th>Campo del sistema</th><th>Columna de tu archivo</th><th>Ejemplo del archivo</th></tr></thead>
+            <tbody id="mapperBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="goStep(0)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goStep(2)">Vista previa →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: VISTA PREVIA -->
+    <div class="step-panel" id="step2">
+      <div class="preview-stats" id="previewStats"></div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:10px;display:flex;gap:16px">
+        <span><span style="display:inline-block;width:10px;height:10px;background:rgba(52,211,153,.3);border-radius:2px;margin-right:4px"></span>Listo para importar</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:rgba(244,185,66,.3);border-radius:2px;margin-right:4px"></span>Advertencia (se importará con datos incompletos)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:rgba(255,92,92,.3);border-radius:2px;margin-right:4px"></span>Error (no se importará)</span>
+      </div>
+      <div class="table-wrap" style="max-height:400px;overflow-y:auto">
+        <table>
+          <thead><tr id="previewHead"></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goStep(3)" id="btnImportar">✅ Importar <span id="importCount"></span> pacientes</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: IMPORTANDO -->
+    <div class="step-panel" id="step3">
+      <div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:32px">
+        <div id="importIcon" style="font-size:3rem;margin-bottom:16px">⏳</div>
+        <div id="importTitle" style="font-family:var(--font-display);font-size:1.3rem;font-style:italic;margin-bottom:8px">Importando pacientes...</div>
+        <div id="importSub" style="font-size:.8rem;color:var(--text-muted);margin-bottom:16px"></div>
+        <div class="progress-bar" id="progressBar" style="max-width:400px;margin:0 auto 16px">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div class="import-log" id="importLog"></div>
+        <div id="importActions" style="display:none;margin-top:20px;display:flex;gap:10px;justify-content:center">
+          <a href="pacientes.html" class="btn btn-primary">👤 Ver pacientes importados</a>
+          <button class="btn btn-ghost" onclick="resetImport()">📥 Nueva importación</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- SheetJS para leer Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'importar';
+let rawData = [], headers = [], currentStep = 0, columnMap = {}, existingPacientes = [];
+
+// Campos del sistema con metadata
+const SYSTEM_FIELDS = [
+  { key:'nombre',        label:'Nombre completo',    required:true,  hint:'Apellido Apellido Nombre' },
+  { key:'tel',           label:'Teléfono',            required:false, hint:'55 0000 0000' },
+  { key:'email',         label:'Correo electrónico',  required:false, hint:'correo@mail.com' },
+  { key:'fnac',          label:'Fecha de nacimiento', required:false, hint:'1990-05-15 o 15/05/1990' },
+  { key:'genero',        label:'Género',              required:false, hint:'Masculino / Femenino' },
+  { key:'alergias',      label:'Alergias',            required:false, hint:'Penicilina / Ninguna' },
+  { key:'padecimientos', label:'Padecimientos',       required:false, hint:'Diabetes / Ninguno' },
+  { key:'medicamentos',  label:'Medicamentos',        required:false, hint:'Metformina / Ninguno' },
+  { key:'sangre',        label:'Tipo de sangre',      required:false, hint:'O+, A-, B+...' },
+  { key:'direccion',     label:'Dirección',           required:false, hint:'Calle, colonia, ciudad' },
+  { key:'expediente',    label:'N° Expediente',       required:false, hint:'P-001 (se genera si no existe)' },
+  { key:'observaciones', label:'Observaciones',       required:false, hint:'Notas adicionales' },
+  { key:'_ignorar',      label:'— Ignorar esta columna —', required:false }
+];
+
+initSession('any').then(async session => {
+  if (!session) return;
+  // Cargar pacientes existentes para detectar duplicados
+  existingPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+
+  // Drag and drop
+  const dz = document.getElementById('dropzone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+});
+
+window.handleFile = function(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+};
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['csv','xlsx','xls'].includes(ext)) {
+    showToast('Formato no soportado. Usa CSV o Excel.', 'error'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      if (!json.length) { showToast('El archivo está vacío','error'); return; }
+      // Primera fila = encabezados
+      headers = (json[0] || []).map(h => String(h).trim());
+      rawData = json.slice(1).filter(row => row.some(cell => cell !== ''));
+      // Mostrar info del archivo
+      document.getElementById('dropzone').style.display = 'none';
+      const fi = document.getElementById('fileInfo');
+      fi.style.display = 'block';
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileStats').textContent = `${rawData.length} registros · ${headers.length} columnas`;
+      // Auto-mapear columnas
+      autoMap();
+      goStep(1);
+    } catch(err) {
+      showToast('Error al leer el archivo: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function autoMap() {
+  // Mapeo automático inteligente por nombre de columna
+  const normalize = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  const matchers = {
+    nombre:        ['nombre','paciente','apellido','name','nombrecompleto','apellidos'],
+    tel:           ['tel','telefono','celular','movil','phone','whatsapp','cel'],
+    email:         ['email','correo','mail','emailaddress'],
+    fnac:          ['fnac','fechanacimiento','nacimiento','fechadenadamiento','birthday','dob','nacimiento'],
+    genero:        ['genero','sexo','gender','sex'],
+    alergias:      ['alergias','alergia','allergy','allergies'],
+    padecimientos: ['padecimientos','padecimiento','enfermedad','enfermedades','antecedentes'],
+    medicamentos:  ['medicamentos','medicamento','medicine','medication'],
+    sangre:        ['sangre','tiposangre','bloodtype','grupo'],
+    direccion:     ['direccion','domicilio','address','calle'],
+    expediente:    ['expediente','exp','id','folio','numero','num'],
+    observaciones: ['observaciones','notas','notes','obs','comentarios'],
+  };
+  columnMap = {};
+  headers.forEach((h, i) => {
+    const hn = normalize(h);
+    for (const [field, aliases] of Object.entries(matchers)) {
+      if (aliases.some(a => hn.includes(a) || a.includes(hn))) {
+        if (!Object.values(columnMap).includes(i)) {
+          columnMap[field] = i;
+          break;
+        }
+      }
+    }
+  });
+}
+
+function renderMapper() {
+  const tbody = document.getElementById('mapperBody');
+  // Opciones de columnas del archivo
+  const colOptions = headers.map((h,i) => `<option value="${i}">${h}</option>`).join('');
+  tbody.innerHTML = SYSTEM_FIELDS.map(f => {
+    const mapped = columnMap[f.key];
+    const sample = mapped !== undefined && rawData[0] ? String(rawData[0][mapped] || '').slice(0,30) : '';
+    const isRequired = f.required ? '<span style="color:var(--red)">*</span>' : '';
+    return `<tr>
+      <td>
+        <div style="font-weight:600;color:var(--text)">${f.label} ${isRequired}</div>
+        <div class="sample">${f.hint}</div>
+      </td>
+      <td>
+        <select class="mapper-select" id="map-${f.key}" onchange="updateMap('${f.key}',this.value)">
+          <option value="">— No mapear —</option>
+          ${colOptions}
+        </select>
+      </td>
+      <td>
+        <div id="sample-${f.key}" style="font-size:.72rem;color:var(--text-muted);font-family:var(--font-mono)">${sample}</div>
+      </td>
+    </tr>`;
+  }).join('');
+  // Set valores actuales
+  SYSTEM_FIELDS.forEach(f => {
+    const sel = document.getElementById('map-'+f.key);
+    if (sel && columnMap[f.key] !== undefined) sel.value = columnMap[f.key];
+  });
+}
+
+window.updateMap = function(field, val) {
+  if (val === '') delete columnMap[field];
+  else columnMap[field] = parseInt(val);
+  // Actualizar sample
+  const idx = columnMap[field];
+  const sample = idx !== undefined && rawData[0] ? String(rawData[0][idx] || '').slice(0,30) : '';
+  const el = document.getElementById('sample-'+field);
+  if (el) el.textContent = sample;
+};
+
+function buildPreview() {
+  const rows = rawData.slice(0, 500); // preview de hasta 500
+  let ok=0, warn=0, err=0;
+  const existingNames = new Set(existingPacientes.map(p=>(p.nombre||'').toLowerCase().trim()));
+
+  const thead = document.getElementById('previewHead');
+  const tbody = document.getElementById('previewBody');
+
+  // Headers de preview
+  const mappedFields = SYSTEM_FIELDS.filter(f => f.key !== '_ignorar' && columnMap[f.key] !== undefined);
+  thead.innerHTML = '<th>#</th><th>Estado</th>' + mappedFields.map(f=>`<th>${f.label}</th>`).join('');
+
+  tbody.innerHTML = rows.map((row, i) => {
+    const nombre = columnMap.nombre !== undefined ? String(row[columnMap.nombre]||'').trim() : '';
+    let rowClass = 'preview-row-ok', statusBadge = '<span class="badge badge-green" style="font-size:.62rem">✅ OK</span>';
+
+    if (!nombre) {
+      rowClass = 'preview-row-err';
+      statusBadge = '<span class="badge badge-red" style="font-size:.62rem">❌ Sin nombre</span>';
+      err++;
+    } else if (existingNames.has(nombre.toLowerCase())) {
+      rowClass = 'preview-row-warn';
+      statusBadge = '<span class="badge badge-gold" style="font-size:.62rem">⚠️ Duplicado</span>';
+      warn++;
+    } else { ok++; }
+
+    const cells = mappedFields.map(f => {
+      const val = columnMap[f.key] !== undefined ? String(row[columnMap[f.key]]||'') : '';
+      return `<td style="font-size:.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${val}">${val||'—'}</td>`;
+    }).join('');
+    return `<tr class="${rowClass}"><td style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim)">${i+1}</td><td>${statusBadge}</td>${cells}</tr>`;
+  }).join('');
+
+  // Stats
+  document.getElementById('previewStats').innerHTML = [
+    {val:rawData.length, label:'📋 Total registros', color:'var(--blue)'},
+    {val:ok,             label:'✅ Listos',           color:'var(--green)'},
+    {val:warn,           label:'⚠️ Duplicados',        color:'var(--gold)'},
+    {val:err,            label:'❌ Con errores',        color:'var(--red)'},
+  ].map(s=>`<div class="prev-stat"><div class="prev-val" style="color:${s.color}">${s.val}</div><div class="prev-label">${s.label}</div></div>`).join('');
+
+  const importable = ok + warn;
+  document.getElementById('importCount').textContent = `(${importable})`;
+  document.getElementById('btnImportar').disabled = importable === 0;
+}
+
+async function runImport() {
+  const logEl = document.getElementById('importLog');
+  const progressFill = document.getElementById('progressFill');
+  logEl.innerHTML = '';
+  let imported=0, skipped=0, errors=0;
+  const total = rawData.length;
+  const existingNames = new Set(existingPacientes.map(p=>(p.nombre||'').toLowerCase().trim()));
+  const BATCH_SIZE = 10;
+
+  document.getElementById('importActions').style.display = 'none';
+  document.getElementById('importTitle').textContent = 'Importando pacientes...';
+  document.getElementById('importIcon').textContent = '⏳';
+
+  const addLog = (msg, type='ok') => {
+    const div = document.createElement('div');
+    div.className = `log-${type}`;
+    div.textContent = msg;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+
+  addLog(`Iniciando importación de ${total} registros...`);
+
+  // Obtener último número de expediente
+  let lastExpNum = existingPacientes.length;
+
+  for (let i=0; i<rawData.length; i++) {
+    const row = rawData[i];
+    const nombre = columnMap.nombre !== undefined ? String(row[columnMap.nombre]||'').trim().toUpperCase() : '';
+    if (!nombre) { skipped++; addLog(`Fila ${i+1}: Sin nombre — omitida`, 'warn'); continue; }
+
+    // Normalizar fecha
+    let fnac = '';
+    if (columnMap.fnac !== undefined) {
+      const rawDate = row[columnMap.fnac];
+      if (rawDate instanceof Date) fnac = rawDate.toISOString().slice(0,10);
+      else if (rawDate) {
+        const s = String(rawDate).trim();
+        if (s.match(/^\d{4}-\d{2}-\d{2}$/)) fnac = s;
+        else if (s.match(/^\d{2}\/\d{2}\/\d{4}$/)) fnac = s.split('/').reverse().join('-');
+        else if (s.match(/^\d{2}-\d{2}-\d{4}$/)) fnac = s.split('-').reverse().join('-');
+      }
+    }
+
+    const getField = (key) => columnMap[key] !== undefined ? String(row[columnMap[key]]||'').trim() : '';
+
+    lastExpNum++;
+    const data = {
+      nombre,
+      tel:           getField('tel').replace(/\s/g,''),
+      email:         getField('email').toLowerCase(),
+      fnac,
+      edad:          fnac ? Math.floor((new Date()-new Date(fnac))/31557600000) : null,
+      genero:        getField('genero') || 'Sin especificar',
+      alergias:      getField('alergias') || 'Ninguna',
+      padecimientos: getField('padecimientos') || 'Ninguno',
+      medicamentos:  getField('medicamentos') || 'Ninguno',
+      sangre:        getField('sangre') || '',
+      direccion:     getField('direccion') || '',
+      observaciones: getField('observaciones') || '',
+      expediente:    getField('expediente') || `P-${String(lastExpNum).padStart(3,'0')}`,
+      alta:          new Date().toLocaleDateString('es-MX'),
+      importado:     true,
+    };
+
+    try {
+      await fsCreate('pacientes', data);
+      imported++;
+      const isDup = existingNames.has(nombre.toLowerCase());
+      addLog(`✓ ${nombre}${isDup?' (duplicado)':''}`, isDup?'warn':'ok');
+    } catch(e) {
+      errors++;
+      addLog(`✗ ${nombre}: ${e.message}`, 'err');
+    }
+
+    // Actualizar progreso
+    const pct = Math.round(((i+1)/total)*100);
+    progressFill.style.width = pct+'%';
+    document.getElementById('importSub').textContent = `${i+1} de ${total} procesados...`;
+
+    // Pausa cada batch para no saturar Firestore
+    if ((i+1) % BATCH_SIZE === 0) await new Promise(r=>setTimeout(r,200));
+  }
+
+  // Resultado final
+  document.getElementById('importIcon').textContent = errors > imported ? '⚠️' : '🎉';
+  document.getElementById('importTitle').textContent = `Importación completada`;
+  document.getElementById('importSub').textContent = `${imported} importados · ${skipped} omitidos · ${errors} errores`;
+  progressFill.style.width = '100%';
+  addLog(`\n=== RESUMEN: ${imported} importados, ${skipped} omitidos, ${errors} errores ===`, imported > 0 ? 'ok' : 'warn');
+  document.getElementById('importActions').style.display = 'flex';
+  updateStepIndicator(3, true);
+}
+
+function goStep(n) {
+  if (n === 1) renderMapper();
+  if (n === 2) buildPreview();
+  if (n === 3) runImport();
+
+  document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  currentStep = n;
+  updateStepIndicator(n, false);
+}
+
+function updateStepIndicator(active, done) {
+  for (let i=0; i<4; i++) {
+    const el = document.getElementById('si-'+i);
+    el.classList.remove('active','done');
+    if (done && i<=active) el.classList.add('done');
+    else if (i === active) el.classList.add('active');
+    else if (i < active) el.classList.add('done');
+  }
+}
+
+window.resetImport = function() {
+  rawData=[]; headers=[]; columnMap={};
+  document.getElementById('dropzone').style.display='block';
+  document.getElementById('fileInfo').style.display='none';
+  document.getElementById('fileInput').value='';
+  document.getElementById('importLog').innerHTML='';
+  document.getElementById('progressFill').style.width='0%';
+  goStep(0);
+};
+
+window.downloadTemplate = function(type) {
+  const headers = ['Nombre','Teléfono','Email','Fecha Nacimiento','Género','Alergias','Padecimientos','Medicamentos','Tipo Sangre','Dirección','Expediente','Observaciones'];
+  const sample  = ['GARCIA LOPEZ MARIA','5512345678','maria@mail.com','1985-03-15','Femenino','Ninguna','Ninguno','Ninguno','O+','Calle 123 Col Centro','P-001','Paciente frecuente'];
+  if (type === 'csv') {
+    const csv = [headers.join(','), sample.join(',')].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+    a.download = 'plantilla_pacientes.csv';
+    a.click();
+  } else {
+    const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+    // Estilo de encabezados
+    headers.forEach((_,i) => {
+      const cell = ws[XLSX.utils.encode_cell({r:0,c:i})];
+      if (cell) cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'00C2A8'}} };
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Pacientes');
+    XLSX.writeFile(wb, 'plantilla_pacientes.xlsx');
+  }
+  showToast('Plantilla descargada','success');
+};
+</script>
+</body>
+</html>
