@@ -235,14 +235,22 @@ function editPaciente(id) {
 }
 
 async function savePaciente() {
-  const nombre = document.getElementById('f-nombre').value.trim();
+  const nombre = document.getElementById('f-nombre').value.trim().toUpperCase();
   if (!nombre) { showToast('El nombre es obligatorio','error'); return; }
+  // Detección de duplicados (normaliza a mayúsculas para comparar)
+  if (!editId) {
+    const dup = allPacientes.find(p => (p.nombre||'').toUpperCase().trim() === nombre);
+    if (dup) {
+      const continuar = await confirmDialog(`⚠️ Ya existe un paciente con el nombre "${dup.nombre}" (Expediente: ${dup.expediente||dup.id}).\n\n¿Deseas registrarlo de todas formas?`);
+      if (!continuar) return;
+    }
+  }
   const btn = document.getElementById('btnSavePx');
   btn.disabled = true; btn.textContent = 'Guardando...';
   const fnac = document.getElementById('f-fnac').value;
   const edad = fnac ? Math.floor((new Date()-new Date(fnac))/31557600000) : null;
   const data = {
-    nombre: nombre.toUpperCase(),
+    nombre,
     fnac, edad,
     genero: document.getElementById('f-genero').value,
     tel: document.getElementById('f-tel').value.trim(),
@@ -274,12 +282,40 @@ async function savePaciente() {
 }
 
 async function deletePaciente(id) {
-  if (!await confirmDialog('¿Eliminar este expediente? Esta acción no se puede deshacer.')) return;
+  const p = allPacientes.find(x=>x.id===id);
+  const nombre = p?.nombre || 'este paciente';
+  // Contar registros relacionados
+  const [trats, abonos, citas] = await Promise.all([
+    fsGetAll('tratamientos', r=>r.where('expId','==',id)),
+    fsGetAll('abonos', r=>r.where('expId','==',id)),
+    fsGetAll('citas', r=>r.where('expId','==',id)),
+  ]);
+  const msg = `¿Eliminar el expediente de ${nombre}?\n\nSe eliminarán también:\n• ${trats.length} tratamiento(s)\n• ${abonos.length} abono(s)\n• ${citas.length} cita(s)\n\nEsta acción NO se puede deshacer.`;
+  if (!await confirmDialog(msg)) return;
   try {
+    // Eliminar todos los registros relacionados
+    const deletes = [
+      ...trats.map(t => fsDelete('tratamientos', t.id)),
+      ...abonos.map(a => fsDelete('abonos', a.id)),
+      ...citas.map(c => fsDelete('citas', c.id)),
+    ];
+    await Promise.all(deletes);
+    // Eliminar RX y notas clínicas si existen
+    try {
+      const [rxList, notas] = await Promise.all([
+        fsGetAll('rx', r=>r.where('expId','==',id)),
+        fsGetAll('notas-clinicas', r=>r.where('expId','==',id)),
+      ]);
+      await Promise.all([
+        ...rxList.map(r=>fsDelete('rx',r.id)),
+        ...notas.map(n=>fsDelete('notas-clinicas',n.id)),
+      ]);
+    } catch(e) { /* rx/notas pueden no existir */ }
+    // Eliminar el expediente
     await fsDelete('pacientes', id);
-    showToast('Expediente eliminado','success');
+    showToast(`Expediente de ${nombre} eliminado correctamente`, 'success');
     await loadPacientes();
-  } catch(e) { showToast('Error: '+e.message,'error'); }
+  } catch(e) { showToast('Error al eliminar: '+e.message, 'error'); }
 }
 
 async function verPaciente(id) {

@@ -133,6 +133,7 @@ function renderSidebar() {
     ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}
     ${navItem('recordatorios','💬','Recordatorios WA','any')}
     ${navItem('importar','📥','Importar Pacientes','any')}
+    ${navItem('importar-datos','📊','Importar Catálogo/Inv/Ofertas','any')}
     ${navItem('busqueda','🔍','Búsqueda Global','any')}
   </nav>
   <div class="sidebar-footer">
