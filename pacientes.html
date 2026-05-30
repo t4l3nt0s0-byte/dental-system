@@ -204,6 +204,9 @@ function renderGrid() {
 
 function openNewModal() {
   editId = null;
+  // Limpiar búsqueda antes de abrir para que al cerrar muestre todos
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterGenero').value = '';
   document.getElementById('modalPxTitle').textContent = 'Nuevo Paciente';
   ['f-nombre','f-tel','f-email','f-dir','f-alergias','f-padecimientos','f-medicamentos','f-obs'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-fnac').value = '';
@@ -276,6 +279,9 @@ async function savePaciente() {
       showToast('Paciente registrado','success');
     }
     closeModal('modalPx');
+    // Limpiar búsqueda para mostrar todos los pacientes
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterGenero').value = '';
     await loadPacientes();
   } catch(e) { showToast('Error al guardar: '+e.message,'error'); }
   btn.disabled = false; btn.textContent = '💾 Guardar paciente';
@@ -314,6 +320,9 @@ async function deletePaciente(id) {
     // Eliminar el expediente
     await fsDelete('pacientes', id);
     showToast(`Expediente de ${nombre} eliminado correctamente`, 'success');
+    // Limpiar búsqueda y mostrar todos los pacientes
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterGenero').value = '';
     await loadPacientes();
   } catch(e) { showToast('Error al eliminar: '+e.message, 'error'); }
 }
