@@ -144,11 +144,34 @@ window.CURRENT_PAGE = 'importar-datos';
 
 // ── DEFINICIÓN DE TIPOS ───────────────────────────────────────────────
 const TIPOS = {
+  pacientes: {
+    icon:'👤', nombre:'Pacientes', desc:'Expedientes de pacientes con datos personales y médicos',
+    color:'var(--purple)', link:'pacientes.html',
+    fields:[
+      {key:'nombre',        label:'Nombre completo',       required:true,  hint:'GARCIA LOPEZ MARIA'},
+      {key:'tel',           label:'Teléfono',              required:false, hint:'5512345678'},
+      {key:'email',         label:'Correo electrónico',    required:false, hint:'correo@mail.com'},
+      {key:'fnac',          label:'Fecha de nacimiento',   required:false, hint:'1990-05-15'},
+      {key:'genero',        label:'Género',                required:false, hint:'Masculino / Femenino'},
+      {key:'alergias',      label:'Alergias',              required:false, hint:'Penicilina / Ninguna'},
+      {key:'padecimientos', label:'Padecimientos',         required:false, hint:'Diabetes / Ninguno'},
+      {key:'medicamentos',  label:'Medicamentos',          required:false, hint:'Metformina / Ninguno'},
+      {key:'sangre',        label:'Tipo de sangre',        required:false, hint:'O+, A-, B+...'},
+      {key:'direccion',     label:'Dirección',             required:false, hint:'Calle, colonia, ciudad'},
+      {key:'expediente',    label:'N° Expediente',         required:false, hint:'P-001 (auto si vacío)'},
+      {key:'observaciones', label:'Observaciones',         required:false, hint:'Notas adicionales'},
+    ],
+    template:[
+      ['Nombre','Teléfono','Email','Fecha Nacimiento','Género','Alergias','Padecimientos','Medicamentos','Tipo Sangre','Dirección','Expediente','Observaciones'],
+      ['GARCIA LOPEZ MARIA ELENA','5512345678','maria@mail.com','1985-03-15','Femenino','Ninguna','Ninguno','Ninguno','O+','Calle 123 Col Centro','P-001','Paciente frecuente'],
+      ['LOPEZ VEGA CARLOS ALBERTO','5598765432','carlos@mail.com','1990-07-22','Masculino','Penicilina','Hipertensión','Losartán','A+','Av Principal 456','P-002',''],
+    ]
+  },
   catalogo: {
     icon:'📚', nombre:'Catálogo & Precios', desc:'Tratamientos con precios mínimo, máximo y sugerido',
     color:'var(--teal)', link:'catalogo.html',
     fields:[
-      {key:'tratamiento', label:'Nombre del tratamiento', required:true, hint:'Endodoncia, Corona...'},
+      {key:'tratamiento', label:'Nombre del tratamiento', required:true,  hint:'Endodoncia, Corona...'},
       {key:'desc',        label:'Descripción',            required:false, hint:'Detalle del servicio'},
       {key:'min',         label:'Precio mínimo (MXN)',    required:false, hint:'7000'},
       {key:'max',         label:'Precio máximo (MXN)',    required:false, hint:'12000'},
@@ -258,32 +281,44 @@ function autoMap() {
   const tipo = TIPOS[selectedTipo];
   columnMap = {};
   const matchers = {
+    // pacientes
+    nombre:       ['nombre','paciente','apellido','name','nombrecompleto','apellidos','patient'],
+    tel:          ['tel','telefono','celular','movil','phone','whatsapp','cel','mobile'],
+    email:        ['email','correo','mail','emailaddress'],
+    fnac:         ['fnac','fechanacimiento','nacimiento','fechanac','birthday','dob','nacimiento','fecha'],
+    genero:       ['genero','sexo','gender','sex'],
+    alergias:     ['alergias','alergia','allergy','allergies'],
+    padecimientos:['padecimientos','padecimiento','enfermedad','enfermedades','antecedentes','condicion'],
+    medicamentos: ['medicamentos','medicamento','medicine','medication','farmacos'],
+    sangre:       ['sangre','tiposangre','bloodtype','grupo','gruposanguineo'],
+    direccion:    ['direccion','domicilio','address','calle','domicilio'],
+    expediente:   ['expediente','exp','id','folio','numero','num','expediente'],
+    observaciones:['observaciones','notas','notes','obs','comentarios','remarks'],
     // catalogo
-    tratamiento:['tratamiento','nombre','name','servicio','procedimiento'],
-    desc:['desc','descripcion','detalle','description'],
-    min:['min','minimo','preciomin','preciominimo','minimum'],
-    max:['max','maximo','preciomax','preciomaximo','maximum'],
-    sugerido:['sugerido','precio','preciosugerido','unitprice','costo','price'],
-    duracion:['duracion','tiempo','duration','time'],
-    iva:['iva','impuesto','tax'],
+    tratamiento:  ['tratamiento','servicio','procedimiento','treatment'],
+    desc:         ['desc','descripcion','detalle','description'],
+    min:          ['preciomin','preciominimo','minimum','minimo'],
+    max:          ['preciomax','preciomaximo','maximum','maximo'],
+    sugerido:     ['sugerido','preciosugerido','unitprice','price'],
+    duracion:     ['duracion','tiempo','duration','time'],
+    iva:          ['iva','impuesto','tax'],
     // inventario
-    nombre:['nombre','name','producto','articulo','item','material'],
-    categoria:['categoria','category','tipo','type'],
-    stock:['stock','cantidad','existencia','qty','quantity'],
-    minStock:['min','minimo','stockmin','minimostock','stockminimo','reorder'],
-    unidad:['unidad','unit','medida'],
-    costo:['costo','cost','preciocompra','costounitario','unitcost'],
-    precio:['precio','price','precioventa','sale'],
-    proveedor:['proveedor','supplier','vendor','distribuidor'],
-    caducidad:['caducidad','expira','vencimiento','expiry','expiration'],
-    ubicacion:['ubicacion','lugar','location','place'],
+    categoria:    ['categoria','category','tipo','type'],
+    stock:        ['stock','cantidad','existencia','qty','quantity'],
+    minStock:     ['stockmin','minimostock','stockminimo','reorder'],
+    unidad:       ['unidad','unit','medida'],
+    costo:        ['costo','cost','preciocompra','costounitario','unitcost'],
+    precio:       ['precioventa','sale','preciov'],
+    proveedor:    ['proveedor','supplier','vendor','distribuidor'],
+    caducidad:    ['caducidad','expira','vencimiento','expiry','expiration'],
+    ubicacion:    ['ubicacion','lugar','location','place'],
     // ofertas
-    descripcion:['descripcion','desc','detalle','description'],
-    original:['original','regular','normal','sin descuento','precio original'],
-    oferta:['oferta','descuento','promo','sale','precio oferta'],
-    vigencia:['vigencia','hasta','valid','expira','vence'],
-    icono:['icono','emoji','icon'],
-    aplica:['aplica','para','target'],
+    descripcion:  ['descripcion','detalle','description'],
+    original:     ['original','regular','preciooriginal'],
+    oferta:       ['oferta','descuento','promo','preciooferta'],
+    vigencia:     ['vigencia','hasta','valid','vence'],
+    icono:        ['icono','emoji','icon'],
+    aplica:       ['aplica','para','target'],
   };
   headers.forEach((h,i) => {
     const hn = norm(h);
@@ -348,12 +383,57 @@ async function runImport() {
     return String(val||'').trim();
   };
 
+  // Cargar pacientes existentes para detectar duplicados (solo si importamos pacientes)
+  let existingNames = new Set();
+  let lastExpNum = 0;
+  if (selectedTipo === 'pacientes') {
+    const existing = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+    existingNames = new Set(existing.map(p => (p.nombre||'').toUpperCase().trim()));
+    lastExpNum = existing.length;
+  }
+
   for (let i=0; i<rawData.length; i++) {
     const row = rawData[i];
     let data = {};
 
     try {
-      if (selectedTipo==='catalogo') {
+      if (selectedTipo === 'pacientes') {
+        const nombre = getField(row,'nombre').toUpperCase().trim();
+        if (!nombre) { addLog(`Fila ${i+1}: Sin nombre — omitida`,'warn'); err++; continue; }
+        // Detección de duplicados
+        if (existingNames.has(nombre)) {
+          addLog(`⚠️ Fila ${i+1}: ${nombre} — duplicado, se importa de todas formas`,'warn');
+        }
+        // Normalizar fecha
+        let fnac = '';
+        const rawDate = row[columnMap.fnac];
+        if (rawDate instanceof Date) fnac = rawDate.toISOString().slice(0,10);
+        else if (rawDate) {
+          const s = String(rawDate).trim();
+          if (s.match(/^\d{4}-\d{2}-\d{2}$/)) fnac = s;
+          else if (s.match(/^\d{2}\/\d{2}\/\d{4}$/)) fnac = s.split('/').reverse().join('-');
+          else if (s.match(/^\d{2}-\d{2}-\d{4}$/)) fnac = s.split('-').reverse().join('-');
+        }
+        lastExpNum++;
+        data = {
+          nombre,
+          tel:          getField(row,'tel').replace(/\s/g,''),
+          email:        getField(row,'email').toLowerCase(),
+          fnac,
+          edad:         fnac ? Math.floor((new Date()-new Date(fnac))/31557600000) : null,
+          genero:       getField(row,'genero') || 'Sin especificar',
+          alergias:     getField(row,'alergias') || 'Ninguna',
+          padecimientos:getField(row,'padecimientos') || 'Ninguno',
+          medicamentos: getField(row,'medicamentos') || 'Ninguno',
+          sangre:       getField(row,'sangre') || '',
+          direccion:    getField(row,'direccion') || '',
+          observaciones:getField(row,'observaciones') || '',
+          expediente:   getField(row,'expediente') || `P-${String(lastExpNum).padStart(3,'0')}`,
+          alta:         new Date().toLocaleDateString('es-MX'),
+          importado:    true,
+        };
+        existingNames.add(nombre); // agregar al set para detectar dupl dentro del mismo archivo
+      } else if (selectedTipo==='catalogo') {
         const tratamiento = getField(row,'tratamiento');
         if (!tratamiento) { addLog(`Fila ${i+1}: Sin nombre — omitida`,'warn'); err++; continue; }
         data = {
@@ -392,7 +472,7 @@ async function runImport() {
       }
       await fsCreate(selectedTipo, data);
       ok++;
-      addLog(`✓ ${data.tratamiento||data.nombre||'Registro '+(i+1)}`,'ok');
+      addLog(`✓ ${data.nombre||data.tratamiento||'Registro '+(i+1)}`,'ok');
     } catch(e) {
       err++;
       addLog(`✗ Fila ${i+1}: ${e.message}`,'err');

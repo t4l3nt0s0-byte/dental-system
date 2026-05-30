@@ -132,8 +132,7 @@ function renderSidebar() {
     ${navItem('recibo','🧾','Recibo de Pago','any')}
     ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}
     ${navItem('recordatorios','💬','Recordatorios WA','any')}
-    ${navItem('importar','📥','Importar Pacientes','any')}
-    ${navItem('importar-datos','📊','Importar Catálogo/Inv/Ofertas','any')}
+    ${navItem('importar-datos','📥','Importar desde Excel','any')}
     ${navItem('busqueda','🔍','Búsqueda Global','any')}
   </nav>
   <div class="sidebar-footer">
