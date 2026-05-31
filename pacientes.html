@@ -226,19 +226,13 @@ function renderGrid() {
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editPaciente('${p.id}')">✏️ Editar</button>
           ${p.tel ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();whatsapp('${p.tel}','Hola ${p.nombre?.split(' ')[0]||''}')">💬 WA</button>` : '<div style="flex:1"></div>'}
         </div>
-        <!-- 🗑️ ELIMINAR — DESACTIVADO TEMPORALMENTE
-             ════════════════════════════════════════
-             Para REACTIVAR el botón eliminar:
-             ARCHIVO: pacientes.html
-             BUSCA este bloque de comentario y
-             reemplázalo con la siguiente línea solo deja el siguiente codigo y eliminalo del comentario y funciona ya:
+        
 
              <div class="px-actions-row">
                <button class="btn btn-ghost btn-sm" style="color:var(--red);flex:1" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️ Eliminar</button>
              </div>
 
-             La función deletePaciente() está en la línea ~314
-             ════════════════════════════════════════ -->
+             
       </div>
     </div>`;
   }).join('');
