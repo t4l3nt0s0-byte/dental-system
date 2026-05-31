@@ -6,26 +6,50 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
+/* FILTROS */
 .filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
-.filters .search-wrap{flex:1;min-width:200px}
-.px-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.px-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:all .2s;cursor:pointer;position:relative;overflow:hidden}
+.filters .search-wrap{flex:1;min-width:180px}
+
+/* GRID DE PACIENTES */
+.px-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+
+/* TARJETA */
+.px-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:all .2s;cursor:pointer;position:relative;overflow:hidden}
 .px-card:hover{border-color:rgba(0,194,168,.3);transform:translateY(-2px)}
 .px-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));opacity:0;transition:opacity .2s}
 .px-card:hover::before{opacity:1}
-.px-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.px-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--teal-dim),var(--blue-dim));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:700;color:var(--teal);flex-shrink:0}
-.px-name{font-size:.92rem;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:2px}
-.px-exp{font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim)}
-.px-row{display:flex;gap:6px;font-size:.75rem;color:var(--text-muted);margin-bottom:5px;align-items:center}
+
+/* HEADER */
+.px-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.px-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal-dim),var(--blue-dim));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.88rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.px-name{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:2px}
+.px-exp{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim)}
+
+/* FILAS DE INFO */
+.px-row{display:flex;gap:6px;font-size:.73rem;color:var(--text-muted);margin-bottom:4px;align-items:center}
 .px-row span{color:var(--text)}
-.px-row .icon{font-size:.8rem;flex-shrink:0}
-.px-actions{display:flex;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.px-row .icon{font-size:.78rem;flex-shrink:0}
+
+/* ACCIONES — 2 filas limpias */
+.px-actions{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.px-actions-row{display:flex;gap:6px}
+.px-actions-row .btn{flex:1;justify-content:center;font-size:.72rem;padding:6px 8px}
+.px-actions-row .btn-icon-only{flex:0 0 34px;padding:6px;justify-content:center}
+
+/* BARRA LÍMITE */
 .limit-bar{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-size:.8rem;color:var(--text-muted)}
 .limit-progress{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
 .limit-fill{height:100%;border-radius:3px;transition:width .5s;background:var(--teal)}
 .limit-fill.warning{background:var(--gold)}
 .limit-fill.danger{background:var(--red)}
+
+/* MOBILE */
+@media(max-width:600px){
+  .px-grid{grid-template-columns:1fr}
+  .filters{flex-direction:column;align-items:stretch}
+  .filters .search-wrap{min-width:unset}
+  .topbar-actions .btn{font-size:.72rem;padding:7px 10px}
+}
 </style>
 </head>
 <body>
@@ -192,11 +216,29 @@ function renderGrid() {
       ${p.alergias&&p.alergias!=='Ninguna'?`<div class="px-row"><span class="icon">⚠️</span><span style="color:var(--gold)">${p.alergias}</span></div>`:''}
       ${p.padecimientos&&p.padecimientos!=='Ninguno'?`<div class="px-row"><span class="icon">🏥</span><span>${p.padecimientos}</span></div>`:''}
       <div class="px-actions">
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editPaciente('${p.id}')">✏️ Editar</button>
-        <a href="expediente.html?px=${p.id}" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">📋 Expediente</a>
-        <a href="tratamientos.html?exp=${p.id}" class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">🦷 Tratamientos</a>
-        ${p.tel ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();whatsapp('${p.tel}','Hola ${p.nombre?.split(' ')[0]||''}')">💬</button>` : ''}
-        <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️</button>
+        <!-- FILA 1: Acciones principales -->
+        <div class="px-actions-row">
+          <a href="expediente.html?px=${p.id}" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">📋 Expediente</a>
+          <a href="tratamientos.html?exp=${p.id}" class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">🦷 Trats.</a>
+        </div>
+        <!-- FILA 2: Editar + WhatsApp -->
+        <div class="px-actions-row">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editPaciente('${p.id}')">✏️ Editar</button>
+          ${p.tel ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();whatsapp('${p.tel}','Hola ${p.nombre?.split(' ')[0]||''}')">💬 WA</button>` : '<div style="flex:1"></div>'}
+        </div>
+        <!-- 🗑️ ELIMINAR — DESACTIVADO TEMPORALMENTE
+             ════════════════════════════════════════
+             Para REACTIVAR el botón eliminar:
+             ARCHIVO: pacientes.html
+             BUSCA este bloque de comentario y
+             reemplázalo con la siguiente línea:
+
+             <div class="px-actions-row">
+               <button class="btn btn-ghost btn-sm" style="color:var(--red);flex:1" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️ Eliminar</button>
+             </div>
+
+             La función deletePaciente() está en la línea ~314
+             ════════════════════════════════════════ -->
       </div>
     </div>`;
   }).join('');

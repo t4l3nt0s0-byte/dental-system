@@ -84,6 +84,8 @@ body::before {
   color: var(--text-muted); font-size: .82rem; font-weight: 500;
   text-decoration: none; transition: all .18s;
   border: 1px solid transparent; position: relative;
+  /* Área de toque mínima para móvil */
+  min-height: 40px;
 }
 .nav-item:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
 .nav-item.active {
@@ -98,6 +100,12 @@ body::before {
 }
 .nav-item.locked { opacity: .4; cursor: not-allowed; }
 .nav-item.locked::after { content: '🔒'; margin-left: auto; font-size: .7rem; }
+
+/* Nav más grande en móvil para facilitar toque */
+@media(max-width:900px) {
+  .nav-item { padding: 11px 13px; font-size: .86rem; min-height: 46px; }
+  .nav-section { padding: 16px 12px 6px; }
+}
 
 .sidebar-footer { padding: 14px 18px; border-top: 1px solid var(--border); }
 .clinic-name { font-weight: 600; color: var(--text); font-size: .88rem; margin-bottom: 2px; }
@@ -299,27 +307,120 @@ tbody tr { transition: all .15s; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
-/* ── RESPONSIVE ── */
+/* ── RESPONSIVE — MÓVIL COMPLETO ── */
+
+/* Tablet 900px */
 @media(max-width:900px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); }
+  /* Sidebar */
+  .sidebar { transform: translateX(-100%); transition: transform .3s ease; }
+  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.5); }
   .main { margin-left: 0; }
+
+  /* Layout */
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .form-grid { grid-template-columns: 1fr; }
-  .content { padding: 18px; }
-  .topbar { padding: 0 16px; }
+  .content { padding: 16px; }
+  .topbar { padding: 0 14px; height: 54px; }
+  .topbar-title { font-size: 1.1rem; }
+
+  /* Tables — scroll horizontal */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 500px; }
+
+  /* Modal */
+  .modal { margin: 10px; max-height: 95vh; }
+  .modal-lg { max-width: 100%; }
+  .modal-body { padding: 16px; }
+  .modal-header { padding: 14px 16px; }
+  .modal-footer { padding: 12px 16px; }
+
+  /* Grids de 2 columnas → 1 */
+  .grid-2, .grid-3, .metrics-grid { grid-template-columns: 1fr !important; }
+  .abono-summary, .inv-summary { grid-template-columns: 1fr 1fr; }
+
+  /* Topbar actions — menos espacio */
+  .topbar-actions { gap: 6px; }
+  .topbar-actions .btn { padding: 6px 10px; font-size: .74rem; }
+  .topbar-actions .btn span:not(:first-child) { display: none; }
+
+  /* Overlay para cerrar sidebar en móvil */
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 99;
+  }
+  .sidebar-overlay.open { display: block; }
 }
-@media(max-width:540px) {
+
+/* Móvil 600px */
+@media(max-width:600px) {
+  /* KPIs en 1 columna */
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Contenido con más espacio */
+  .content { padding: 12px; }
+
+  /* Topbar más compacto */
+  .topbar { height: 50px; padding: 0 12px; }
+  .topbar-title { font-size: 1rem; }
+
+  /* Botones del topbar — solo icono */
+  .topbar-actions .btn-text-hide { display: none; }
+  .topbar-actions .btn { padding: 6px 8px; min-width: 34px; }
+
+  /* Cards */
+  .card { padding: 14px; }
+
+  /* Filtros en columna */
+  .filters { flex-direction: column; }
+  .filters .search-wrap { min-width: unset; }
+  .filters .form-select { width: 100% !important; }
+
+  /* Preview de cotización ocultar en móvil */
+  .cot-layout { grid-template-columns: 1fr !important; }
+  .preview-wrap { display: none; }
+
+  /* Agenda layout */
+  .agenda-layout { grid-template-columns: 1fr !important; }
+
+  /* Expediente layout */
+  .exp-layout { grid-template-columns: 1fr !important; }
+  .exp-sidebar { position: static !important; }
+
+  /* Estado de cuenta */
+  .edo-layout { grid-template-columns: 1fr !important; }
+
+  /* Recibo layout */
+  .recibo-layout { grid-template-columns: 1fr !important; }
+  .recibo-wrap { position: static !important; }
+}
+
+/* Muy pequeño 400px */
+@media(max-width:400px) {
   .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-value { font-size: 1.3rem; }
+  .topbar-title { font-size: .9rem; }
+  .badge { font-size: .58rem; padding: 2px 6px; }
+  .btn-sm { padding: 4px 8px; font-size: .7rem; }
 }
 
 /* ── HAMBURGER ── */
 .hamburger {
-  display: none; background: none; border: 1px solid var(--border);
-  border-radius: 8px; padding: 6px 8px; cursor: pointer; color: var(--text-muted);
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 9px;
+  cursor: pointer;
+  color: var(--text-muted);
   font-size: 1.1rem;
+  transition: all .15s;
+  margin-right: 8px;
 }
-@media(max-width:900px) { .hamburger { display: flex; } }
+.hamburger:hover { background: var(--surface2); color: var(--text); }
+@media(max-width:900px) { .hamburger { display: flex; align-items: center; } }
+
 
 /* ── PLAN UPGRADE BANNER ── */
 .upgrade-banner {

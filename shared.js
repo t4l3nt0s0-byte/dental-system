@@ -145,16 +145,45 @@ function renderSidebar() {
   const sidebar = document.getElementById('sidebar');
   if (sidebar) sidebar.innerHTML = html;
 
-  // Mobile hamburger
+  // ── MÓVIL: Hamburger + Overlay ──────────────────────────
+  // Crear overlay si no existe
+  let overlay = document.getElementById('_sidebar_overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = '_sidebar_overlay';
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  const openSidebar  = () => { sidebar?.classList.add('open');    overlay.classList.add('open');    document.body.style.overflow='hidden'; };
+  const closeSidebar = () => { sidebar?.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow=''; };
+
   const ham = document.getElementById('hamburger');
   if (ham) {
-    ham.addEventListener('click', () => sidebar.classList.toggle('open'));
+    ham.addEventListener('click', () => {
+      if (sidebar?.classList.contains('open')) closeSidebar();
+      else openSidebar();
+    });
   }
-  // Close sidebar on nav click (mobile)
+
+  // Cerrar con clic en overlay
+  overlay.addEventListener('click', closeSidebar);
+
+  // Cerrar al navegar (móvil)
   document.querySelectorAll('.nav-item').forEach(a => {
     a.addEventListener('click', () => {
-      if (window.innerWidth <= 900) sidebar.classList.remove('open');
+      if (window.innerWidth <= 900) closeSidebar();
     });
+  });
+
+  // Cerrar con tecla Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sidebar?.classList.contains('open')) closeSidebar();
+  });
+
+  // Ajustar al rotar pantalla
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 900) closeSidebar();
   });
 }
 
