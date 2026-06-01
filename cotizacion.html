@@ -376,7 +376,7 @@ async function guardarCot() {
 function updateLogoPreview() {
   const el = document.getElementById('pvLogo');
   if (!el) return;
-  if (clinicaLogoBase64 && mostrarLogoCot) {
+  if (clinicaLogoBase64 && mostrarLogoCot && SESSION?.clinica?.logoOpcion !== 'default') {
     el.innerHTML = `<img src="${clinicaLogoBase64}" style="width:60px;height:60px;object-fit:contain;border-radius:8px;background:#fff;padding:4px;display:block;margin:0 auto 8px">`;
   } else {
     el.innerHTML = '🦷';

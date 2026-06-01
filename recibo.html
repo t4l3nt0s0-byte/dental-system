@@ -389,7 +389,8 @@ function fillFromAbonoId(id){
 function renderFiscalPreview(){
   // Logo — usa el guardado en Firestore si existe y el toggle está activo
   const mostrarLogo = document.getElementById('chkLogo')?.checked !== false;
-  const logoSrc = mostrarLogo ? (clinicaLogoBase64 || null) : null;
+  const cliData = SESSION?.clinica || {};
+  const logoSrc = mostrarLogo && cliData.logoOpcion !== 'default' ? (clinicaLogoBase64 || null) : null;
   const logoEl = document.getElementById('rv-logo');
   if (logoEl) {
     if (logoSrc) {

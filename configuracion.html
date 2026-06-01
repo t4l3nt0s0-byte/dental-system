@@ -108,34 +108,53 @@
         </div>
       </div>
 
-      <!-- CONTENIDO -->
-      <div>
-
-        <!-- IDENTIDAD -->
-        <div class="config-section active" id="sec-identidad">
+      <!-- CONTENIDO -->\n      <div>\n\n        <!-- IDENTIDAD -->\n        <div class="config-section active" id="sec-identidad">
           <div class="section-card">
             <div class="section-title">🏥 Nombre e imagen del consultorio</div>
             <div class="section-sub">Este nombre y logo aparecerán en cotizaciones, recibos y el encabezado del sistema.</div>
-            <!-- LOGO -->
-            <div style="font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Logo del consultorio</div>
-            <div class="logo-upload" id="logoDropzone">
-              <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(event)">
-              <div id="logoEmpty">
-                <div class="logo-empty-icon">🖼️</div>
-                <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:4px">Sube tu logo aquí</div>
-                <div class="logo-upload-hint">PNG, JPG o SVG · <strong>Máx. 2MB</strong> · Recomendado: fondo transparente</div>
+
+            <!-- LOGO SELECTOR -->
+            <div style="font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Logo del consultorio</div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px" id="logoSelector">
+
+              <!-- OPCIÓN A: Ícono predeterminado -->
+              <div class="logo-option" id="logoOptDefault" onclick="selectLogoOption('default')"
+                style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:var(--r-lg);padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative">
+                <div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#060D14" id="checkDefault">✓</div>
+                <div style="font-size:2.8rem;margin-bottom:8px">🦷</div>
+                <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:3px">Ícono predeterminado</div>
+                <div style="font-size:.68rem;color:var(--text-muted)">El ícono de muela de DentalOS</div>
               </div>
-              <div id="logoPreviewWrap" style="display:none">
-                <img id="logoPreviewImg" class="logo-preview" src="" alt="Logo">
-                <div style="font-size:.75rem;color:var(--text-muted)">Clic para cambiar el logo</div>
+
+              <!-- OPCIÓN B: Logo personalizado -->
+              <div class="logo-option" id="logoOptCustom" onclick="selectLogoOption('custom')"
+                style="border:2px solid var(--border);border-radius:var(--r-lg);padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative">
+                <div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--text-dim)" id="checkCustom">✓</div>
+                <div id="logoOptCustomPreview" style="font-size:2.5rem;margin-bottom:8px;height:48px;display:flex;align-items:center;justify-content:center">📁</div>
+                <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:3px">Mi logo</div>
+                <div style="font-size:.68rem;color:var(--text-muted)" id="logoOptCustomHint">Sube tu imagen PNG, JPG o SVG</div>
               </div>
             </div>
-            <div style="display:flex;gap:8px;margin-bottom:20px">
-              <button class="btn btn-ghost btn-sm" onclick="removeLogo()">✕ Quitar logo</button>
-              <div style="font-size:.72rem;color:var(--text-dim);margin-top:8px">Si no subes logo se usará el ícono 🦷</div>
+
+            <!-- ZONA DE CARGA (visible solo cuando se selecciona "custom") -->
+            <div id="logoUploadZone" style="display:none">
+              <div class="logo-upload" id="logoDropzone" style="margin-bottom:10px">
+                <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(event)">
+                <div id="logoEmpty">
+                  <div class="logo-empty-icon">🖼️</div>
+                  <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:4px">Arrastra tu logo aquí o haz clic</div>
+                  <div class="logo-upload-hint">PNG, JPG o SVG · <strong>Máx. 2MB</strong> · Recomendado: fondo transparente</div>
+                </div>
+                <div id="logoPreviewWrap" style="display:none">
+                  <img id="logoPreviewImg" class="logo-preview" src="" alt="Logo">
+                  <div style="font-size:.75rem;color:var(--text-muted)">Clic para cambiar el logo</div>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="removeLogo()" style="margin-bottom:16px">✕ Quitar logo personalizado</button>
             </div>
-            <!-- NOMBRE -->
-            <div class="form-group">
+
+            <!-- NOMBRE -->\n            <div class="form-group">
               <label class="form-label">Nombre del consultorio *</label>
               <input class="form-input" id="cf-nombre" placeholder="Hersantych Dental" oninput="markDirty()">
             </div>
@@ -379,9 +398,14 @@ initSession('any').then(async session => {
   // Identidad
   document.getElementById('cf-nombre').value   = data.nombre  || '';
   document.getElementById('cf-eslogan').value  = data.eslogan || '';
-  if (data.logoBase64) {
+
+  // Logo — determinar qué opción está activa al cargar
+  if (data.logoBase64 && data.logoOpcion !== 'default') {
     logoBase64 = data.logoBase64;
     showLogoPreview(data.logoBase64);
+    selectLogoOption('custom', false);
+  } else {
+    selectLogoOption('default', false);
   }
 
   // Tema
@@ -432,7 +456,46 @@ window.showSection = function(sec) {
   document.getElementById('nav-'+sec).classList.add('active');
 };
 
-// ── LOGO ─────────────────────────────────────────────────
+// ── LOGO SELECTOR ─────────────────────────────────────────
+let logoOpcionActiva = 'default'; // 'default' | 'custom'
+
+window.selectLogoOption = function(opcion, dirty = true) {
+  logoOpcionActiva = opcion;
+  const defCard   = document.getElementById('logoOptDefault');
+  const cusCard   = document.getElementById('logoOptCustom');
+  const checkDef  = document.getElementById('checkDefault');
+  const checkCus  = document.getElementById('checkCustom');
+  const uploadZone= document.getElementById('logoUploadZone');
+
+  if (opcion === 'default') {
+    // Activar tarjeta predeterminada
+    defCard.style.border   = '2px solid var(--teal)';
+    defCard.style.background = 'var(--teal-dim)';
+    checkDef.style.background = 'var(--teal)';
+    checkDef.style.color = '#060D14';
+    // Desactivar tarjeta custom
+    cusCard.style.border   = '2px solid var(--border)';
+    cusCard.style.background = 'transparent';
+    checkCus.style.background = 'var(--border)';
+    checkCus.style.color = 'var(--text-dim)';
+    uploadZone.style.display = 'none';
+  } else {
+    // Activar tarjeta custom
+    cusCard.style.border   = '2px solid var(--teal)';
+    cusCard.style.background = 'var(--teal-dim)';
+    checkCus.style.background = 'var(--teal)';
+    checkCus.style.color = '#060D14';
+    // Desactivar tarjeta default
+    defCard.style.border   = '2px solid var(--border)';
+    defCard.style.background = 'transparent';
+    checkDef.style.background = 'var(--border)';
+    checkDef.style.color = 'var(--text-dim)';
+    uploadZone.style.display = 'block';
+  }
+
+  if (dirty) { markDirty(); renderPreview(); }
+};
+
 window.handleLogo = function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -451,6 +514,11 @@ function showLogoPreview(src) {
   document.getElementById('logoEmpty').style.display = 'none';
   document.getElementById('logoPreviewWrap').style.display = 'block';
   document.getElementById('logoPreviewImg').src = src;
+  // Actualizar mini preview en la tarjeta de opción custom
+  const prevEl = document.getElementById('logoOptCustomPreview');
+  if (prevEl) prevEl.innerHTML = `<img src="${src}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#fff;padding:3px">`;
+  const hintEl = document.getElementById('logoOptCustomHint');
+  if (hintEl) hintEl.textContent = 'Logo cargado ✓';
 }
 
 window.removeLogo = function() {
@@ -458,8 +526,11 @@ window.removeLogo = function() {
   document.getElementById('logoEmpty').style.display = 'block';
   document.getElementById('logoPreviewWrap').style.display = 'none';
   document.getElementById('logoInput').value = '';
-  markDirty();
-  renderPreview();
+  const prevEl = document.getElementById('logoOptCustomPreview');
+  if (prevEl) prevEl.innerHTML = '📁';
+  const hintEl = document.getElementById('logoOptCustomHint');
+  if (hintEl) hintEl.textContent = 'Sube tu imagen PNG, JPG o SVG';
+  selectLogoOption('default');
 };
 
 // ── TEMA ─────────────────────────────────────────────────
@@ -497,7 +568,7 @@ function renderPreview() {
   const txtDim = isDark ? 'rgba(232,240,248,.3)' : '#9ca3af';
   const accent = selectedColor;
   const nombre = document.getElementById('cf-nombre')?.value || 'Mi Consultorio';
-  const logoSrc = logoBase64;
+  const logoSrc = (logoOpcionActiva === 'custom' && logoBase64) ? logoBase64 : null;
 
   document.getElementById('previewMini').innerHTML = `
     <div class="preview-mini-sidebar" style="background:${sbBg};border-right:1px solid rgba(128,128,128,.1)">
@@ -552,10 +623,14 @@ window.guardarConfig = async function() {
       fiscal, config: configData,
       actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     };
-    // Logo — solo si cambió (base64 puede ser pesado)
-    if (logoBase64 !== null) updates.logoBase64 = logoBase64;
-    else if (logoBase64 === null && !clinicaData?.logoBase64) {
+    // Logo — guardar opción seleccionada
+    updates.logoOpcion = logoOpcionActiva;
+    if (logoOpcionActiva === 'default') {
+      // Usar ícono predeterminado — no guardar base64 personalizado
       updates.logoBase64 = null;
+    } else if (logoBase64 !== null) {
+      // Guardar el logo personalizado
+      updates.logoBase64 = logoBase64;
     }
 
     await db.collection('clinicas').doc(SESSION.clinica.id).update(updates);
