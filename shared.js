@@ -236,6 +236,7 @@ function renderSidebar() {
     ${navItem('busqueda','🔍','Búsqueda Global','any')}
     ${navItem('planes','💎','Planes & Precios','any')}
     ${navItem('configuracion','⚙️','Configuración','any')}
+    ${navItem('legal','📋','Documentos Legales','any')}
   </nav>
   <div class="sidebar-footer">
     <div class="clinic-name">${clinica.nombre || 'Consultorio'}</div>

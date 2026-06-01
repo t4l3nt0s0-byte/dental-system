@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Documentos Legales</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.legal-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
+.legal-nav{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;position:sticky;top:80px}
+.legal-nav-item{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:.82rem;font-weight:500;color:var(--text-muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+.legal-nav-item:hover{background:var(--surface2);color:var(--text)}
+.legal-nav-item.active{background:var(--teal-dim);color:var(--teal);border-left-color:var(--teal)}
+.legal-section{display:none}.legal-section.active{display:block}
+/* DOC */
+.doc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:32px;margin-bottom:16px}
+.doc-header{margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.doc-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic;color:var(--text);margin-bottom:6px}
+.doc-meta{font-size:.72rem;color:var(--text-dim);display:flex;gap:16px;flex-wrap:wrap}
+.doc-meta span{display:flex;align-items:center;gap:4px}
+.doc-body{font-size:.85rem;color:var(--text-muted);line-height:1.8}
+.doc-body h3{font-size:.92rem;font-weight:700;color:var(--text);margin:20px 0 8px;padding-left:10px;border-left:3px solid var(--teal)}
+.doc-body h4{font-size:.82rem;font-weight:700;color:var(--text);margin:14px 0 6px}
+.doc-body p{margin-bottom:10px}
+.doc-body ul,.doc-body ol{margin:8px 0 12px 20px}
+.doc-body li{margin-bottom:5px}
+.doc-body .highlight{background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);border-radius:8px;padding:12px 16px;margin:14px 0;font-size:.82rem;color:var(--teal)}
+.doc-body .warning{background:rgba(244,185,66,.08);border:1px solid rgba(244,185,66,.2);border-radius:8px;padding:12px 16px;margin:14px 0;font-size:.82rem;color:var(--gold)}
+.doc-body .info{background:rgba(74,158,255,.08);border:1px solid rgba(74,158,255,.2);border-radius:8px;padding:12px 16px;margin:14px 0;font-size:.82rem;color:var(--blue)}
+/* ESTRELLAS */
+.stars-wrap{display:flex;gap:8px;justify-content:center;margin:20px 0}
+.star{font-size:2.5rem;cursor:pointer;transition:all .15s;opacity:.35;filter:grayscale(1)}
+.star:hover,.star.active{opacity:1;filter:grayscale(0);transform:scale(1.15)}
+.rating-labels{display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-dim);margin:-10px 0 16px}
+.rating-submitted{text-align:center;padding:24px;display:none}
+/* CONTACTO */
+.contact-form .form-group{margin-bottom:14px}
+/* SUSCRIPCION INFO */
+.sub-table{width:100%;border-collapse:collapse;margin:12px 0}
+.sub-table th{background:var(--surface2);padding:10px 14px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);text-align:left;border-bottom:1px solid var(--border)}
+.sub-table td{padding:10px 14px;font-size:.82rem;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.sub-table td:first-child{font-weight:600;color:var(--text)}
+@media(max-width:900px){.legal-layout{grid-template-columns:1fr}.legal-nav{position:static;display:flex;overflow-x:auto;border-radius:var(--r)}.legal-nav-item{flex-shrink:0;border-left:none;border-bottom:3px solid transparent}.legal-nav-item.active{border-left:none;border-bottom-color:var(--teal)}.doc-card{padding:20px}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📋 Documentos Legales</div>
+    <div class="topbar-actions">
+      <a href="configuracion.html" class="btn btn-ghost btn-sm">← Configuración</a>
+    </div>
+  </div>
+  <div class="content">
+    <div class="legal-layout">
+
+      <!-- NAV -->
+      <div class="legal-nav">
+        <div class="legal-nav-item active" onclick="showLegal('privacidad')" id="lnav-privacidad"><span>🔒</span> Política de Privacidad</div>
+        <div class="legal-nav-item" onclick="showLegal('terminos')" id="lnav-terminos"><span>📜</span> Términos y Condiciones</div>
+        <div class="legal-nav-item" onclick="showLegal('aviso')" id="lnav-aviso"><span>📄</span> Aviso de Privacidad</div>
+        <div class="legal-nav-item" onclick="showLegal('reembolso')" id="lnav-reembolso"><span>💳</span> Política de Reembolso</div>
+        <div class="legal-nav-item" onclick="showLegal('cancelacion')" id="lnav-cancelacion"><span>🚫</span> Cancelación de Suscripción</div>
+        <div class="legal-nav-item" onclick="showLegal('gestion')" id="lnav-gestion"><span>⚙️</span> Gestión de Suscripción</div>
+        <div class="legal-nav-item" onclick="showLegal('datos')" id="lnav-datos"><span>🗄️</span> Acuerdo de Datos</div>
+        <div class="legal-nav-item" onclick="showLegal('calificanos')" id="lnav-calificanos"><span>⭐</span> Calificanos</div>
+        <div class="legal-nav-item" onclick="showLegal('contacto')" id="lnav-contacto"><span>💬</span> Contáctanos</div>
+      </div>
+
+      <!-- CONTENIDO -->
+      <div>
+
+        <!-- POLÍTICA DE PRIVACIDAD -->
+        <div class="legal-section active" id="sec-privacidad">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">🔒 Política de Privacidad</div>
+              <div class="doc-meta">
+                <span>📅 Última actualización: junio 2026</span>
+                <span>🌐 Aplica para: México</span>
+                <span>⚖️ Ley LFPDPPP</span>
+              </div>
+            </div>
+            <div class="doc-body">
+              <div class="highlight">Esta política describe cómo Hersantych ("nosotros", "nuestro") recopila, usa y protege la información de los usuarios de DentalOS.</div>
+
+              <h3>1. Responsable del tratamiento de datos</h3>
+              <p>Hersantych, operando bajo el nombre comercial <strong>DentalOS</strong>, es responsable del tratamiento de sus datos personales en términos de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.</p>
+              <p>Contacto del responsable: disponible a través del formulario en la sección "Contáctanos" de esta plataforma.</p>
+
+              <h3>2. Datos personales que recopilamos</h3>
+              <p>Para la prestación del servicio DentalOS recopilamos:</p>
+              <ul>
+                <li><strong>Datos de identificación:</strong> nombre, correo electrónico, teléfono del suscriptor.</li>
+                <li><strong>Datos de facturación:</strong> RFC, razón social, régimen fiscal (cuando aplique).</li>
+                <li><strong>Datos de uso:</strong> páginas visitadas, funciones utilizadas, horarios de acceso.</li>
+                <li><strong>Datos de terceros (pacientes):</strong> el suscriptor ingresa datos de sus pacientes como nombre, teléfono, historial dental. Estos datos son responsabilidad del suscriptor como encargado directo.</li>
+              </ul>
+
+              <h3>3. Finalidades del tratamiento</h3>
+              <ul>
+                <li>Prestación y mejora del servicio DentalOS.</li>
+                <li>Gestión de cuenta y autenticación.</li>
+                <li>Facturación y cobro de suscripciones.</li>
+                <li>Soporte técnico y atención al cliente.</li>
+                <li>Comunicaciones sobre actualizaciones, mantenimiento y nuevas funciones.</li>
+                <li>Cumplimiento de obligaciones legales.</li>
+              </ul>
+
+              <h3>4. Transferencia de datos</h3>
+              <p>Sus datos se almacenan en los servidores de <strong>Google Firebase</strong> (Google LLC), sujeto a los Términos de Servicio de Google Cloud y al acuerdo de procesamiento de datos de Google. No vendemos ni compartimos sus datos con terceros con fines comerciales.</p>
+              <div class="info">Google Firebase cumple con GDPR, CCPA y estándares internacionales de seguridad (ISO 27001, SOC 2/3).</div>
+
+              <h3>5. Seguridad</h3>
+              <p>Implementamos medidas técnicas y organizativas para proteger sus datos, incluyendo: autenticación segura, cifrado en tránsito (TLS), reglas de acceso por rol y respaldos automáticos en la nube. Sin embargo, ningún sistema es 100% infalible.</p>
+
+              <h3>6. Derechos ARCO</h3>
+              <p>En términos de la LFPDPPP, usted tiene derechos de <strong>Acceso, Rectificación, Cancelación y Oposición (ARCO)</strong> sobre sus datos personales. Para ejercerlos, contáctenos a través del formulario en la sección "Contáctanos".</p>
+
+              <h3>7. Cookies y tecnologías de seguimiento</h3>
+              <p>DentalOS utiliza almacenamiento local (localStorage) del navegador para guardar preferencias de sesión y tema visual. No utilizamos cookies de rastreo publicitario.</p>
+
+              <h3>8. Retención de datos</h3>
+              <p>Sus datos se conservan mientras su suscripción esté activa. Tras la cancelación, los datos se mantienen 30 días adicionales para facilitar posibles reactivaciones, tras lo cual se eliminan de forma permanente, salvo obligación legal de conservarlos.</p>
+
+              <h3>9. Modificaciones a esta política</h3>
+              <p>Nos reservamos el derecho de modificar esta política. Los cambios serán notificados a través de la plataforma con al menos 15 días de anticipación.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TÉRMINOS Y CONDICIONES -->
+        <div class="legal-section" id="sec-terminos">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">📜 Términos y Condiciones de Uso</div>
+              <div class="doc-meta"><span>📅 Vigente desde: junio 2026</span><span>⚖️ Jurisdicción: México</span></div>
+            </div>
+            <div class="doc-body">
+              <div class="highlight">Al crear una cuenta en DentalOS, usted acepta estos Términos y Condiciones de forma íntegra y sin reservas.</div>
+
+              <h3>1. Descripción del servicio</h3>
+              <p><strong>DentalOS</strong> es un sistema de administración para consultorios dentales, ofrecido como Software como Servicio (SaaS) por <strong>Hersantych</strong>, operado en México. El servicio incluye módulos de gestión de pacientes, agenda, tratamientos, facturación, inventario y reportes.</p>
+
+              <h3>2. Elegibilidad</h3>
+              <p>El servicio está dirigido a profesionales de la salud dental y personal administrativo de consultorios en México. Al registrarse, declara tener capacidad legal para celebrar contratos y que el uso del sistema cumple con la normativa aplicable a su práctica profesional.</p>
+
+              <h3>3. Cuenta de usuario</h3>
+              <ul>
+                <li>Usted es responsable de mantener la confidencialidad de sus credenciales.</li>
+                <li>Cada suscripción corresponde a un consultorio o unidad de negocio independiente.</li>
+                <li>Está prohibida la cesión, reventa o transferencia de la cuenta a terceros.</li>
+                <li>Hersantych se reserva el derecho de suspender cuentas que violen estos términos.</li>
+              </ul>
+
+              <h3>4. Uso aceptable</h3>
+              <p>Queda estrictamente prohibido:</p>
+              <ul>
+                <li>Usar DentalOS para actividades ilegales o que violen derechos de terceros.</li>
+                <li>Intentar acceder a datos de otros consultorios o realizar ingeniería inversa.</li>
+                <li>Cargar contenido malicioso, virus o código dañino.</li>
+                <li>Usar el sistema para fines distintos a la administración dental.</li>
+              </ul>
+
+              <h3>5. Propiedad intelectual</h3>
+              <p>El software DentalOS, su diseño, código fuente, marca y documentación son propiedad exclusiva de Hersantych. Se otorga una licencia de uso limitada, no exclusiva e intransferible para acceder y usar el servicio durante la vigencia de la suscripción.</p>
+              <p>Los datos ingresados por el suscriptor (pacientes, tratamientos, etc.) son y permanecen propiedad del suscriptor.</p>
+
+              <h3>6. Disponibilidad del servicio</h3>
+              <p>Hersantych se esfuerza por mantener una disponibilidad del 99% mensual. Sin embargo, no garantiza disponibilidad ininterrumpida. Mantenimientos programados se anunciarán con anticipación. No somos responsables por interrupciones causadas por terceros (Firebase, GitHub, proveedores de internet).</p>
+
+              <h3>7. Limitación de responsabilidad</h3>
+              <div class="warning">Hersantych no será responsable por pérdidas de datos derivadas de uso incorrecto, por decisiones médicas tomadas con base en la información del sistema, ni por daños indirectos o consecuentes. La responsabilidad máxima de Hersantych se limita al monto pagado por el suscriptor en los últimos 3 meses.</div>
+
+              <h3>8. Ley aplicable</h3>
+              <p>Estos términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia se someterá a la jurisdicción de los tribunales competentes de la Ciudad de México.</p>
+
+              <h3>9. Modificaciones</h3>
+              <p>Hersantych puede modificar estos términos con previo aviso de 15 días. El uso continuado del servicio tras la notificación implica aceptación de los cambios.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AVISO DE PRIVACIDAD INTEGRAL -->
+        <div class="legal-section" id="sec-aviso">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">📄 Aviso de Privacidad Integral</div>
+              <div class="doc-meta"><span>📅 Junio 2026</span><span>⚖️ LFPDPPP — Art. 15 y 16</span></div>
+            </div>
+            <div class="doc-body">
+              <div class="highlight">Conforme a lo dispuesto por la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), ponemos a su disposición el presente Aviso de Privacidad Integral.</div>
+
+              <h3>Identidad y domicilio del responsable</h3>
+              <p><strong>Responsable:</strong> Hersantych (persona física, nombre comercial DentalOS)<br>
+              <strong>Contacto:</strong> A través del formulario de contacto disponible en la plataforma DentalOS.<br>
+              <strong>Actividad:</strong> Desarrollo y operación de software SaaS para administración de consultorios dentales.</p>
+
+              <h3>Datos personales recabados</h3>
+              <p><strong>De suscriptores (responsables del consultorio):</strong></p>
+              <ul>
+                <li>Nombre completo, correo electrónico, contraseña (cifrada).</li>
+                <li>Datos del consultorio: nombre, dirección, teléfono, RFC.</li>
+                <li>Datos de pago (procesados por Stripe; no almacenamos datos de tarjeta).</li>
+              </ul>
+              <p><strong>De pacientes del consultorio (ingresados por el suscriptor):</strong></p>
+              <ul>
+                <li>Datos de identificación: nombre, fecha de nacimiento, sexo, teléfono.</li>
+                <li>Datos de salud: diagnósticos, tratamientos, historial dental, alergias, padecimientos.</li>
+              </ul>
+              <div class="warning">Los datos de salud de pacientes son considerados <strong>datos sensibles</strong> conforme al Art. 9 de la LFPDPPP y requieren consentimiento expreso. El suscriptor es responsable de obtener dicho consentimiento de sus pacientes.</div>
+
+              <h3>Finalidades del tratamiento</h3>
+              <p><strong>Finalidades primarias (necesarias):</strong></p>
+              <ul>
+                <li>Proveer el servicio de administración dental contratado.</li>
+                <li>Autenticación y control de acceso.</li>
+                <li>Soporte técnico.</li>
+              </ul>
+              <p><strong>Finalidades secundarias (opcionales):</strong></p>
+              <ul>
+                <li>Envío de novedades y actualizaciones del sistema.</li>
+                <li>Análisis estadístico agregado y anónimo para mejorar el servicio.</li>
+              </ul>
+
+              <h3>Transferencias de datos</h3>
+              <p>Sus datos son almacenados en Google Firebase (Google LLC, EE.UU.), bajo acuerdo de procesamiento de datos conforme al marco legal aplicable. No realizamos transferencias comerciales a terceros.</p>
+
+              <h3>Derechos ARCO y revocación del consentimiento</h3>
+              <p>Usted puede ejercer sus derechos de Acceso, Rectificación, Cancelación y Oposición (ARCO), así como revocar su consentimiento, enviando su solicitud a través del formulario de contacto de la plataforma. Atenderemos su solicitud en un plazo máximo de <strong>20 días hábiles</strong>.</p>
+
+              <h3>Uso de tecnologías de rastreo</h3>
+              <p>DentalOS utiliza exclusivamente almacenamiento local del navegador (localStorage) para preferencias de sesión. No se emplean cookies de rastreo publicitario ni se comparte información con redes de publicidad.</p>
+
+              <h3>Modificaciones al aviso</h3>
+              <p>Cualquier modificación a este aviso se notificará a través de la plataforma DentalOS con al menos 15 días de anticipación a su entrada en vigor.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- POLÍTICA DE REEMBOLSO -->
+        <div class="legal-section" id="sec-reembolso">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">💳 Política de Reembolso</div>
+              <div class="doc-meta"><span>📅 Vigente: junio 2026</span></div>
+            </div>
+            <div class="doc-body">
+              <div class="warning">⚠️ Hersantych tiene una política de <strong>NO REEMBOLSO</strong> sobre los pagos realizados por concepto de suscripción a DentalOS.</div>
+
+              <h3>1. Política general</h3>
+              <p>Todos los pagos realizados por suscripciones a DentalOS (planes Básico, Profesional o Premium) son <strong>definitivos y no reembolsables</strong>, independientemente del período de uso efectivo dentro del ciclo de facturación.</p>
+
+              <h3>2. Justificación</h3>
+              <p>Esta política se fundamenta en que:</p>
+              <ul>
+                <li>DentalOS ofrece un <strong>período de prueba gratuito de 7 días</strong> para que el usuario evalúe el servicio antes de contratar.</li>
+                <li>El servicio se activa inmediatamente al realizarse el pago, incurriendo en costos de infraestructura desde ese momento.</li>
+                <li>El usuario tiene acceso completo a las funciones contratadas desde el primer día del ciclo.</li>
+              </ul>
+
+              <h3>3. Excepciones</h3>
+              <p>Se considerarán reembolsos únicamente en los siguientes casos extraordinarios:</p>
+              <ul>
+                <li>Cobro duplicado por error técnico comprobable.</li>
+                <li>Pago realizado después de la cancelación confirmada de la suscripción.</li>
+                <li>Indisponibilidad del servicio mayor a 72 horas continuas atribuible exclusivamente a Hersantych.</li>
+              </ul>
+              <p>En estos casos, el usuario debe presentar su solicitud dentro de los <strong>5 días hábiles</strong> siguientes al cargo, mediante el formulario de contacto.</p>
+
+              <h3>4. Cancelación sin reembolso</h3>
+              <p>Si cancela su suscripción antes del término del período pagado, conservará acceso al servicio hasta la fecha de vencimiento del ciclo. <strong>No se realizará reembolso proporcional por los días no utilizados.</strong></p>
+
+              <h3>5. Contacto</h3>
+              <p>Para disputas de cargo o solicitudes de excepción, contacte a través del formulario disponible en la sección "Contáctanos" de esta plataforma.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- POLÍTICA DE CANCELACIÓN -->
+        <div class="legal-section" id="sec-cancelacion">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">🚫 Política de Cancelación de Suscripción</div>
+              <div class="doc-meta"><span>📅 Vigente: junio 2026</span></div>
+            </div>
+            <div class="doc-body">
+              <div class="highlight">✅ El cliente puede cancelar su suscripción en cualquier momento, sin penalizaciones ni cargos adicionales.</div>
+
+              <h3>1. Derecho de cancelación</h3>
+              <p>Cualquier suscriptor de DentalOS tiene derecho a cancelar su suscripción en cualquier momento, sin necesidad de justificación y sin incurrir en penalizaciones, cargos por cancelación anticipada ni períodos de permanencia obligatoria.</p>
+
+              <h3>2. Proceso de cancelación</h3>
+              <p>Para cancelar su suscripción:</p>
+              <ol>
+                <li>Ingrese a DentalOS con su cuenta de administrador.</li>
+                <li>Vaya a <strong>Configuración → Mi cuenta → Plan & Suscripción</strong>.</li>
+                <li>Haga clic en "Ver planes y precios".</li>
+                <li>Contacte a Hersantych a través del formulario o WhatsApp indicando su intención de cancelar.</li>
+                <li>Recibirá confirmación de cancelación en un plazo máximo de <strong>24 horas hábiles</strong>.</li>
+              </ol>
+
+              <h3>3. Efectos de la cancelación</h3>
+              <ul>
+                <li>El acceso al servicio se mantiene activo hasta el último día del período ya pagado.</li>
+                <li>No se realizarán cobros adicionales tras la cancelación confirmada.</li>
+                <li>Los datos del consultorio (pacientes, tratamientos, etc.) estarán disponibles para exportación durante <strong>30 días</strong> posteriores a la cancelación.</li>
+                <li>Transcurridos los 30 días, los datos se eliminarán de forma permanente de nuestros servidores.</li>
+              </ul>
+
+              <h3>4. Reactivación</h3>
+              <p>Si desea reactivar su suscripción después de cancelar, puede hacerlo en cualquier momento. Si la reactivación ocurre dentro de los 30 días posteriores a la cancelación, sus datos estarán disponibles. Después de ese período, la cuenta iniciará desde cero.</p>
+
+              <h3>5. Cancelación por incumplimiento</h3>
+              <p>Hersantych se reserva el derecho de cancelar suscripciones de forma inmediata y sin previo aviso en caso de violación comprobada de los Términos y Condiciones, uso fraudulento o actividades ilegales.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- GESTIÓN DE SUSCRIPCIÓN -->
+        <div class="legal-section" id="sec-gestion">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">⚙️ Gestión de Suscripción</div>
+              <div class="doc-meta"><span>📅 Junio 2026</span></div>
+            </div>
+            <div class="doc-body">
+              <h3>Planes disponibles</h3>
+              <table class="sub-table">
+                <thead><tr><th>Plan</th><th>Precio</th><th>Usuarios</th><th>Pacientes</th><th>Funciones clave</th></tr></thead>
+                <tbody>
+                  <tr><td>Trial</td><td>Gratis 7 días</td><td>1</td><td>Limitado</td><td>Funciones básicas</td></tr>
+                  <tr><td>Básico</td><td>$299 MXN/mes</td><td>1</td><td>Hasta 50</td><td>Agenda, expedientes, pagos</td></tr>
+                  <tr><td>Profesional</td><td>$599 MXN/mes</td><td>5</td><td>Ilimitados</td><td>+ Odontograma, métricas, reportes</td></tr>
+                  <tr><td>Premium</td><td>$1,199 MXN/mes</td><td>Ilimitados</td><td>Ilimitados</td><td>+ Multi-sucursal, KPI avanzados</td></tr>
+                </tbody>
+              </table>
+
+              <h3>Ciclo de facturación</h3>
+              <p>Las suscripciones se facturan de forma <strong>mensual</strong> a partir de la fecha de activación del plan de pago. El pago se procesa al inicio de cada ciclo. Si el pago falla, se notificará al suscriptor con un período de gracia de <strong>3 días</strong> para regularizar antes de suspender el acceso.</p>
+
+              <h3>Cambio de plan</h3>
+              <p>El suscriptor puede solicitar cambio de plan (upgrade o downgrade) en cualquier momento:</p>
+              <ul>
+                <li><strong>Upgrade (subir de plan):</strong> el cambio aplica de inmediato. Se cobra la diferencia proporcional al período restante.</li>
+                <li><strong>Downgrade (bajar de plan):</strong> aplica al inicio del siguiente ciclo de facturación. Los datos no se eliminan, pero algunas funciones quedan inaccesibles hasta volver al plan superior.</li>
+              </ul>
+
+              <h3>Método de pago</h3>
+              <p>Actualmente los pagos se coordinan directamente con Hersantych vía WhatsApp o transferencia bancaria. La integración con Stripe para pagos automáticos estará disponible próximamente.</p>
+
+              <h3>Comprobante de pago</h3>
+              <p>Al confirmar su pago, Hersantych enviará confirmación por el canal acordado. El propio sistema mostrará el plan activo en la sección <strong>Configuración → Mi cuenta</strong>.</p>
+
+              <h3>Activación del plan</h3>
+              <p>Una vez confirmado el pago, Hersantych activa el plan en un plazo máximo de <strong>2 horas hábiles</strong>. La activación se refleja inmediatamente en el sistema al iniciar sesión.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACUERDO DE TRATAMIENTO DE DATOS -->
+        <div class="legal-section" id="sec-datos">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">🗄️ Acuerdo de Tratamiento de Datos (ATD)</div>
+              <div class="doc-meta"><span>📅 Junio 2026</span><span>⚖️ LFPDPPP — Responsable vs Encargado</span></div>
+            </div>
+            <div class="doc-body">
+              <div class="info">Este acuerdo regula la relación entre Hersantych (Encargado del tratamiento) y el suscriptor de DentalOS (Responsable del tratamiento) respecto a los datos personales de pacientes.</div>
+
+              <h3>1. Partes del acuerdo</h3>
+              <ul>
+                <li><strong>Responsable:</strong> El suscriptor de DentalOS (el dentista o consultorio), quien determina los fines y medios del tratamiento de datos de sus pacientes.</li>
+                <li><strong>Encargado:</strong> Hersantych, quien trata los datos personales de pacientes por cuenta y bajo instrucción del Responsable, a través de la plataforma DentalOS.</li>
+              </ul>
+
+              <h3>2. Naturaleza y finalidad del tratamiento</h3>
+              <p>Hersantych tratará datos personales de pacientes (incluyendo datos de salud sensibles) <strong>únicamente</strong> para:</p>
+              <ul>
+                <li>Almacenamiento y recuperación en el sistema DentalOS conforme a las acciones del Responsable.</li>
+                <li>Generación de documentos (cotizaciones, recibos, estados de cuenta) solicitados por el Responsable.</li>
+                <li>Respaldo automático para seguridad y disponibilidad del servicio.</li>
+              </ul>
+              <p>Hersantych <strong>no utilizará</strong> los datos de pacientes para fines propios, publicidad, cesión a terceros, ni ningún fin distinto a los anteriores.</p>
+
+              <h3>3. Obligaciones de Hersantych como Encargado</h3>
+              <ul>
+                <li>Tratar los datos únicamente conforme a las instrucciones documentadas del Responsable.</li>
+                <li>Implementar medidas de seguridad técnicas y organizativas adecuadas (autenticación, cifrado TLS, acceso por roles).</li>
+                <li>No transferir datos a terceros sin autorización expresa del Responsable.</li>
+                <li>Notificar al Responsable de cualquier brecha de seguridad en un plazo máximo de 72 horas.</li>
+                <li>Eliminar o devolver los datos al término de la relación contractual.</li>
+                <li>Subencargado autorizado: Google Firebase (Google LLC) bajo sus propios términos de protección de datos.</li>
+              </ul>
+
+              <h3>4. Obligaciones del Responsable (suscriptor)</h3>
+              <ul>
+                <li>Obtener el consentimiento válido de sus pacientes para el tratamiento de sus datos en DentalOS.</li>
+                <li>Informar a sus pacientes sobre el uso de herramientas digitales para gestión de su expediente.</li>
+                <li>No cargar datos de pacientes para fines distintos a la administración clínica.</li>
+                <li>Mantener sus credenciales de acceso seguras y notificar inmediatamente cualquier acceso no autorizado.</li>
+              </ul>
+
+              <h3>5. Datos sensibles</h3>
+              <p>El sistema DentalOS procesa datos de salud considerados <strong>datos sensibles</strong> conforme al Art. 9 LFPDPPP. El Responsable declara contar con el consentimiento expreso y por escrito de sus pacientes para el tratamiento de estos datos.</p>
+
+              <h3>6. Vigencia</h3>
+              <p>Este acuerdo está vigente durante toda la relación contractual entre el suscriptor y Hersantych, terminando automáticamente con la cancelación de la suscripción.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CALIFICANOS -->
+        <div class="legal-section" id="sec-calificanos">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">⭐ Califica DentalOS</div>
+              <div class="doc-meta"><span>Tu opinión nos ayuda a mejorar</span></div>
+            </div>
+            <div class="doc-body">
+              <div id="ratingForm">
+                <p style="text-align:center;font-size:.9rem;margin-bottom:6px">¿Qué tan satisfecho estás con DentalOS?</p>
+                <div class="stars-wrap" id="starsWrap">
+                  <span class="star" data-val="1" onclick="setStar(1)">⭐</span>
+                  <span class="star" data-val="2" onclick="setStar(2)">⭐</span>
+                  <span class="star" data-val="3" onclick="setStar(3)">⭐</span>
+                  <span class="star" data-val="4" onclick="setStar(4)">⭐</span>
+                  <span class="star" data-val="5" onclick="setStar(5)">⭐</span>
+                </div>
+                <div class="rating-labels"><span>Muy malo</span><span>Regular</span><span>Bueno</span><span>Muy bueno</span><span>Excelente</span></div>
+                <div id="starLabel" style="text-align:center;font-size:.82rem;color:var(--text-muted);margin-bottom:16px;min-height:20px"></div>
+                <div class="form-group">
+                  <label class="form-label">¿Qué es lo que más te gusta? (opcional)</label>
+                  <textarea class="form-textarea" id="r-bueno" rows="2" placeholder="La agenda, los reportes, la facilidad de uso..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">¿Qué podríamos mejorar? (opcional)</label>
+                  <textarea class="form-textarea" id="r-mejorar" rows="2" placeholder="Cuéntanos qué le falta o qué cambiarías..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">¿Recomendarías DentalOS a otros colegas?</label>
+                  <select class="form-select" id="r-recom">
+                    <option value="">Seleccionar...</option>
+                    <option value="si">✅ Sí, definitivamente</option>
+                    <option value="quiza">🤔 Quizás</option>
+                    <option value="no">❌ Por ahora no</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" style="width:100%" onclick="enviarCalificacion()" id="btnCalif">⭐ Enviar calificación</button>
+              </div>
+              <div class="rating-submitted" id="ratingDone">
+                <div style="font-size:3rem;margin-bottom:12px">🎉</div>
+                <div style="font-family:var(--font-display);font-size:1.3rem;font-style:italic;margin-bottom:8px">¡Gracias por tu calificación!</div>
+                <div style="font-size:.82rem;color:var(--text-muted)">Tu opinión es muy valiosa para nosotros. La usaremos para seguir mejorando DentalOS.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTÁCTANOS -->
+        <div class="legal-section" id="sec-contacto">
+          <div class="doc-card">
+            <div class="doc-header">
+              <div class="doc-title">💬 Contáctanos</div>
+              <div class="doc-meta"><span>Tiempo de respuesta: 24-48 horas hábiles</span></div>
+            </div>
+            <div class="doc-body">
+              <div class="info">Tu mensaje se envía directamente a nuestro equipo. No compartimos tu información con terceros.</div>
+              <div class="contact-form">
+                <div class="form-group">
+                  <label class="form-label">Tu nombre *</label>
+                  <input class="form-input" id="c-nombre" placeholder="Dr. Nombre Apellido">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tu correo electrónico *</label>
+                  <input type="email" class="form-input" id="c-email" placeholder="correo@miconsultorio.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tipo de mensaje</label>
+                  <select class="form-select" id="c-tipo">
+                    <option value="problema">🐛 Reportar un problema técnico</option>
+                    <option value="pregunta">❓ Pregunta sobre el sistema</option>
+                    <option value="sugerencia">💡 Sugerencia o mejora</option>
+                    <option value="facturacion">💳 Facturación o pagos</option>
+                    <option value="cancelacion">🚫 Solicitar cancelación</option>
+                    <option value="otro">📩 Otro</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Mensaje *</label>
+                  <textarea class="form-textarea" id="c-mensaje" rows="5" placeholder="Describe detalladamente tu problema, pregunta o sugerencia..."></textarea>
+                </div>
+                <div id="contactError" style="display:none;color:var(--red);font-size:.78rem;margin-bottom:10px"></div>
+                <button class="btn btn-primary" style="width:100%" id="btnContacto" onclick="enviarContacto()">📤 Enviar mensaje</button>
+                <div id="contactSuccess" style="display:none;background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);border-radius:8px;padding:16px;text-align:center;margin-top:12px;font-size:.85rem;color:var(--teal)">
+                  ✅ Mensaje enviado correctamente. Te responderemos en 24-48 horas hábiles.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'legal';
+let currentUser = null, currentClinica = null;
+
+initSession('any').then(session => {
+  if (!session) return;
+  currentUser  = session.user;
+  currentClinica = session.clinica;
+  // Pre-llenar contacto
+  document.getElementById('c-nombre').value = currentUser.nombre || '';
+  document.getElementById('c-email').value  = currentUser.email  || '';
+});
+
+// ── NAVEGACIÓN ────────────────────────────────────────────
+window.showLegal = function(sec) {
+  document.querySelectorAll('.legal-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.legal-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-'+sec).classList.add('active');
+  document.getElementById('lnav-'+sec).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+
+// ── CALIFICACIÓN ──────────────────────────────────────────
+let starVal = 0;
+const starLabels = ['','😞 Muy malo','😐 Regular','🙂 Bueno','😊 Muy bueno','🤩 ¡Excelente!'];
+
+window.setStar = function(val) {
+  starVal = val;
+  document.querySelectorAll('.star').forEach((s,i) => {
+    s.classList.toggle('active', i < val);
+  });
+  document.getElementById('starLabel').textContent = starLabels[val] || '';
+};
+
+window.enviarCalificacion = async function() {
+  if (!starVal) { showToast('Selecciona una calificación primero','error'); return; }
+  const btn = document.getElementById('btnCalif');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    // Guardar en Firebase Dental (colección pública de calificaciones)
+    await db.collection('clinicas').doc(currentClinica?.id || 'anonimo').collection('calificaciones').add({
+      estrellas: starVal,
+      bueno:     document.getElementById('r-bueno').value.trim(),
+      mejorar:   document.getElementById('r-mejorar').value.trim(),
+      recomienda:document.getElementById('r-recom').value,
+      clinica:   currentClinica?.nombre || '',
+      usuario:   currentUser?.email || '',
+      fecha:     new Date().toISOString(),
+    });
+    // También guardar en colección global para Hersantych
+    await db.collection('_calificaciones_globales').add({
+      estrellas: starVal,
+      clinica:   currentClinica?.nombre || '',
+      fecha:     new Date().toISOString(),
+      bueno:     document.getElementById('r-bueno').value.trim(),
+      mejorar:   document.getElementById('r-mejorar').value.trim(),
+    });
+    document.getElementById('ratingForm').style.display = 'none';
+    document.getElementById('ratingDone').style.display = 'block';
+    showToast('¡Gracias por tu calificación!','success');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '⭐ Enviar calificación';
+    showToast('Error al enviar: '+e.message,'error');
+  }
+};
+
+// ── CONTACTO ──────────────────────────────────────────────
+window.enviarContacto = async function() {
+  const nombre  = document.getElementById('c-nombre').value.trim();
+  const email   = document.getElementById('c-email').value.trim();
+  const tipo    = document.getElementById('c-tipo').value;
+  const mensaje = document.getElementById('c-mensaje').value.trim();
+  const errEl   = document.getElementById('contactError');
+  errEl.style.display = 'none';
+
+  if (!nombre || !email || !mensaje) {
+    errEl.textContent = 'Por favor completa todos los campos obligatorios.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!email.includes('@')) {
+    errEl.textContent = 'Ingresa un correo electrónico válido.';
+    errEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('btnContacto');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    // Guardar mensaje en Firebase — Hersantych lo lee desde Firebase Console
+    await db.collection('_mensajes_soporte').add({
+      nombre, email, tipo, mensaje,
+      clinica:    currentClinica?.nombre || '',
+      clinicaId:  currentClinica?.id     || '',
+      plan:       currentClinica?.plan   || '',
+      fecha:      new Date().toISOString(),
+      leido:      false,
+      respondido: false,
+    });
+    document.getElementById('contactSuccess').style.display = 'block';
+    document.getElementById('c-mensaje').value = '';
+    btn.textContent = '✅ Enviado';
+    showToast('Mensaje enviado. Te responderemos pronto.','success');
+  } catch(e) {
+    errEl.textContent = 'Error al enviar: '+e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = '📤 Enviar mensaje';
+  }
+};
+
+// Abrir sección por URL param
+const param = new URLSearchParams(location.search).get('sec');
+if (param) showLegal(param);
+</script>
+</body>
+</html>

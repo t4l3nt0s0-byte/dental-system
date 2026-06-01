@@ -78,7 +78,7 @@
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">⚙️ Configuración del Consultorio</div>
+    <div class="topbar-title">⚙️ Configuración</div>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm" onclick="window.location.href='index.html'">← Dashboard</button>
       <button class="btn btn-primary" id="btnGuardar" onclick="guardarConfig()">💾 Guardar cambios</button>
@@ -102,6 +102,9 @@
         </div>
         <div class="config-nav-item" onclick="showSection('cuenta')" id="nav-cuenta">
           <span class="nav-icon">👤</span> Mi cuenta
+        </div>
+        <div class="config-nav-item" onclick="window.location.href='legal.html'" id="nav-legal">
+          <span class="nav-icon">📋</span> Documentos legales
         </div>
         <div class="config-nav-item" onclick="showSection('peligro')" id="nav-peligro" style="color:var(--red)">
           <span class="nav-icon">⚠️</span> Zona de peligro
