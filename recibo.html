@@ -263,18 +263,23 @@
 <script>
 window.CURRENT_PAGE = 'recibo';
 let allPacientes=[], allAbonos=[], allTrat=[], fiscalData={}, reciboNum=1;
+let clinicaLogoBase64 = null;
 
 initSession('any').then(async session=>{
   if(!session) return;
   const {clinica,user}=session;
 
-  // Cargar datos fiscales guardados
+  // Cargar datos fiscales Y logo guardados
   const cSnap=await db.collection('clinicas').doc(clinica.id).get();
-  fiscalData=cSnap.data()?.fiscal||{};
+  const cData = cSnap.data() || {};
+  fiscalData=cData.fiscal||{};
   fiscalData.nombre=fiscalData.nombre||clinica.nombre||'Hersantych Dental';
   fiscalData.tel=fiscalData.tel||clinica.telefono||'';
   fiscalData.email=fiscalData.email||clinica.emailClinica||'';
   fiscalData.direccion=fiscalData.direccion||clinica.direccion||'';
+
+  // Cargar logo de Firestore
+  clinicaLogoBase64 = cData.logoBase64 || null;
 
   // Número de recibo
   const recibos=await fsGetAll('recibos',r=>r.orderBy('creadoEn','desc').limit(1));
@@ -286,6 +291,15 @@ initSession('any').then(async session=>{
   document.getElementById('rv-numero').textContent='#R-'+String(reciboNum).padStart(3,'0');
   document.getElementById('rv-doctor').textContent=user.nombre||'Dr. Administrador';
   updateRecibo();
+
+  // Agregar toggle de logo si existe
+  if (clinicaLogoBase64) {
+    const toggleWrap = document.createElement('div');
+    toggleWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:.78rem;color:var(--text-muted)';
+    toggleWrap.innerHTML=`<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chkLogo" checked onchange="renderFiscalPreview()"> Mostrar logo del consultorio en el recibo</label>`;
+    const builderEl = document.querySelector('.builder');
+    if (builderEl) builderEl.insertBefore(toggleWrap, builderEl.firstChild);
+  }
 
   await Promise.all([loadPacientes(),loadAbonos(),loadTrat()]);
 
@@ -373,15 +387,22 @@ function fillFromAbonoId(id){
 }
 
 function renderFiscalPreview(){
-  // Header
-  if(fiscalData.logo){
-    document.getElementById('rv-logo').outerHTML=`<img id="rv-logo" src="${fiscalData.logo}" class="recibo-logo-img" onerror="this.outerHTML='<div id=\\'rv-logo\\' class=\\'recibo-logo-emoji\\'>🦷</div>'">`;
+  // Logo — usa el guardado en Firestore si existe y el toggle está activo
+  const mostrarLogo = document.getElementById('chkLogo')?.checked !== false;
+  const logoSrc = mostrarLogo ? (clinicaLogoBase64 || null) : null;
+  const logoEl = document.getElementById('rv-logo');
+  if (logoEl) {
+    if (logoSrc) {
+      logoEl.outerHTML = `<img id="rv-logo" src="${logoSrc}" style="width:70px;height:70px;border-radius:10px;object-fit:contain;margin:0 auto 10px;display:block;background:#fff;padding:6px">`;
+    } else {
+      if (logoEl.tagName === 'IMG') logoEl.outerHTML = `<div id="rv-logo" class="recibo-logo-emoji">🦷</div>`;
+      else logoEl.textContent = '🦷';
+    }
   }
   document.getElementById('rv-clinica').textContent=fiscalData.nombre||'Hersantych Dental';
   const subParts=[fiscalData.especialidad,fiscalData.tel,fiscalData.email].filter(Boolean);
   document.getElementById('rv-sub').textContent=subParts.join(' · ');
   document.getElementById('rv-footer').innerHTML=`<strong>${fiscalData.nombre||'Hersantych Dental'}</strong><br>${fiscalData.leyenda||'Gracias por su preferencia'}<br>${fiscalData.direccion||''}`;
-
   // Datos fiscales en el cuerpo
   const rows=[
     fiscalData.razon?['Razón social',fiscalData.razon]:null,

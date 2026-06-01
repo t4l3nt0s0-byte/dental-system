@@ -81,6 +81,12 @@
             <div class="form-group"><label class="form-label">Vigencia (días)</label>
               <select class="form-select" id="f-vigencia" onchange="updatePreview()"><option value="7">7 días</option><option value="15" selected>15 días</option><option value="30">30 días</option><option value="60">60 días</option></select>
             </div>
+            <div class="form-group full" id="logoToggleWrap" style="display:none">
+              <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text-muted);cursor:pointer">
+                <input type="checkbox" id="chkLogoCot" checked onchange="toggleLogoCot(this)">
+                Mostrar logo del consultorio en la cotización
+              </label>
+            </div>
             <div class="form-group full"><label class="form-label">Notas / Observaciones</label><textarea class="form-textarea" id="f-notas" placeholder="Información adicional para el paciente..." rows="2" oninput="updatePreview()"></textarea></div>
           </div>
         </div>
@@ -131,7 +137,7 @@
       <div class="preview-wrap">
         <div class="preview-card" id="previewCard">
           <div class="preview-header">
-            <div class="preview-logo">🦷</div>
+            <div id="pvLogo" class="preview-logo">🦷</div>
             <div class="preview-clinic" id="pvClinica">Hersantych Dental</div>
             <div class="preview-sub" id="pvSub">Sistema de Administración</div>
           </div>
@@ -184,13 +190,21 @@
 <script>
 window.CURRENT_PAGE = 'cotizacion';
 let allCatalogo = [], allPacientes = [], items = [], cotNum = 1;
+let clinicaLogoBase64 = null, mostrarLogoCot = true;
 
 initSession('any').then(async session => {
   if (!session) return;
   const { clinica } = session;
+  // Cargar logo desde Firestore
+  const cSnap = await db.collection('clinicas').doc(clinica.id).get();
+  clinicaLogoBase64 = cSnap.data()?.logoBase64 || null;
   document.getElementById('pvClinica').textContent = clinica.nombre || 'Hersantych Dental';
   document.getElementById('pvSub').textContent = clinica.telefono ? 'Tel: '+clinica.telefono : '';
   document.getElementById('pvFooter').textContent = `${clinica.nombre||'Hersantych Dental'} · ${clinica.direccion||''} · Gracias por su preferencia`;
+  // Actualizar logo en preview
+  updateLogoPreview();
+  // Mostrar toggle de logo solo si existe logo
+  if (clinicaLogoBase64) document.getElementById('logoToggleWrap').style.display = 'block';
 
   await Promise.all([loadCatalogo(), loadPacientes(), loadCotNum()]);
 
@@ -357,6 +371,23 @@ async function guardarCot() {
 }
 
 // imprimirCot definida en print-helper.js
+
+function updateLogoPreview() {
+  const el = document.getElementById('pvLogo');
+  if (!el) return;
+  if (clinicaLogoBase64 && mostrarLogoCot) {
+    el.innerHTML = `<img src="${clinicaLogoBase64}" style="width:60px;height:60px;object-fit:contain;border-radius:8px;background:#fff;padding:4px;display:block;margin:0 auto 8px">`;
+  } else {
+    el.innerHTML = '🦷';
+    el.style.fontSize = '2rem';
+  }
+}
+
+// Toggle logo en cotización — llamado desde checkbox del builder
+window.toggleLogoCot = function(chk) {
+  mostrarLogoCot = chk.checked;
+  updateLogoPreview();
+};
 </script>
 </body>
 </html>

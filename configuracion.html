@@ -253,20 +253,57 @@
               Las acciones en esta sección son <strong style="color:var(--red)">irreversibles</strong>. Piensa dos veces antes de continuar.
             </div>
             <div style="display:flex;flex-direction:column;gap:10px">
-              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-                <div>
-                  <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px">Exportar todos mis datos</div>
-                  <div style="font-size:.72rem;color:var(--text-muted)">Descarga todos tus pacientes, tratamientos y pagos en formato JSON.</div>
+
+              <!-- EXPORTAR -->
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+                  <div>
+                    <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px">📥 Exportar todos mis datos (Backup)</div>
+                    <div style="font-size:.72rem;color:var(--text-muted)">Descarga un archivo JSON con todos tus datos para respaldo.</div>
+                  </div>
+                  <button class="btn btn-ghost btn-sm" onclick="exportarTodo()">📥 Exportar</button>
                 </div>
-                <button class="btn btn-ghost btn-sm" onclick="exportarTodo()">📥 Exportar</button>
-              </div>
-              <div style="background:var(--surface);border:1px solid rgba(255,92,92,.2);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-                <div>
-                  <div style="font-size:.85rem;font-weight:600;color:var(--red);margin-bottom:2px">Cerrar sesión en todos los dispositivos</div>
-                  <div style="font-size:.72rem;color:var(--text-muted)">Cierra la sesión activa en todos los navegadores.</div>
+                <div style="background:var(--surface2);border-radius:6px;padding:10px;font-size:.72rem;color:var(--text-muted);line-height:1.7">
+                  <strong style="color:var(--text)">El backup incluye:</strong><br>
+                  👤 Todos los expedientes de pacientes<br>
+                  🦷 Historial de tratamientos<br>
+                  💰 Todos los abonos y pagos<br>
+                  📅 Historial de citas agendadas<br>
+                  📚 Catálogo de precios<br><br>
+                  <strong style="color:var(--text)">¿Para qué sirve?</strong><br>
+                  Es tu copia de seguridad. Si cambias de plan, dispositivo o quieres guardar tus datos fuera del sistema, descarga este archivo y guárdalo en tu computadora.
                 </div>
-                <button class="btn btn-red btn-sm" onclick="logout()">🚪 Cerrar todo</button>
               </div>
+
+              <!-- RESTAURAR -->
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+                  <div>
+                    <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px">📤 Restaurar desde backup JSON</div>
+                    <div style="font-size:.72rem;color:var(--text-muted)">Importa un backup guardado anteriormente para recuperar tus datos.</div>
+                  </div>
+                  <button class="btn btn-ghost btn-sm" onclick="document.getElementById('restoreInput').click()">📤 Restaurar</button>
+                </div>
+                <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restaurarBackup(event)">
+                <div style="background:rgba(244,185,66,.08);border:1px solid rgba(244,185,66,.2);border-radius:6px;padding:8px 10px;font-size:.72rem;color:var(--gold)">
+                  ⚠️ Solo restaura pacientes y catálogo. No sobreescribe datos existentes — agrega los del backup.
+                </div>
+                <div id="restoreLog" style="display:none;margin-top:8px;background:var(--surface2);border-radius:6px;padding:10px;font-size:.72rem;font-family:var(--font-mono);color:var(--text-muted);max-height:120px;overflow-y:auto"></div>
+              </div>
+
+              <!-- CERRAR SESIÓN -->
+              <div style="background:var(--surface);border:1px solid rgba(255,92,92,.15);border-radius:var(--r);padding:14px">
+                <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:4px">🔐 Cerrar sesión en otros dispositivos</div>
+                <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+                  <strong style="color:var(--gold)">¿Por qué no se cierra en el celular automáticamente?</strong><br>
+                  Firebase guarda la sesión en cada navegador de forma independiente. Es imposible cerrarla remotamente sin un servidor. La solución: <strong style="color:var(--text)">cambia tu contraseña</strong> — esto invalida todas las sesiones activas en todos los dispositivos automáticamente.
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-ghost btn-sm" onclick="showSection('cuenta');document.getElementById('cf-pass').focus()">🔑 Cambiar contraseña (cierra todas las sesiones)</button>
+                  <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="logout()">🚪 Cerrar esta sesión</button>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -566,6 +603,61 @@ window.cambiarPass = async function() {
     document.getElementById('cf-pass').value = '';
     showToast('Contraseña actualizada correctamente','success');
   } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+// ── RESTAURAR DESDE BACKUP JSON ───────────────────────────
+window.restaurarBackup = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const logEl = document.getElementById('restoreLog');
+  logEl.style.display = 'block';
+  logEl.innerHTML = '⏳ Leyendo archivo...';
+  const addLog = (msg, color='var(--text-muted)') => {
+    logEl.innerHTML += `<div style="color:${color}">${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+  try {
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    if (!backup.pacientes && !backup.catalogo) {
+      logEl.innerHTML = '<span style="color:var(--red)">❌ Archivo JSON inválido — no es un backup de DentalOS</span>'; return;
+    }
+    addLog(`📋 Backup de: ${backup.clinica||'—'} · ${backup.exportadoEl?.slice(0,10)||''}`);
+    let ok=0, skip=0;
+    // Restaurar pacientes
+    if (backup.pacientes?.length) {
+      addLog(`👤 Restaurando ${backup.pacientes.length} pacientes...`);
+      const existing = await fsGetAll('pacientes');
+      const existNames = new Set(existing.map(p=>(p.nombre||'').toUpperCase().trim()));
+      for (const p of backup.pacientes) {
+        if (!p.nombre) { skip++; continue; }
+        if (existNames.has((p.nombre||'').toUpperCase().trim())) {
+          addLog(`  ⚠️ ${p.nombre} — ya existe, omitido`,'var(--gold)'); skip++; continue;
+        }
+        delete p.id;
+        await fsCreate('pacientes', p);
+        ok++;
+      }
+      addLog(`  ✅ ${ok} pacientes restaurados, ${skip} omitidos`,'var(--green)');
+    }
+    // Restaurar catálogo
+    if (backup.catalogo?.length) {
+      let catOk=0;
+      addLog(`📚 Restaurando ${backup.catalogo.length} items del catálogo...`);
+      for (const c of backup.catalogo) {
+        if (!c.tratamiento) continue;
+        delete c.id;
+        await fsCreate('catalogo', c);
+        catOk++;
+      }
+      addLog(`  ✅ ${catOk} items del catálogo restaurados`,'var(--green)');
+    }
+    addLog(`\n✅ Restauración completada`,'var(--teal)');
+    showToast('Backup restaurado correctamente','success');
+  } catch(err) {
+    logEl.innerHTML = `<span style="color:var(--red)">❌ Error: ${err.message}</span>`;
+  }
+  e.target.value = '';
 };
 
 // ── EXPORTAR TODO ─────────────────────────────────────────
