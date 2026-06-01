@@ -2,121 +2,174 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Dashboard</title>
+<title>DentalOS · Panel Clínico</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-.welcome{margin-bottom:24px}
-.welcome-title{font-family:var(--font-display);font-size:1.7rem;font-style:italic;color:var(--text)}
-.welcome-sub{font-size:.82rem;color:var(--text-muted);margin-top:4px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px}
-.section-title{font-size:.72rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
-.section-title a{font-size:.7rem;font-weight:500;color:var(--text-muted);text-decoration:none;letter-spacing:0;text-transform:none}
-.section-title a:hover{color:var(--teal)}
-/* Cita card */
-.cita-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
-.cita-item:last-child{border-bottom:none}
-.cita-time{font-family:var(--font-mono);font-size:.8rem;color:var(--teal);min-width:48px;font-weight:600}
-.cita-info{flex:1}
-.cita-name{font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:1px}
-.cita-treat{font-size:.73rem;color:var(--text-muted)}
-.cita-estado{font-size:.68rem;padding:2px 8px;border-radius:100px;font-weight:700}
-.cita-wa{background:none;border:none;font-size:1rem;cursor:pointer;opacity:.6;transition:opacity .15s;padding:4px}
-.cita-wa:hover{opacity:1}
-/* Adeudo card */
-.adeudo-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
-.adeudo-item:last-child{border-bottom:none}
-.adeudo-avatar{width:34px;height:34px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:var(--teal);border:1px solid var(--border);flex-shrink:0}
+/* ── GREETING ── */
+.greeting{margin-bottom:24px}
+.greeting-title{font-family:var(--font-display);font-size:1.9rem;font-style:italic;color:var(--text);margin-bottom:4px}
+.greeting-sub{font-size:.82rem;color:var(--text-muted)}
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;transition:all .2s}
+.kpi-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.kpi-card.green::after{background:var(--teal)}
+.kpi-card.gold::after{background:var(--gold)}
+.kpi-card.blue::after{background:var(--blue)}
+.kpi-card.purple::after{background:var(--purple,#A78BFA)}
+.kpi-icon{font-size:1.4rem;margin-bottom:8px;display:block}
+.kpi-value{font-family:var(--font-mono);font-size:1.55rem;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi-label{font-size:.68rem;color:var(--text-muted);font-weight:600;letter-spacing:.04em}
+.kpi-delta{font-size:.68rem;margin-top:6px;display:flex;align-items:center;gap:4px}
+.kpi-delta.up{color:#34D399}.kpi-delta.down{color:#FF5C5C}.kpi-delta.neutral{color:var(--text-dim)}
+/* ── TURNO ── */
+.turno-card{background:linear-gradient(135deg,rgba(0,194,168,.08),rgba(0,194,168,.02));border:1px solid rgba(0,194,168,.25);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;position:relative;overflow:hidden}
+.turno-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue))}
+.turno-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.turno-dot{width:10px;height:10px;border-radius:50%;background:var(--teal);animation:pulse 1.5s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,194,168,.4)}50%{box-shadow:0 0 0 6px rgba(0,194,168,0)}}
+.turno-label{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)}
+.turno-body{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.turno-px-name{font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:3px}
+.turno-px-info{font-size:.78rem;color:var(--text-muted)}
+.turno-actions{display:flex;gap:8px;flex-shrink:0}
+.turno-next{margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,194,168,.15);display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--text-muted)}
+.turno-next .next-label{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-right:4px}
+.sin-citas{text-align:center;padding:20px;color:var(--text-dim);font-size:.82rem}
+/* ── META INGRESOS ── */
+.meta-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:20px}
+.meta-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.meta-title{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+.meta-values{display:flex;gap:20px;align-items:baseline;flex-wrap:wrap}
+.meta-actual{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--text)}
+.meta-target{font-family:var(--font-mono);font-size:.88rem;color:var(--text-dim)}
+.meta-pct{font-size:.8rem;font-weight:700;padding:2px 8px;border-radius:100px}
+.progress-track{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;margin-bottom:10px;position:relative}
+.progress-fill-meta{height:100%;border-radius:5px;transition:width 1s ease;position:relative}
+.progress-fill-meta::after{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:rgba(255,255,255,.4);border-radius:2px}
+.meta-prev-line{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.3);z-index:1}
+.meta-stats{display:flex;gap:16px;flex-wrap:wrap}
+.meta-stat{font-size:.72rem;color:var(--text-muted)}
+.meta-stat strong{color:var(--text)}
+/* ── DASHBOARD GRID ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.dash-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;overflow:hidden}
+.dash-card.full{grid-column:1/-1}
+.card-title{font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.card-title span:first-child{color:var(--teal)}
+/* ── CITAS ── */
+.cita-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);transition:background .15s}
+.cita-row:last-child{border-bottom:none}
+.cita-hora{font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--teal);min-width:40px}
+.cita-info{flex:1;min-width:0}
+.cita-px{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cita-trat{font-size:.68rem;color:var(--text-muted)}
+/* ── ADEUDOS ── */
+.adeudo-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.adeudo-row:last-child{border-bottom:none}
+.adeudo-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--teal);flex-shrink:0}
 .adeudo-info{flex:1;min-width:0}
-.adeudo-name{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.adeudo-treat{font-size:.7rem;color:var(--text-muted)}
-.adeudo-amount{font-family:var(--font-mono);font-size:.85rem;color:var(--red);font-weight:700;flex-shrink:0}
-/* Alert */
-.alert-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);margin-bottom:8px;font-size:.8rem}
-.alert-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
-.alert-text{flex:1;color:var(--text-muted);line-height:1.4}
-.alert-text strong{color:var(--text)}
-/* Mini chart bars */
-.mini-bars{display:flex;align-items:flex-end;gap:3px;height:44px;margin-top:10px}
-.mini-bar{flex:1;border-radius:3px 3px 0 0;background:var(--teal-dim);border:1px solid var(--teal-dim);transition:all .3s;position:relative;cursor:default}
-.mini-bar:hover{background:var(--teal);opacity:.8}
-.mini-bar-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:.55rem;color:var(--text-dim);white-space:nowrap}
-/* Acceso rápido */
-.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.quick-btn{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 10px;text-align:center;text-decoration:none;color:var(--text-muted);font-size:.75rem;font-weight:500;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px}
-.quick-btn .quick-icon{font-size:1.5rem}
-.quick-btn:hover{background:var(--teal-dim);border-color:rgba(0,194,168,.3);color:var(--teal);transform:translateY(-2px)}
-@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+.adeudo-px{font-size:.8rem;font-weight:600;color:var(--text)}
+.adeudo-trat{font-size:.65rem;color:var(--text-muted)}
+.adeudo-monto{font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--red,#FF5C5C);flex-shrink:0}
+/* ── EMBUDO ── */
+.funnel-wrap{display:flex;flex-direction:column;gap:6px}
+.funnel-step{display:flex;align-items:center;gap:10px}
+.funnel-bar-wrap{flex:1;height:28px;background:var(--surface2);border-radius:4px;overflow:hidden;position:relative}
+.funnel-bar{height:100%;border-radius:4px;transition:width 1s ease;display:flex;align-items:center;padding-left:10px}
+.funnel-bar-label{font-size:.7rem;font-weight:700;color:#fff;white-space:nowrap}
+.funnel-label{font-size:.7rem;color:var(--text-muted);min-width:90px;text-align:right}
+.funnel-count{font-family:var(--font-mono);font-size:.75rem;font-weight:700;min-width:28px;text-align:center}
+/* ── TOP FRECUENTES ── */
+.freq-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.freq-row:last-child{border-bottom:none}
+.freq-rank{font-family:var(--font-mono);font-size:.7rem;font-weight:700;color:var(--text-dim);min-width:18px}
+.freq-avatar{width:28px;height:28px;border-radius:50%;background:var(--teal-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.freq-name{flex:1;font-size:.78rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.freq-count{font-family:var(--font-mono);font-size:.72rem;color:var(--teal);font-weight:700}
+/* ── MODAL META ── */
+.meta-edit-btn{font-size:.68rem;cursor:pointer;color:var(--teal);background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);border-radius:6px;padding:3px 8px;transition:all .15s}
+.meta-edit-btn:hover{background:var(--teal);color:#060D14}
+/* EMPTY */
+.empty-mini{text-align:center;padding:20px;color:var(--text-dim);font-size:.78rem}
+/* CHART containers */
+.chart-wrap{position:relative;height:180px}
+.chart-wrap-tall{position:relative;height:220px}
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.dash-grid,.dash-grid-3{grid-template-columns:1fr}.turno-body{grid-template-columns:1fr}.turno-actions{margin-top:8px}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:1fr 1fr}.kpi-value{font-size:1.2rem}}
 </style>
 </head>
 <body>
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
-
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">📊 Panel Clinico</div>
-    <div class="topbar-actions">
-      <span id="todayLabel" style="font-size:.75rem;color:var(--text-muted)"></span>
-      <a href="agenda.html" class="btn btn-primary btn-sm">+ Nueva cita</a>
+    <div class="topbar-title">📊 Panel Clínico</div>
+    <div class="topbar-actions" style="gap:12px">
+      <div id="topbarFecha" style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono)"></div>
+      <button class="btn btn-primary btn-sm" onclick="window.location.href='agenda.html'">+ Nueva cita</button>
     </div>
   </div>
-
-  <div class="content">
-    <div class="welcome">
-      <div class="welcome-title" id="welcomeTitle">Buen día 👋</div>
-      <div class="welcome-sub" id="welcomeSub">Cargando datos del consultorio...</div>
-    </div>
-
-    <!-- KPIs -->
-    <div class="kpi-grid" id="kpiGrid">
-      <div class="kpi-card"><div class="spinner" style="margin:16px auto"></div></div>
-      <div class="kpi-card"></div><div class="kpi-card"></div><div class="kpi-card"></div>
-    </div>
-
-    <!-- Fila 2: Citas hoy + Adeudos -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="section-title">📅 Citas de hoy <a href="agenda.html">Ver agenda →</a></div>
-        <div id="citasHoy"><div class="loader"><div class="spinner"></div></div></div>
-      </div>
-      <div class="card">
-        <div class="section-title">❗ Mayores adeudos <a href="abonos.html">Ver todos →</a></div>
-        <div id="adeudosList"><div class="loader"><div class="spinner"></div></div></div>
-      </div>
-    </div>
-
-    <!-- Fila 3: Acceso rápido + Alertas + Mini chart -->
-    <div class="grid-3">
-      <div class="card" style="grid-column:span 2">
-        <div class="section-title">⚡ Acceso rápido</div>
-        <div class="quick-grid">
-          <a href="pacientes.html" class="quick-btn"><span class="quick-icon">👤</span>Nuevo paciente</a>
-          <a href="tratamientos.html" class="quick-btn"><span class="quick-icon">🦷</span>Tratamiento</a>
-          <a href="abonos.html" class="quick-btn"><span class="quick-icon">💰</span>Registrar pago</a>
-          <a href="cotizacion.html" class="quick-btn"><span class="quick-icon">📝</span>Cotización</a>
-          <a href="catalogo.html" class="quick-btn"><span class="quick-icon">📚</span>Catálogo</a>
-          <a href="corte-caja.html" class="quick-btn"><span class="quick-icon">🧾</span>Corte de caja</a>
-          <a href="busqueda.html" class="quick-btn"><span class="quick-icon">🔍</span>Buscar</a>
-          <a href="metricas.html" class="quick-btn" id="qMetricas"><span class="quick-icon">📈</span>Métricas</a>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-title">🔔 Alertas</div>
-        <div id="alertsList"><div class="loader"><div class="spinner"></div></div></div>
-      </div>
-    </div>
-
-    <!-- Ingresos de la semana -->
-    <div class="card" style="margin-top:0">
-      <div class="section-title">💵 Ingresos de los últimos 7 días <a href="metricas.html">Ver métricas →</a></div>
-      <div style="position:relative;padding-bottom:20px">
-        <div class="mini-bars" id="miniBars"></div>
-      </div>
-    </div>
+  <div class="content" id="mainContent">
+    <div class="loader" style="padding:60px;text-align:center"><div class="spinner"></div></div>
   </div>
 </main>
+
+<!-- MODAL CONFIGURAR META -->
+<div class="modal-overlay" id="modalMeta">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">🎯 Configurar meta mensual</div>
+      <button class="modal-close" onclick="closeModal('modalMeta')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:16px">
+        Define cuánto quieres cobrar este mes. El sistema mostrará tu progreso en tiempo real.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meta de ingresos mensual (MXN)</label>
+        <input type="number" class="form-input" id="metaInput" placeholder="15000" min="1000" step="500">
+      </div>
+      <div style="font-size:.72rem;color:var(--text-dim)">💡 Tip: Multiplica tus citas promedio por semana × precio promedio × 4</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalMeta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMeta()">💾 Guardar meta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FINALIZAR CITA -->
+<div class="modal-overlay" id="modalFinCita">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">✅ Finalizar cita</div>
+      <button class="modal-close" onclick="closeModal('modalFinCita')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="finCitaInfo" style="font-size:.85rem;color:var(--text-muted);margin-bottom:14px"></div>
+      <div class="form-group">
+        <label class="form-label">Estado final</label>
+        <select class="form-select" id="finCitaEstado">
+          <option value="Completado">✅ Completado — Cita realizada</option>
+          <option value="No Asistió">❌ No asistió</option>
+          <option value="Cancelado">🚫 Cancelado por el paciente</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <textarea class="form-textarea" id="finCitaNotas" rows="2" placeholder="Observaciones de la cita..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalFinCita')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarFinCita()">✅ Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -124,135 +177,537 @@
 <script src="shared.js"></script>
 <script>
 window.CURRENT_PAGE = 'index';
+let ALL_CITAS=[], ALL_ABONOS=[], ALL_PACIENTES=[], ALL_TRATS=[], ALL_COTIZACIONES=[];
+let citaActualId=null, metaMensual=0, isAdmin=false;
+const CHART_DEFAULTS = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, animation:{duration:800} };
 
-initSession('any').then(async session => {
-  if (!session) return;
-  const { user, clinica } = session;
+// ── HELPERS ───────────────────────────────────────────────
+const hoy        = () => new Date().toISOString().slice(0,10);
+const mesActual  = () => new Date().toISOString().slice(0,7);
+const mesAnterior= () => { const d=new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); };
+const chartColor = (hex,a=1) => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; };
+const gridColor  = 'rgba(255,255,255,.05)';
+const textColor  = 'rgba(232,240,248,.4)';
 
-  // Welcome
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
-  document.getElementById('welcomeTitle').textContent = `${greeting}, ${user.nombre?.split(' ')[0] || 'Doctor'} 👋`;
-  document.getElementById('welcomeSub').textContent = `${clinica.nombre} · ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
-  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+initSession('any').then(async session=>{
+  if(!session) return;
+  const {clinica,user}=session;
+  isAdmin = user.rol==='admin';
 
-  // Lock metrics if basic
-  if (!hasFeature('metricas')) {
-    document.getElementById('qMetricas').style.opacity = '.4';
-    document.getElementById('qMetricas').style.pointerEvents = 'none';
-  }
+  // Fecha en topbar
+  const now=new Date();
+  document.getElementById('topbarFecha').textContent=now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 
-  // Load all data in parallel
-  const [tratamientos, abonos, citas] = await Promise.all([
+  // Cargar datos en paralelo
+  const [citas,abonos,pacientes,trats,cotizaciones]=await Promise.all([
+    fsGetAll('citas'),
+    fsGetAll('abonos'),
+    fsGetAll('pacientes'),
     fsGetAll('tratamientos'),
-    fsGetAll('abonos', r => r.orderBy('creadoEn','desc').limit(200)),
-    fsGetAll('citas', r => r.where('fecha','==', todayISO())),
+    fsGetAll('cotizaciones'),
   ]);
+  ALL_CITAS=citas; ALL_ABONOS=abonos; ALL_PACIENTES=pacientes; ALL_TRATS=trats; ALL_COTIZACIONES=cotizaciones;
 
-  // ── KPIs ──
-  const totalFac   = tratamientos.reduce((s,t) => s + Number(t.costo||0), 0);
-  const totalCob   = tratamientos.reduce((s,t) => s + Number(t.abonado||0), 0);
-  const totalPend  = tratamientos.reduce((s,t) => s + Number(t.saldo||0), 0);
-  const liqCount   = tratamientos.filter(t => t.estado === 'Liquidado').length;
-  const plan = PLANES[clinica.plan] || PLANES.basico;
-  const pxCount = (await fsGetAll('pacientes', r => r.limit(1000))).length;
+  // Meta mensual
+  const cSnap=await db.collection('clinicas').doc(clinica.id).get();
+  metaMensual=cSnap.data()?.metaMensual||0;
 
-  const kpiDefs = [
-    { icon:'💵', val: fmtMXN(totalCob),  label:'Total cobrado',          color:'var(--teal)',  accent:'var(--teal)' },
-    { icon:'❗', val: fmtMXN(totalPend), label:'Saldo pendiente',         color:'var(--gold)',  accent:'var(--gold)' },
-    { icon:'✅', val: `${liqCount}/${tratamientos.length}`, label:'Tratamientos liquidados', color:'var(--blue)',  accent:'var(--blue)' },
-    { icon:'👤', val: plan.maxPacientes === Infinity ? `${pxCount}` : `${pxCount}/${plan.maxPacientes}`, label:'Pacientes registrados', color:'var(--purple)', accent:'var(--purple)' },
-  ];
-  document.getElementById('kpiGrid').innerHTML = kpiDefs.map(k => `
-    <div class="kpi-card" style="--accent:${k.accent}">
-      <div class="kpi-icon">${k.icon}</div>
-      <div class="kpi-value" style="color:${k.color}">${k.val}</div>
-      <div class="kpi-label">${k.label}</div>
-    </div>`).join('');
-
-  // ── Citas hoy ──
-  const citasEl = document.getElementById('citasHoy');
-  if (!citas.length) {
-    citasEl.innerHTML = `<div class="empty-state" style="padding:28px 0"><div class="empty-icon">📅</div><div class="empty-title">Sin citas hoy</div><div class="empty-sub">Agenda una cita desde la sección de agenda</div></div>`;
-  } else {
-    const sorted = [...citas].sort((a,b) => (a.hora||'').localeCompare(b.hora||''));
-    citasEl.innerHTML = sorted.map(c => {
-      const estadoColor = c.estado==='Confirmado' ? 'badge-green' : c.estado==='Cancelado' ? 'badge-red' : 'badge-gold';
-      return `<div class="cita-item">
-        <div class="cita-time">${c.hora||'—'}</div>
-        <div class="cita-info">
-          <div class="cita-name">${c.paciente||'—'}</div>
-          <div class="cita-treat">${c.tratamiento||'Sin tratamiento'}</div>
-        </div>
-        <span class="badge ${estadoColor}">${c.estado||'Agendado'}</span>
-        ${c.tel ? `<button class="cita-wa" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te recordamos tu cita hoy a las ${c.hora} en Hersantych Dental.')" title="WhatsApp">💬</button>` : ''}
-      </div>`;
-    }).join('');
-  }
-
-  // ── Mayores adeudos ──
-  const conSaldo = tratamientos
-    .filter(t => Number(t.saldo||0) > 0)
-    .sort((a,b) => Number(b.saldo) - Number(a.saldo))
-    .slice(0, 5);
-  const adeudosEl = document.getElementById('adeudosList');
-  if (!conSaldo.length) {
-    adeudosEl.innerHTML = `<div class="empty-state" style="padding:28px 0"><div class="empty-icon">✅</div><div class="empty-title">Sin adeudos pendientes</div></div>`;
-  } else {
-    adeudosEl.innerHTML = conSaldo.map(t => {
-      const initials = (t.paciente||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
-      return `<div class="adeudo-item">
-        <div class="adeudo-avatar">${initials}</div>
-        <div class="adeudo-info">
-          <div class="adeudo-name">${t.paciente||'—'}</div>
-          <div class="adeudo-treat">${t.tratamiento||'—'}</div>
-        </div>
-        <div class="adeudo-amount">${fmtMXN(t.saldo)}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // ── Alertas ──
-  const alerts = [];
-  // Pacientes cerca del límite (plan básico)
-  if (plan.maxPacientes !== Infinity && pxCount >= plan.maxPacientes * 0.9) {
-    alerts.push({ icon:'👤', text: `<strong>Límite de pacientes:</strong> Tienes ${pxCount} de ${plan.maxPacientes} pacientes registrados.` });
-  }
-  // Adeudos altos
-  const adeudosAltos = tratamientos.filter(t => Number(t.saldo||0) > 5000);
-  if (adeudosAltos.length) alerts.push({ icon:'💰', text: `<strong>${adeudosAltos.length} tratamiento(s)</strong> con saldo mayor a $5,000.` });
-  // Citas sin confirmar
-  const sinConfirmar = citas.filter(c => !c.estado || c.estado === 'Agendado');
-  if (sinConfirmar.length) alerts.push({ icon:'📅', text: `<strong>${sinConfirmar.length} cita(s) de hoy</strong> sin confirmar.` });
-  if (!alerts.length) alerts.push({ icon:'✅', text: 'Todo en orden. Sin alertas pendientes.' });
-
-  document.getElementById('alertsList').innerHTML = alerts.map(a =>
-    `<div class="alert-item"><span class="alert-icon">${a.icon}</span><div class="alert-text">${a.text}</div></div>`
-  ).join('');
-
-  // ── Mini bars (últimos 7 días) ──
-  const dias = [];
-  for (let i=6; i>=0; i--) {
-    const d = new Date(); d.setDate(d.getDate()-i);
-    dias.push(d.toISOString().slice(0,10));
-  }
-  const ingPorDia = dias.map(fecha => {
-    const dayAbonos = abonos.filter(a => {
-      const aFecha = a.fecha || (a.creadoEn?.toDate ? a.creadoEn.toDate().toISOString().slice(0,10) : null);
-      return aFecha === fecha;
-    });
-    return { fecha, total: dayAbonos.reduce((s,a) => s+Number(a.monto||0),0) };
-  });
-  const maxIng = Math.max(...ingPorDia.map(d=>d.total), 1);
-  const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  document.getElementById('miniBars').innerHTML = ingPorDia.map(d => {
-    const pct = Math.max(4, Math.round(d.total/maxIng*100));
-    const dow = new Date(d.fecha+'T12:00:00').getDay();
-    return `<div class="mini-bar" style="height:${pct}%;background:${d.total>0?'var(--teal)':'var(--surface2)'}" title="${d.fecha}: ${fmtMXN(d.total)}">
-      <span class="mini-bar-label">${dayNames[dow]}</span>
-    </div>`;
-  }).join('');
+  renderDashboard(clinica,user);
 });
+
+function renderDashboard(clinica,user){
+  const mc=document.getElementById('mainContent');
+  const greeting=greetingText();
+  const hora=new Date().getHours();
+  const emoji=hora<12?'👋':hora<19?'☀️':'🌙';
+  const nombre=user.nombre?.split(' ')[0]||user.email.split('@')[0];
+
+  // KPIs
+  const {cobradoMes,cobradoAnt,adeudoTotal,tiqMedio}=calcKPIs();
+  const {citasHoy,nuevosMes,nuevosAnt}=calcExtra();
+
+  // Variación %
+  const varIngresos=cobradoAnt>0?Math.round(((cobradoMes-cobradoAnt)/cobradoAnt)*100):null;
+  const varPacientes=nuevosAnt>0?Math.round(((nuevosMes-nuevosAnt)/nuevosAnt)*100):null;
+
+  mc.innerHTML=`
+  <!-- GREETING -->
+  <div class="greeting">
+    <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
+    <div class="greeting-sub">${clinica.nombre||'DentalOS'} · ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <span class="kpi-icon">💵</span>
+      <div class="kpi-value" style="color:var(--teal)">${fmtMXN(cobradoMes)}</div>
+      <div class="kpi-label">Total cobrado este mes</div>
+      ${varIngresos!==null?`<div class="kpi-delta ${varIngresos>=0?'up':'down'}">${varIngresos>=0?'▲':'▼'} ${Math.abs(varIngresos)}% vs mes anterior</div>`:'<div class="kpi-delta neutral">Primer mes</div>'}
+    </div>
+    <div class="kpi-card gold">
+      <span class="kpi-icon">❗</span>
+      <div class="kpi-value" style="color:var(--gold)">${fmtMXN(adeudoTotal)}</div>
+      <div class="kpi-label">Saldo pendiente total</div>
+      <div class="kpi-delta neutral">${ALL_TRATS.filter(t=>Number(t.saldo||0)>0).length} tratamientos con adeudo</div>
+    </div>
+    <div class="kpi-card blue">
+      <span class="kpi-icon">✅</span>
+      <div class="kpi-value" style="color:var(--blue)">${ALL_TRATS.filter(t=>t.estado==='Liquidado'&&t.updatedAt?.slice?.(0,7)===mesActual()).length}/${ALL_TRATS.filter(t=>t.updatedAt?.slice?.(0,7)===mesActual()||t.creadoEn?.slice?.(0,7)===mesActual()).length||1}</div>
+      <div class="kpi-label">Liquidados este mes</div>
+      <div class="kpi-delta neutral">Tiq. medio: ${fmtMXN(tiqMedio)}</div>
+    </div>
+    <div class="kpi-card purple">
+      <span class="kpi-icon">👤</span>
+      <div class="kpi-value" style="color:var(--purple,#A78BFA)">${ALL_PACIENTES.length}</div>
+      <div class="kpi-label">Pacientes registrados</div>
+      <div class="kpi-delta ${varPacientes!==null&&varPacientes>=0?'up':'down'}">${nuevosMes} nuevos este mes ${varPacientes!==null?`${varPacientes>=0?'▲':'▼'}${Math.abs(varPacientes)}%`:''}</div>
+    </div>
+  </div>
+
+  <!-- TURNO ACTUAL -->
+  <div id="turnoSection"></div>
+
+  <!-- META INGRESOS -->
+  ${isAdmin?`<div id="metaSection"></div>`:''}
+
+  <!-- GRID PRINCIPAL: Citas + Adeudos -->
+  <div class="dash-grid" style="margin-bottom:20px">
+    <div class="dash-card">
+      <div class="card-title"><span>📅 CITAS DE HOY</span><a href="agenda.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver agenda →</a></div>
+      <div id="citasHoyList"></div>
+    </div>
+    <div class="dash-card">
+      <div class="card-title"><span>❗ MAYORES ADEUDOS</span><a href="abonos.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver todos →</a></div>
+      <div id="adeudosList"></div>
+    </div>
+  </div>
+
+  <!-- GRÁFICAS — solo admin -->
+  ${isAdmin?`
+  <!-- FILA 1: Ingresos + Pacientes nuevos -->
+  <div class="dash-grid" style="margin-bottom:16px">
+    <div class="dash-card">
+      <div class="card-title"><span>📈 INGRESOS DIARIOS — MES ACTUAL VS ANTERIOR</span></div>
+      <div class="chart-wrap"><canvas id="chartIngresos"></canvas></div>
+    </div>
+    <div class="dash-card">
+      <div class="card-title"><span>👤 PACIENTES NUEVOS POR MES</span></div>
+      <div class="chart-wrap"><canvas id="chartPacNuevos"></canvas></div>
+    </div>
+  </div>
+  <!-- FILA 2: Top tratamientos + Frecuentes -->
+  <div class="dash-grid" style="margin-bottom:16px">
+    <div class="dash-card">
+      <div class="card-title"><span>🦷 TOP 5 TRATAMIENTOS POR INGRESO</span></div>
+      <div class="chart-wrap"><canvas id="chartTratamientos"></canvas></div>
+    </div>
+    <div class="dash-card">
+      <div class="card-title"><span>🏆 PACIENTES MÁS FRECUENTES</span></div>
+      <div id="frecuentesList"></div>
+    </div>
+  </div>
+  <!-- FILA 3: Embudo comercial -->
+  <div class="dash-grid" style="margin-bottom:16px">
+    <div class="dash-card">
+      <div class="card-title"><span>🔽 EMBUDO COMERCIAL</span><span style="font-size:.65rem;color:var(--text-dim)">${mesActual()}</span></div>
+      <div id="embudoSection"></div>
+    </div>
+    <div class="dash-card">
+      <div class="card-title"><span>📅 CITAS POR DÍA DE LA SEMANA</span></div>
+      <div class="chart-wrap"><canvas id="chartDias"></canvas></div>
+    </div>
+  </div>
+  `:''}
+
+  <!-- ACCESO RÁPIDO -->
+  <div class="dash-card" style="margin-bottom:16px">
+    <div class="card-title"><span>⚡ ACCESO RÁPIDO</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${[
+        ['agenda.html','📅','Nueva cita'],
+        ['pacientes.html','👤','Nuevo paciente'],
+        ['abonos.html','💰','Registrar pago'],
+        ['cotizacion.html','📝','Cotización'],
+        ['recibo.html','🧾','Recibo'],
+        ['estado-cuenta.html','📄','Estado cuenta'],
+        ['recordatorios.html','💬','Recordatorios'],
+        ['reportes.html','📊','Reportes'],
+      ].map(([href,icon,label])=>`<a href="${href}" class="btn btn-ghost btn-sm" style="flex:1;min-width:100px;justify-content:center">${icon} ${label}</a>`).join('')}
+    </div>
+  </div>
+  `;
+
+  renderTurno();
+  renderCitasHoy();
+  renderAdeudos();
+  if(isAdmin){
+    renderMeta();
+    renderChartIngresos();
+    renderChartPacNuevos();
+    renderChartTratamientos();
+    renderFrecuentes();
+    renderEmbudo();
+    renderChartDias();
+  }
+}
+
+// ── TURNO ACTUAL ──────────────────────────────────────────
+function renderTurno(){
+  const ahora=new Date();
+  const horaActual=ahora.getHours()*60+ahora.getMinutes();
+  const citasHoy=ALL_CITAS
+    .filter(c=>c.fecha===hoy()&&c.hora&&c.estado!=='Completado'&&c.estado!=='Cancelado'&&c.estado!=='No Asistió')
+    .sort((a,b)=>a.hora.localeCompare(b.hora));
+
+  const enCurso=citasHoy.find(c=>{ const [h,m]=c.hora.split(':').map(Number); const minC=h*60+m; return minC<=horaActual&&horaActual<minC+60; });
+  const proxima=citasHoy.find(c=>{ const [h,m]=c.hora.split(':').map(Number); return h*60+m>horaActual; });
+  const siguiente=enCurso?citasHoy.find(c=>c.id!==enCurso.id&&c.hora>enCurso.hora):null;
+
+  const el=document.getElementById('turnoSection');
+  if(!el) return;
+
+  if(!enCurso&&!proxima){
+    el.innerHTML=`<div class="turno-card" style="margin-bottom:20px"><div class="sin-citas">📋 Sin citas pendientes para hoy</div></div>`;
+    return;
+  }
+
+  const cita=enCurso||proxima;
+  citaActualId=cita.id;
+  const dot=enCurso?'<div class="turno-dot"></div>':'<span style="font-size:.8rem">⏰</span>';
+  const lbl=enCurso?'EN CONSULTA AHORA':'PRÓXIMA CITA';
+  const sig=enCurso?siguiente:citasHoy.find(c=>c.hora>proxima.hora);
+
+  el.innerHTML=`
+  <div class="turno-card" style="margin-bottom:20px">
+    <div class="turno-header">${dot}<span class="turno-label">${lbl}</span></div>
+    <div class="turno-body">
+      <div>
+        <div class="turno-px-name">${cita.paciente||'—'}</div>
+        <div class="turno-px-info">🦷 ${cita.tratamiento||'Sin tratamiento'} · ⏰ ${cita.hora} · <span class="badge ${cita.estado==='Confirmado'?'badge-teal':'badge-gold'}" style="font-size:.62rem">${cita.estado||'Agendado'}</span></div>
+      </div>
+      <div class="turno-actions">
+        ${enCurso?`
+          <button class="btn btn-primary btn-sm" style="background:#25D366" onclick="whatsapp('${cita.tel||''}','Hola ${cita.paciente?.split(' ')[0]||''}')">💬</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${cita.id}','${(cita.paciente||'').replace(/'/g,"\\'")}','${cita.tratamiento||''}')">✅ Finalizar</button>
+        `:`
+          <button class="btn btn-ghost btn-sm" onclick="confirmarCita('${cita.id}')">✓ Confirmar</button>
+          <button class="btn btn-primary btn-sm" onclick="window.location.href='agenda.html'">Ver agenda</button>
+        `}
+      </div>
+    </div>
+    ${sig?`
+    <div class="turno-next">
+      <span class="next-label">PRÓXIMO</span>
+      <span style="color:var(--text);font-weight:600">${sig.paciente||'—'}</span>
+      <span>· ${sig.hora}</span>
+      <span>· ${sig.tratamiento||'Sin tratamiento'}</span>
+    </div>`:''}
+  </div>`;
+}
+
+window.abrirFinCita=function(id,paciente,trat){
+  citaActualId=id;
+  document.getElementById('finCitaInfo').innerHTML=`<strong>${paciente}</strong><br>${trat}`;
+  openModal('modalFinCita');
+};
+
+window.confirmarCita=async function(id){
+  try{
+    await fsUpdate('citas',id,{estado:'Confirmado'});
+    showToast('Cita confirmada','success');
+    ALL_CITAS=ALL_CITAS.map(c=>c.id===id?{...c,estado:'Confirmado'}:c);
+    renderTurno();
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+window.confirmarFinCita=async function(){
+  const estado=document.getElementById('finCitaEstado').value;
+  const notas=document.getElementById('finCitaNotas').value.trim();
+  try{
+    await fsUpdate('citas',citaActualId,{estado,notas,finalizadoEn:new Date().toISOString()});
+    showToast('Cita finalizada — '+estado,'success');
+    ALL_CITAS=ALL_CITAS.map(c=>c.id===citaActualId?{...c,estado}:c);
+    closeModal('modalFinCita');
+    renderTurno();
+    renderCitasHoy();
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+// ── CITAS HOY ─────────────────────────────────────────────
+function renderCitasHoy(){
+  const list=document.getElementById('citasHoyList'); if(!list) return;
+  const citasH=ALL_CITAS.filter(c=>c.fecha===hoy()).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  if(!citasH.length){list.innerHTML='<div class="empty-mini">Sin citas para hoy</div>';return;}
+  const estadoClass={Confirmado:'badge-teal',Completado:'badge-green',Cancelado:'badge-red','No Asistió':'badge-purple',Agendado:'badge-gold'};
+  list.innerHTML=citasH.slice(0,6).map(c=>`
+    <div class="cita-row">
+      <div class="cita-hora">${c.hora||'—'}</div>
+      <div class="cita-info">
+        <div class="cita-px">${c.paciente||'—'}</div>
+        <div class="cita-trat">${c.tratamiento||'Sin tratamiento'}</div>
+      </div>
+      <span class="badge ${estadoClass[c.estado]||'badge-gold'}" style="font-size:.6rem;flex-shrink:0">${c.estado||'Agendado'}</span>
+      ${c.tel?`<button class="btn btn-ghost btn-sm" style="padding:4px 6px;flex-shrink:0" onclick="whatsapp('${c.tel}','Hola ${c.paciente?.split(' ')[0]||''}')">💬</button>`:''}
+    </div>`).join('');
+  if(citasH.length>6) list.innerHTML+=`<div style="text-align:center;padding:8px;font-size:.72rem;color:var(--text-dim)">+${citasH.length-6} citas más → <a href="agenda.html" style="color:var(--teal)">ver agenda</a></div>`;
+}
+
+// ── ADEUDOS ───────────────────────────────────────────────
+function renderAdeudos(){
+  const list=document.getElementById('adeudosList'); if(!list) return;
+  const conSaldo=ALL_TRATS.filter(t=>Number(t.saldo||0)>0).sort((a,b)=>Number(b.saldo)-Number(a.saldo)).slice(0,6);
+  if(!conSaldo.length){list.innerHTML='<div class="empty-mini">✅ Sin adeudos pendientes</div>';return;}
+  list.innerHTML=conSaldo.map(t=>{
+    const initials=(t.paciente||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
+    return`<div class="adeudo-row">
+      <div class="adeudo-avatar">${initials}</div>
+      <div class="adeudo-info">
+        <div class="adeudo-px">${t.paciente||'—'}</div>
+        <div class="adeudo-trat">${t.tratamiento||'—'}</div>
+      </div>
+      <div class="adeudo-monto">${fmtMXN(t.saldo)}</div>
+    </div>`;}).join('');
+}
+
+// ── META MENSUAL ──────────────────────────────────────────
+function renderMeta(){
+  const el=document.getElementById('metaSection'); if(!el) return;
+  const actual=calcCobradoMes();
+  const ant=calcCobradoMes(-1);
+  const pct=metaMensual>0?Math.min(100,Math.round((actual/metaMensual)*100)):0;
+  const delta=ant>0?Math.round(((actual-ant)/ant)*100):null;
+  // Estimación: proyectar al fin de mes según avance del día
+  const diasMes=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+  const diaActual=new Date().getDate();
+  const estimacion=diaActual>0?Math.round((actual/diaActual)*diasMes):0;
+
+  // Color de la barra
+  const barColor=pct>=100?'#34D399':pct>=70?'#00C2A8':pct>=40?'#F4B942':'#FF6B6B';
+  const antPct=metaMensual>0?Math.min(100,Math.round((ant/metaMensual)*100)):0;
+
+  el.innerHTML=`
+  <div class="meta-card" style="margin-bottom:20px">
+    <div class="meta-header">
+      <div>
+        <div class="meta-title">🎯 META DE INGRESOS MENSUAL</div>
+        <div class="meta-values">
+          <span class="meta-actual">${fmtMXN(actual)}</span>
+          ${metaMensual>0?`<span class="meta-target">de ${fmtMXN(metaMensual)}</span>
+          <span class="meta-pct" style="background:${barColor}22;color:${barColor}">${pct}%</span>`:''}
+          ${delta!==null?`<span class="kpi-delta ${delta>=0?'up':'down'}" style="font-size:.72rem">${delta>=0?'▲':'▼'}${Math.abs(delta)}% vs ${mesAnterior().slice(0,7)}</span>`:''}
+        </div>
+      </div>
+      <button class="meta-edit-btn" onclick="openModal('modalMeta');document.getElementById('metaInput').value=${metaMensual||''}">
+        ✏️ ${metaMensual>0?'Editar meta':'Configurar meta'}
+      </button>
+    </div>
+    ${metaMensual>0?`
+    <div class="progress-track" style="position:relative">
+      <div class="progress-fill-meta" style="width:${pct}%;background:${barColor}"></div>
+      ${antPct>0?`<div class="meta-prev-line" style="left:${antPct}%" title="Mes anterior"></div>`:''}
+    </div>
+    <div class="meta-stats">
+      <div class="meta-stat">📅 Día <strong>${diaActual}/${diasMes}</strong></div>
+      <div class="meta-stat">📊 Estimación fin de mes: <strong style="color:${barColor}">${fmtMXN(estimacion)}</strong></div>
+      ${ant>0?`<div class="meta-stat">🗓 Mes anterior: <strong>${fmtMXN(ant)}</strong></div>`:''}
+      <div class="meta-stat">📏 Faltante: <strong style="color:var(--gold)">${fmtMXN(Math.max(0,metaMensual-actual))}</strong></div>
+    </div>
+    `:'<div style="font-size:.78rem;color:var(--text-dim);text-align:center;padding:10px">Haz clic en "Configurar meta" para establecer tu objetivo mensual</div>'}
+  </div>`;
+}
+
+window.guardarMeta=async function(){
+  const val=parseInt(document.getElementById('metaInput').value)||0;
+  if(val<1000){showToast('La meta mínima es $1,000 MXN','error');return;}
+  try{
+    await db.collection('clinicas').doc(SESSION.clinica.id).update({metaMensual:val});
+    metaMensual=val;
+    closeModal('modalMeta');
+    renderMeta();
+    showToast('Meta actualizada a '+fmtMXN(val),'success');
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+// ── CHARTS ────────────────────────────────────────────────
+function chartDefaults(extra={}){
+  return{
+    responsive:true,maintainAspectRatio:false,
+    animation:{duration:600},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(6,13,20,.9)',titleColor:'#E8F0F8',bodyColor:'rgba(232,240,248,.7)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:10,cornerRadius:8}},
+    scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},callback:v=>fmtMXN(v).replace('MXN','')}}},
+    ...extra
+  };
+}
+
+function renderChartIngresos(){
+  const ctx=document.getElementById('chartIngresos')?.getContext('2d'); if(!ctx) return;
+  const diasMes=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+  const labels=Array.from({length:diasMes},(_,i)=>`${i+1}`);
+  const dataAct=Array(diasMes).fill(0);
+  const dataAnt=Array(diasMes).fill(0);
+  const mes=mesActual(); const ant=mesAnterior();
+  ALL_ABONOS.forEach(a=>{
+    if(!a.fecha) return;
+    const [y,m,d]=a.fecha.split('-');
+    const ym=`${y}-${m}`;
+    const day=parseInt(d)-1;
+    if(ym===mes&&day<diasMes) dataAct[day]+=Number(a.monto||0);
+    if(ym===ant&&day<diasMes) dataAnt[day]+=Number(a.monto||0);
+  });
+  // Acumulado
+  let s1=0,s2=0;
+  const acAct=dataAct.map(v=>(s1+=v,s1));
+  const acAnt=dataAnt.map(v=>(s2+=v,s2));
+  new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Este mes',data:acAct,borderColor:'#00C2A8',backgroundColor:chartColor('#00C2A8',.1),borderWidth:2,pointRadius:0,tension:.4,fill:true},
+    {label:'Mes anterior',data:acAnt,borderColor:'#4A9EFF',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.4,borderDash:[4,3]},
+  ]},options:{...chartDefaults(),plugins:{...chartDefaults().plugins,legend:{display:true,labels:{color:textColor,font:{size:10},boxWidth:10}}}}});
+}
+
+function renderChartPacNuevos(){
+  const ctx=document.getElementById('chartPacNuevos')?.getContext('2d'); if(!ctx) return;
+  // Últimos 6 meses
+  const meses=[]; const datos=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(); d.setMonth(d.getMonth()-i);
+    const ym=d.toISOString().slice(0,7);
+    const lbl=d.toLocaleDateString('es-MX',{month:'short',year:'2-digit'});
+    meses.push(lbl);
+    datos.push(ALL_PACIENTES.filter(p=>(p.creadoEn||p.alta||'').slice?.(0,7)===ym).length);
+  }
+  new Chart(ctx,{type:'bar',data:{labels:meses,datasets:[{
+    data:datos,
+    backgroundColor:datos.map((_,i)=>i===5?'#00C2A8':'rgba(0,194,168,.3)'),
+    borderColor:datos.map((_,i)=>i===5?'#00C2A8':'rgba(0,194,168,.5)'),
+    borderWidth:1,borderRadius:4,
+  }]},options:{...chartDefaults(),scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},stepSize:1}}}}});
+}
+
+function renderChartTratamientos(){
+  const ctx=document.getElementById('chartTratamientos')?.getContext('2d'); if(!ctx) return;
+  // Agrupar ingresos por tipo de tratamiento
+  const map={};
+  ALL_ABONOS.forEach(a=>{
+    if(!a.tratamiento) return;
+    map[a.tratamiento]=(map[a.tratamiento]||0)+Number(a.monto||0);
+  });
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(!sorted.length){return;}
+  const labels=sorted.map(([k])=>k.length>18?k.slice(0,16)+'…':k);
+  const data=sorted.map(([,v])=>v);
+  const colors=['#00C2A8','#4A9EFF','#F4B942','#A78BFA','#34D399'];
+  new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors.map(c=>chartColor(c,.85)),borderColor:colors,borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},
+      plugins:{legend:{display:true,position:'right',labels:{color:textColor,font:{size:10},boxWidth:10,padding:8}},
+        tooltip:{backgroundColor:'rgba(6,13,20,.9)',titleColor:'#E8F0F8',bodyColor:'rgba(232,240,248,.7)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:10,cornerRadius:8,
+          callbacks:{label:ctx=>`${ctx.label}: ${fmtMXN(ctx.parsed)}`}
+        }
+      }
+    }
+  });
+}
+
+function renderFrecuentes(){
+  const el=document.getElementById('frecuentesList'); if(!el) return;
+  // Contar citas por paciente este mes
+  const map={};
+  ALL_CITAS.filter(c=>c.fecha?.slice(0,7)===mesActual()&&c.estado!=='Cancelado').forEach(c=>{
+    const k=c.paciente||'Sin nombre';
+    if(!map[k]) map[k]={nombre:k,citas:0,expId:c.expId};
+    map[k].citas++;
+  });
+  const sorted=Object.values(map).sort((a,b)=>b.citas-a.citas).slice(0,6);
+  if(!sorted.length){el.innerHTML='<div class="empty-mini">Sin citas este mes</div>';return;}
+  const max=sorted[0].citas;
+  el.innerHTML=sorted.map((p,i)=>{
+    const initials=p.nombre.split(' ').slice(0,2).map(w=>w[0]).join('');
+    const pct=Math.round((p.citas/max)*100);
+    const medals=['🥇','🥈','🥉'];
+    return`<div class="freq-row">
+      <div class="freq-rank">${medals[i]||i+1}</div>
+      <div class="freq-avatar">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div class="freq-name">${p.nombre}</div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-top:3px"><div style="height:100%;width:${pct}%;background:var(--teal);border-radius:2px;transition:width .8s"></div></div>
+      </div>
+      <div class="freq-count">${p.citas} cita${p.citas!==1?'s':''}</div>
+    </div>`;}).join('');
+}
+
+function renderEmbudo(){
+  const el=document.getElementById('embudoSection'); if(!el) return;
+  const mes=mesActual();
+  const presupuestos=ALL_COTIZACIONES.filter(c=>c.fecha?.slice(0,7)===mes).length||ALL_COTIZACIONES.length;
+  const aceptadas=ALL_TRATS.filter(t=>t.creadoEn?.slice?.(0,7)===mes).length;
+  const iniciadas=ALL_TRATS.filter(t=>t.creadoEn?.slice?.(0,7)===mes&&['En tratamiento','Abonando'].includes(t.estado)).length;
+  const liquidadas=ALL_TRATS.filter(t=>t.creadoEn?.slice?.(0,7)===mes&&t.estado==='Liquidado').length;
+  const total=Math.max(presupuestos,aceptadas,iniciadas,liquidadas,1);
+  const pasos=[
+    {label:'Presupuestos realizados',count:presupuestos,color:'#4A9EFF',icon:'📝'},
+    {label:'Presupuestos aceptados',count:aceptadas,color:'#00C2A8',icon:'✅'},
+    {label:'Tratamientos iniciados',count:iniciadas,color:'#F4B942',icon:'🦷'},
+    {label:'Tratamientos liquidados',count:liquidadas,color:'#34D399',icon:'💰'},
+  ];
+  el.innerHTML=`<div class="funnel-wrap">${pasos.map((p,i)=>{
+    const w=Math.round((p.count/total)*100);
+    const conv=i>0&&pasos[i-1].count>0?Math.round((p.count/pasos[i-1].count)*100):100;
+    return`<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-muted);margin-bottom:4px">
+        <span>${p.icon} ${p.label}</span>
+        <span style="font-family:var(--font-mono);color:${p.color}">${p.count} ${i>0?`<span style="color:var(--text-dim)">(${conv}% conv.)</span>`:''}</span>
+      </div>
+      <div style="height:28px;background:var(--surface2);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${w}%;background:${p.color};border-radius:6px;transition:width 1s ease;display:flex;align-items:center;padding-left:${w>15?'10px':'0'};min-width:4px">
+          ${w>20?`<span style="font-size:.7rem;font-weight:700;color:rgba(6,13,20,.9)">${p.count}</span>`:''}
+        </div>
+      </div>
+    </div>`;}).join('')}
+  </div>`;
+}
+
+function renderChartDias(){
+  const ctx=document.getElementById('chartDias')?.getContext('2d'); if(!ctx) return;
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const counts=Array(7).fill(0);
+  ALL_CITAS.filter(c=>c.fecha).forEach(c=>{
+    const d=new Date(c.fecha+'T12:00');
+    counts[d.getDay()]++;
+  });
+  new Chart(ctx,{type:'bar',data:{labels:dias,datasets:[{
+    data:counts,
+    backgroundColor:counts.map((v,i)=>v===Math.max(...counts)?'#00C2A8':'rgba(0,194,168,.25)'),
+    borderColor:counts.map((v,i)=>v===Math.max(...counts)?'#00C2A8':'rgba(0,194,168,.4)'),
+    borderWidth:1,borderRadius:6,
+  }]},options:{...chartDefaults(),scales:{x:{grid:{display:false},ticks:{color:textColor,font:{size:11}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},stepSize:1}}}}});
+}
+
+// ── CÁLCULOS ──────────────────────────────────────────────
+function calcCobradoMes(offset=0){
+  const d=new Date(); d.setMonth(d.getMonth()+offset);
+  const ym=d.toISOString().slice(0,7);
+  return ALL_ABONOS.filter(a=>a.fecha?.startsWith(ym)).reduce((s,a)=>s+Number(a.monto||0),0);
+}
+function calcKPIs(){
+  return{
+    cobradoMes:calcCobradoMes(0),
+    cobradoAnt:calcCobradoMes(-1),
+    adeudoTotal:ALL_TRATS.reduce((s,t)=>s+Number(t.saldo||0),0),
+    tiqMedio:ALL_ABONOS.filter(a=>a.fecha?.startsWith(mesActual())).length>0
+      ?Math.round(calcCobradoMes(0)/ALL_ABONOS.filter(a=>a.fecha?.startsWith(mesActual())).length):0,
+  };
+}
+function calcExtra(){
+  return{
+    citasHoy:ALL_CITAS.filter(c=>c.fecha===hoy()).length,
+    nuevosMes:ALL_PACIENTES.filter(p=>(p.creadoEn||p.alta||'').slice?.(0,7)===mesActual()).length,
+    nuevosAnt:ALL_PACIENTES.filter(p=>(p.creadoEn||p.alta||'').slice?.(0,7)===mesAnterior()).length,
+  };
+}
+function greetingText(){
+  const h=new Date().getHours();
+  return h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';
+}
 </script>
 </body>
 </html>
