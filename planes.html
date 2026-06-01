@@ -330,7 +330,7 @@ window.contratarPlan = function(planKey, planNombre, precio) {
   showToast(`Plan ${planNombre} seleccionado. Pagos en línea próximamente disponibles.`, 'info');
 
   // Por ahora: abrir WhatsApp para coordinar el pago manualmente
-  const msg = `Hola! Me interesa contratar el *Plan ${planNombre}* de DentalOS por $${precio.toLocaleString('es-MX')} MXN/mes.\n\nMi consultorio está en el sistema. ¿Cómo procedo con el pago?`;
+  const msg = `Hola! Me interesa contratar el *Plan ${planNombre}* de Hersantych por $${precio.toLocaleString('es-MX')} MXN/mes.\n\nMi consultorio está en el sistema. ¿Cómo procedo con el pago?`;
   setTimeout(() => {
     if (confirm(`¿Deseas contactarnos por WhatsApp para activar el Plan ${planNombre}?`)) {
       // Cambia este número por el tuyo
