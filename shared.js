@@ -197,7 +197,7 @@ function renderSidebar() {
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section">Principal</div>
-    ${navItem('index','📊','Dashboard','any')}
+    ${navItem('index','📊','Inicio','any')}
     ${navItem('agenda','📅','Agenda de Citas','any')}
     ${navItem('pacientes','👤','Expedientes','any')}
     <div class="nav-section">Clínica</div>
