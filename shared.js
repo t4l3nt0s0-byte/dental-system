@@ -55,40 +55,54 @@ const TRIAL_FEATURES = ['agenda','pacientes','tratamientos','abonos','cotizacion
   const t = localStorage.getItem('dental_tema');
   const c = localStorage.getItem('dental_color');
   if (!t && !c) return;
+
+  // Suprimir transiciones para cambio instantáneo sin pasme
+  const noTrans = document.createElement('style');
+  noTrans.id = '_no_transition_init';
+  noTrans.textContent = '*, *::before, *::after { transition: none !important; animation-duration: 0s !important; }';
+  document.head.appendChild(noTrans);
+
   const root = document.documentElement;
   if (t === 'light') {
-    root.style.setProperty('--bg',           '#f8fafc');
-    root.style.setProperty('--surface',      '#ffffff');
-    root.style.setProperty('--surface2',     '#f0f4f8');
-    root.style.setProperty('--border',       'rgba(0,0,0,.08)');
-    root.style.setProperty('--border2',      'rgba(0,0,0,.15)');
-    root.style.setProperty('--text',         '#111827');
-    root.style.setProperty('--text-muted',   'rgba(17,24,39,.55)');
-    root.style.setProperty('--text-dim',     'rgba(17,24,39,.3)');
-    // Sidebar y topbar en modo claro
-    root.style.setProperty('--sidebar-bg',   '#ffffff');
-    root.style.setProperty('--topbar-bg',    'rgba(255,255,255,.95)');
+    root.style.setProperty('--bg',         '#f8fafc');
+    root.style.setProperty('--surface',    '#ffffff');
+    root.style.setProperty('--surface2',   '#f0f4f8');
+    root.style.setProperty('--border',     'rgba(0,0,0,.08)');
+    root.style.setProperty('--border2',    'rgba(0,0,0,.15)');
+    root.style.setProperty('--text',       '#111827');
+    root.style.setProperty('--text-muted', 'rgba(17,24,39,.55)');
+    root.style.setProperty('--text-dim',   'rgba(17,24,39,.3)');
+    root.style.setProperty('--sidebar-bg', '#ffffff');
+    root.style.setProperty('--topbar-bg',  'rgba(255,255,255,.97)');
     document.body && (document.body.style.background = '#f8fafc');
-  } else {
-    // Restaurar modo oscuro
-    root.style.setProperty('--bg',           '#060D14');
-    root.style.setProperty('--surface',      '#0C1622');
-    root.style.setProperty('--surface2',     '#111E2E');
-    root.style.setProperty('--border',       'rgba(255,255,255,.07)');
-    root.style.setProperty('--border2',      'rgba(255,255,255,.12)');
-    root.style.setProperty('--text',         '#E8F0F8');
-    root.style.setProperty('--text-muted',   'rgba(232,240,248,.50)');
-    root.style.setProperty('--text-dim',     'rgba(232,240,248,.25)');
-    root.style.setProperty('--sidebar-bg',   '#0A1628');
-    root.style.setProperty('--topbar-bg',    'rgba(6,13,20,.92)');
+    document.body && (document.body.style.color = '#111827');
+  } else if (t === 'dark') {
+    root.style.setProperty('--bg',         '#060D14');
+    root.style.setProperty('--surface',    '#0C1622');
+    root.style.setProperty('--surface2',   '#111E2E');
+    root.style.setProperty('--border',     'rgba(255,255,255,.07)');
+    root.style.setProperty('--border2',    'rgba(255,255,255,.12)');
+    root.style.setProperty('--text',       '#E8F0F8');
+    root.style.setProperty('--text-muted', 'rgba(232,240,248,.50)');
+    root.style.setProperty('--text-dim',   'rgba(232,240,248,.25)');
+    root.style.setProperty('--sidebar-bg', '#0A1628');
+    root.style.setProperty('--topbar-bg',  'rgba(6,13,20,.95)');
     document.body && (document.body.style.background = '#060D14');
   }
   if (c) {
-    const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);
+    const r = parseInt(c.slice(1,3),16);
+    const g = parseInt(c.slice(3,5),16);
+    const b = parseInt(c.slice(5,7),16);
     root.style.setProperty('--teal',      c);
     root.style.setProperty('--teal-dim',  `rgba(${r},${g},${b},.12)`);
     root.style.setProperty('--teal-glow', `rgba(${r},${g},${b},.25)`);
   }
+
+  // Restaurar transiciones en el siguiente frame
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const s = document.getElementById('_no_transition_init');
+    if (s) s.remove();
+  }));
 })();
 
 // Banner de trial en la parte inferior
