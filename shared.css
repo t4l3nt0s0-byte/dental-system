@@ -54,11 +54,11 @@ body::before {
 /* ── SIDEBAR ── */
 .sidebar {
   position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
-  background: var(--surface);
+  background: var(--sidebar-bg, var(--surface));
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
   z-index: 100;
-  transition: transform .3s;
+  transition: transform .3s, background .3s;
 }
 .sidebar-logo { padding: 24px 20px 18px; border-bottom: 1px solid var(--border); }
 .logo-mark { display: flex; align-items: center; gap: 10px; }
@@ -121,14 +121,19 @@ body::before {
 
 .topbar {
   position: sticky; top: 0;
-  background: rgba(6,13,20,.9);
+  background: var(--topbar-bg, rgba(6,13,20,.92));
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   padding: 0 28px; height: 60px;
   display: flex; align-items: center; justify-content: space-between;
   z-index: 50;
+  color: var(--text);
+  transition: background .3s, color .3s;
 }
-.topbar-title { font-family: var(--font-display); font-size: 1.35rem; font-style: italic; }
+.topbar-title {
+  font-family: var(--font-display); font-size: 1.35rem; font-style: italic;
+  color: var(--text);
+}
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
 .content { padding: 28px; }

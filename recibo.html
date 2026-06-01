@@ -399,8 +399,9 @@ function renderFiscalPreview(){
       else logoEl.textContent = '🦷';
     }
   }
-  document.getElementById('rv-clinica').textContent=fiscalData.nombre||'Hersantych Dental';
-  const subParts=[fiscalData.especialidad,fiscalData.tel,fiscalData.email].filter(Boolean);
+  document.getElementById('rv-clinica').textContent=fiscalData.nombre||SESSION?.clinica?.nombre||'Hersantych Dental';
+  const eslogan = SESSION?.clinica?.eslogan || '';
+  const subParts=[eslogan, fiscalData.especialidad,fiscalData.tel,fiscalData.email].filter(Boolean);
   document.getElementById('rv-sub').textContent=subParts.join(' · ');
   document.getElementById('rv-footer').innerHTML=`<strong>${fiscalData.nombre||'Hersantych Dental'}</strong><br>${fiscalData.leyenda||'Gracias por su preferencia'}<br>${fiscalData.direccion||''}`;
   // Datos fiscales en el cuerpo

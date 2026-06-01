@@ -199,8 +199,9 @@ initSession('any').then(async session => {
   const cSnap = await db.collection('clinicas').doc(clinica.id).get();
   clinicaLogoBase64 = cSnap.data()?.logoBase64 || null;
   document.getElementById('pvClinica').textContent = clinica.nombre || 'Hersantych Dental';
-  document.getElementById('pvSub').textContent = clinica.telefono ? 'Tel: '+clinica.telefono : '';
-  document.getElementById('pvFooter').textContent = `${clinica.nombre||'Hersantych Dental'} · ${clinica.direccion||''} · Gracias por su preferencia`;
+  const subPartsArr = [clinica.eslogan, clinica.telefono ? 'Tel: '+clinica.telefono : ''].filter(Boolean);
+  document.getElementById('pvSub').textContent = subPartsArr.join(' · ') || 'Sistema de Administración';
+  document.getElementById('pvFooter').textContent = `${clinica.nombre||'Hersantych Dental'} · ${clinica.direccion||''} · ${clinica.eslogan||'Gracias por su preferencia'}`;
   // Actualizar logo en preview
   updateLogoPreview();
   // Mostrar toggle de logo solo si existe logo

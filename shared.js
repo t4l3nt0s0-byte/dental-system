@@ -57,20 +57,37 @@ const TRIAL_FEATURES = ['agenda','pacientes','tratamientos','abonos','cotizacion
   if (!t && !c) return;
   const root = document.documentElement;
   if (t === 'light') {
-    root.style.setProperty('--bg','#f8fafc');
-    root.style.setProperty('--surface','#ffffff');
-    root.style.setProperty('--surface2','#f0f4f8');
-    root.style.setProperty('--border','rgba(0,0,0,.08)');
-    root.style.setProperty('--border2','rgba(0,0,0,.15)');
-    root.style.setProperty('--text','#111827');
-    root.style.setProperty('--text-muted','rgba(17,24,39,.55)');
-    root.style.setProperty('--text-dim','rgba(17,24,39,.3)');
+    root.style.setProperty('--bg',           '#f8fafc');
+    root.style.setProperty('--surface',      '#ffffff');
+    root.style.setProperty('--surface2',     '#f0f4f8');
+    root.style.setProperty('--border',       'rgba(0,0,0,.08)');
+    root.style.setProperty('--border2',      'rgba(0,0,0,.15)');
+    root.style.setProperty('--text',         '#111827');
+    root.style.setProperty('--text-muted',   'rgba(17,24,39,.55)');
+    root.style.setProperty('--text-dim',     'rgba(17,24,39,.3)');
+    // Sidebar y topbar en modo claro
+    root.style.setProperty('--sidebar-bg',   '#ffffff');
+    root.style.setProperty('--topbar-bg',    'rgba(255,255,255,.95)');
+    document.body && (document.body.style.background = '#f8fafc');
+  } else {
+    // Restaurar modo oscuro
+    root.style.setProperty('--bg',           '#060D14');
+    root.style.setProperty('--surface',      '#0C1622');
+    root.style.setProperty('--surface2',     '#111E2E');
+    root.style.setProperty('--border',       'rgba(255,255,255,.07)');
+    root.style.setProperty('--border2',      'rgba(255,255,255,.12)');
+    root.style.setProperty('--text',         '#E8F0F8');
+    root.style.setProperty('--text-muted',   'rgba(232,240,248,.50)');
+    root.style.setProperty('--text-dim',     'rgba(232,240,248,.25)');
+    root.style.setProperty('--sidebar-bg',   '#0A1628');
+    root.style.setProperty('--topbar-bg',    'rgba(6,13,20,.92)');
+    document.body && (document.body.style.background = '#060D14');
   }
   if (c) {
     const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);
-    root.style.setProperty('--teal',c);
-    root.style.setProperty('--teal-dim',`rgba(${r},${g},${b},.12)`);
-    root.style.setProperty('--teal-glow',`rgba(${r},${g},${b},.25)`);
+    root.style.setProperty('--teal',      c);
+    root.style.setProperty('--teal-dim',  `rgba(${r},${g},${b},.12)`);
+    root.style.setProperty('--teal-glow', `rgba(${r},${g},${b},.25)`);
   }
 })();
 
@@ -169,10 +186,12 @@ function renderSidebar() {
   const html = `
   <div class="sidebar-logo">
     <div class="logo-mark">
-      <div class="logo-icon">🦷</div>
-      <div>
-        <div class="logo-text">Hersantych<span> Dental</span></div>
-        <div class="logo-sub">Sistema integral</div>
+      ${clinica.logoBase64
+        ? `<img src="${clinica.logoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:#fff;padding:3px;flex-shrink:0">`
+        : '<div class="logo-icon">🦷</div>'}
+      <div style="min-width:0">
+        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'DentalOS'}</div>
+        <div class="logo-sub">${clinica.eslogan || 'Sistema integral'}</div>
       </div>
     </div>
   </div>
