@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Documentos Legales</title>
+<title>DentalOS · Legalidad</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -48,7 +48,7 @@
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">📋 Documentos Legales</div>
+    <div class="topbar-title">⚖️ Legalidad</div>
     <div class="topbar-actions">
       <a href="configuracion.html" class="btn btn-ghost btn-sm">← Configuración</a>
     </div>
@@ -58,13 +58,11 @@
 
       <!-- NAV -->
       <div class="legal-nav">
-        <div class="legal-nav-item active" onclick="showLegal('privacidad')" id="lnav-privacidad"><span>🔒</span> Política de Privacidad</div>
+        <div class="legal-nav-item active" onclick="showLegal('aviso')" id="lnav-aviso"><span>📄</span> Aviso de Privacidad</div>
         <div class="legal-nav-item" onclick="showLegal('terminos')" id="lnav-terminos"><span>📜</span> Términos y Condiciones</div>
-        <div class="legal-nav-item" onclick="showLegal('aviso')" id="lnav-aviso"><span>📄</span> Aviso de Privacidad</div>
-        <div class="legal-nav-item" onclick="showLegal('reembolso')" id="lnav-reembolso"><span>💳</span> Política de Reembolso</div>
-        <div class="legal-nav-item" onclick="showLegal('cancelacion')" id="lnav-cancelacion"><span>🚫</span> Cancelación de Suscripción</div>
-        <div class="legal-nav-item" onclick="showLegal('gestion')" id="lnav-gestion"><span>⚙️</span> Gestión de Suscripción</div>
         <div class="legal-nav-item" onclick="showLegal('datos')" id="lnav-datos"><span>🗄️</span> Acuerdo de Datos</div>
+        <div class="legal-nav-item" onclick="showLegal('cancelacion')" id="lnav-cancelacion"><span>🚫</span> Cancelación y Reembolso</div>
+        <div class="legal-nav-item" onclick="showLegal('gestion')" id="lnav-gestion"><span>⚙️</span> Gestión de Suscripción</div>
         <div class="legal-nav-item" onclick="showLegal('calificanos')" id="lnav-calificanos"><span>⭐</span> Calificanos</div>
         <div class="legal-nav-item" onclick="showLegal('contacto')" id="lnav-contacto"><span>💬</span> Contáctanos</div>
       </div>
@@ -73,7 +71,7 @@
       <div>
 
         <!-- POLÍTICA DE PRIVACIDAD -->
-        <div class="legal-section active" id="sec-privacidad">
+        <div class="legal-section" id="sec-privacidad">
           <div class="doc-card">
             <div class="doc-header">
               <div class="doc-title">🔒 Política de Privacidad</div>
@@ -184,7 +182,7 @@
         </div>
 
         <!-- AVISO DE PRIVACIDAD INTEGRAL -->
-        <div class="legal-section" id="sec-aviso">
+        <div class="legal-section active" id="sec-aviso">
           <div class="doc-card">
             <div class="doc-header">
               <div class="doc-title">📄 Aviso de Privacidad Integral</div>
@@ -280,10 +278,10 @@
         </div>
 
         <!-- POLÍTICA DE CANCELACIÓN -->
-        <div class="legal-section" id="sec-cancelacion">
+        <div class="legal-section" id="sec-cancelacion" style="">
           <div class="doc-card">
             <div class="doc-header">
-              <div class="doc-title">🚫 Política de Cancelación de Suscripción</div>
+              <div class="doc-title">🚫 Cancelación de Suscripción y Reembolso</div>
               <div class="doc-meta"><span>📅 Vigente: junio 2026</span></div>
             </div>
             <div class="doc-body">
@@ -622,6 +620,7 @@ window.enviarContacto = async function() {
 // Abrir sección por URL param
 const param = new URLSearchParams(location.search).get('sec');
 if (param) showLegal(param);
+else showLegal('aviso');
 </script>
 </body>
 </html>
