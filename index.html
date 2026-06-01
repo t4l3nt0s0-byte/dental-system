@@ -109,7 +109,12 @@
   <div class="topbar">
     <div class="topbar-title">📊 Panel Clínico</div>
     <div class="topbar-actions" style="gap:12px">
-      <div id="topbarFecha" style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono)"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="topbarReloj" style="font-size:.78rem;color:var(--teal);font-family:var(--font-mono);font-weight:700;display:flex;align-items:center;gap:4px">
+          <span style="font-size:.75rem">🕐</span><span id="relojTxt">00:00:00</span>
+        </div>
+        <div id="topbarFecha" style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono)"></div>
+      </div>
       <button class="btn btn-primary btn-sm" onclick="window.location.href='agenda.html'">+ Nueva cita</button>
     </div>
   </div>
@@ -181,6 +186,25 @@ let ALL_CITAS=[], ALL_ABONOS=[], ALL_PACIENTES=[], ALL_TRATS=[], ALL_COTIZACIONE
 let citaActualId=null, metaMensual=0, isAdmin=false;
 const CHART_DEFAULTS = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, animation:{duration:800} };
 
+// ── RELOJ EN VIVO ────────────────────────────────────────
+function startClock(){
+  function tick(){
+    const now=new Date();
+    const h=String(now.getHours()).padStart(2,'0');
+    const m=String(now.getMinutes()).padStart(2,'0');
+    const s=String(now.getSeconds()).padStart(2,'0');
+    const el=document.getElementById('relojTxt');
+    if(el) el.textContent=`${h}:${m}:${s}`;
+    // Update clock icon by hour
+    const hr=now.getHours()%12;
+    const icons=['🕛','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚'];
+    const iconEl=document.querySelector('#topbarReloj span:first-child');
+    if(iconEl) iconEl.textContent=icons[hr];
+  }
+  tick();
+  setInterval(tick,1000);
+}
+
 // ── HELPERS ───────────────────────────────────────────────
 const hoy        = () => new Date().toISOString().slice(0,10);
 const mesActual  = () => new Date().toISOString().slice(0,7);
@@ -213,6 +237,7 @@ initSession('any').then(async session=>{
   metaMensual=cSnap.data()?.metaMensual||0;
 
   renderDashboard(clinica,user);
+  startClock();
 });
 
 function renderDashboard(clinica,user){
@@ -362,7 +387,11 @@ function renderTurno(){
 
   const enCurso=citasHoy.find(c=>{ const [h,m]=c.hora.split(':').map(Number); const minC=h*60+m; return minC<=horaActual&&horaActual<minC+60; });
   const proxima=citasHoy.find(c=>{ const [h,m]=c.hora.split(':').map(Number); return h*60+m>horaActual; });
-  const siguiente=enCurso?citasHoy.find(c=>c.id!==enCurso.id&&c.hora>enCurso.hora):null;
+  const siguiente=enCurso
+    ? citasHoy.find(c=>c.id!==enCurso.id&&c.hora>enCurso.hora)
+    : proxima
+      ? citasHoy.find(c=>c.id!==proxima.id&&c.hora>proxima.hora)
+      : null;
 
   const el=document.getElementById('turnoSection');
   if(!el) return;
@@ -374,38 +403,41 @@ function renderTurno(){
 
   const cita=enCurso||proxima;
   citaActualId=cita.id;
-  const dot=enCurso?'<div class="turno-dot"></div>':'<span style="font-size:.8rem">⏰</span>';
+  const dot=enCurso?'<div class="turno-dot"></div>':'<span style="font-size:.85rem">⏰</span>';
   const lbl=enCurso?'EN CONSULTA AHORA':'PRÓXIMA CITA';
-  const sig=enCurso?siguiente:citasHoy.find(c=>c.hora>proxima.hora);
+  const cardBorder=enCurso?'rgba(0,194,168,.3)':'rgba(74,158,255,.25)';
+  const cardBg=enCurso?'rgba(0,194,168,.08)':'rgba(74,158,255,.06)';
+  const lblColor=enCurso?'var(--teal)':'var(--blue)';
 
   el.innerHTML=`
-  <div class="turno-card" style="margin-bottom:20px">
-    <div class="turno-header">${dot}<span class="turno-label">${lbl}</span></div>
+  <div class="turno-card" style="margin-bottom:20px;background:linear-gradient(135deg,${cardBg},transparent);border-color:${cardBorder}">
+    <div class="turno-header">${dot}<span class="turno-label" style="color:${lblColor}">${lbl}</span></div>
     <div class="turno-body">
       <div>
         <div class="turno-px-name">${cita.paciente||'—'}</div>
-        <div class="turno-px-info">🦷 ${cita.tratamiento||'Sin tratamiento'} · ⏰ ${cita.hora} · <span class="badge ${cita.estado==='Confirmado'?'badge-teal':'badge-gold'}" style="font-size:.62rem">${cita.estado||'Agendado'}</span></div>
+        <div class="turno-px-info">
+          🦷 ${cita.tratamiento||'Sin tratamiento'} &nbsp;·&nbsp; ⏰ ${cita.hora}
+          &nbsp;·&nbsp; <span class="badge ${cita.estado==='Confirmado'?'badge-teal':'badge-gold'}" style="font-size:.62rem">${cita.estado||'Agendado'}</span>
+        </div>
       </div>
       <div class="turno-actions">
-        ${enCurso?`
-          <button class="btn btn-primary btn-sm" style="background:#25D366" onclick="whatsapp('${cita.tel||''}','Hola ${cita.paciente?.split(' ')[0]||''}')">💬</button>
-          <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${cita.id}','${(cita.paciente||'').replace(/'/g,"\\'")}','${cita.tratamiento||''}')">✅ Finalizar</button>
-        `:`
-          <button class="btn btn-ghost btn-sm" onclick="confirmarCita('${cita.id}')">✓ Confirmar</button>
-          <button class="btn btn-primary btn-sm" onclick="window.location.href='agenda.html'">Ver agenda</button>
-        `}
+        ${cita.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${cita.tel}','Hola ${(cita.paciente||'').split(' ')[0]}')">💬</button>`:''}
+        ${!enCurso?`<button class="btn btn-ghost btn-sm" onclick="confirmarCita('${cita.id}')">✓ Confirmar</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${cita.id}','${(cita.paciente||'').replace(/'/g,"\'")}','${(cita.tratamiento||'').replace(/'/g,"\'")}')">✅ Finalizar</button>
       </div>
     </div>
-    ${sig?`
+    ${siguiente?`
     <div class="turno-next">
-      <span class="next-label">PRÓXIMO</span>
-      <span style="color:var(--text);font-weight:600">${sig.paciente||'—'}</span>
-      <span>· ${sig.hora}</span>
-      <span>· ${sig.tratamiento||'Sin tratamiento'}</span>
+      <span class="next-label">DESPUÉS</span>
+      <span style="font-size:.9rem">👤</span>
+      <span style="color:var(--text);font-weight:600">${siguiente.paciente||'—'}</span>
+      <span style="color:var(--text-dim)">·</span>
+      <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--teal)">${siguiente.hora}</span>
+      <span style="color:var(--text-dim)">·</span>
+      <span>${siguiente.tratamiento||'Sin tratamiento'}</span>
     </div>`:''}
   </div>`;
 }
-
 window.abrirFinCita=function(id,paciente,trat){
   citaActualId=id;
   document.getElementById('finCitaInfo').innerHTML=`<strong>${paciente}</strong><br>${trat}`;
@@ -491,14 +523,17 @@ function renderMeta(){
     <div class="meta-header">
       <div>
         <div class="meta-title">🎯 META DE INGRESOS MENSUAL</div>
-        <div class="meta-values">
+        <div class="meta-values" style="align-items:center">
           <span class="meta-actual">${fmtMXN(actual)}</span>
-          ${metaMensual>0?`<span class="meta-target">de ${fmtMXN(metaMensual)}</span>
-          <span class="meta-pct" style="background:${barColor}22;color:${barColor}">${pct}%</span>`:''}
-          ${delta!==null?`<span class="kpi-delta ${delta>=0?'up':'down'}" style="font-size:.72rem">${delta>=0?'▲':'▼'}${Math.abs(delta)}% vs ${mesAnterior().slice(0,7)}</span>`:''}
+          ${metaMensual>0?`
+          <span style="font-size:.85rem;color:var(--text-dim)">de</span>
+          <span class="meta-target" style="font-size:1rem;color:var(--text-muted)">${fmtMXN(metaMensual)}</span>
+          <span class="meta-pct" style="background:${barColor}22;color:${barColor};font-size:1.05rem;font-weight:800;padding:3px 12px">${pct}%</span>
+          `:''}
+          ${delta!==null?`<span class="kpi-delta ${delta>=0?'up':'down'}" style="font-size:.72rem">${delta>=0?'▲':'▼'}${Math.abs(delta)}% vs mes ant.</span>`:''}
         </div>
       </div>
-      <button class="meta-edit-btn" onclick="openModal('modalMeta');document.getElementById('metaInput').value=${metaMensual||''}">
+      <button class="meta-edit-btn" onclick="abrirModalMeta()">
         ✏️ ${metaMensual>0?'Editar meta':'Configurar meta'}
       </button>
     </div>
@@ -516,6 +551,12 @@ function renderMeta(){
     `:'<div style="font-size:.78rem;color:var(--text-dim);text-align:center;padding:10px">Haz clic en "Configurar meta" para establecer tu objetivo mensual</div>'}
   </div>`;
 }
+
+window.abrirModalMeta=function(){
+  const inp=document.getElementById('metaInput');
+  if(inp) inp.value=metaMensual||'';
+  openModal('modalMeta');
+};
 
 window.guardarMeta=async function(){
   const val=parseInt(document.getElementById('metaInput').value)||0;
