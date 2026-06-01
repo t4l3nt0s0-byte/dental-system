@@ -198,29 +198,29 @@ function renderSidebar() {
   <nav class="sidebar-nav">
     <div class="nav-section">Principal</div>
     ${navItem('index','📊','Inicio','any')}
-    ${navItem('agenda','📅','Agenda de Citas','any')}
-    ${navItem('pacientes','👤','Expedientes','any')}
+    ${navItem('agenda','📅','Agenda','any')}
+    ${navItem('pacientes','👤','Pacientes','any')}
     <div class="nav-section">Clínica</div>
     ${navItem('tratamientos','🦷','Tratamientos','any')}
-    ${navItem('abonos','💰','Abonos & Pagos','any')}
-    ${navItem('catalogo','📚','Catálogo & Precios','any')}
+    ${navItem('abonos','💰','Pagos','any')}
+    ${navItem('catalogo','📚','Precios','any')}
     ${navItem('cotizacion','📝','Cotizaciones','any')}
     ${navItem('corte-caja','🧾','Corte de Caja','any')}
     <div class="nav-section">Avanzado</div>
     ${navItem('odontograma','🦷','Odontograma','odontograma')}
     ${navItem('inventario','💊','Inventario','inventario')}
-    ${navItem('ofertas','🎁','Ofertas & Promos','ofertas')}
+    ${navItem('ofertas','🎁','Ofertas','ofertas')}
     ${navItem('metricas','📈','Métricas','metricas')}
     ${navItem('reportes','📊','Reportes','reportes')}
     <div class="nav-section">Sistema</div>
     ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
-    ${navItem('expediente','📋','Expediente Completo','expediente')}
+    ${navItem('expediente','📋','Expediente','expediente')}
     ${navItem('recibo','🧾','Recibo de Pago','any')}
     ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}
     ${navItem('recordatorios','💬','Recordatorios WA','any')}
     ${navItem('importar-datos','📥','Importar desde Excel','any')}
     ${navItem('busqueda','🔍','Búsqueda Global','any')}
-    ${navItem('planes','💎','Planes & Precios','any')}
+    ${navItem('planes','💎','Planes de suscripción','any')}
     ${navItem('configuracion','⚙️','Configuración','any')}
   </nav>
   <div class="sidebar-footer">
