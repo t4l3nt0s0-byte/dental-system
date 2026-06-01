@@ -261,7 +261,7 @@
                     <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px">📥 Exportar todos mis datos (Backup)</div>
                     <div style="font-size:.72rem;color:var(--text-muted)">Descarga un archivo JSON con todos tus datos para respaldo.</div>
                   </div>
-                  <button class="btn btn-ghost btn-sm" onclick="exportarTodo()">🔐 Exportar con contraseña</button>
+                  <button class="btn btn-ghost btn-sm" onclick="exportarTodo()">📥 Exportar</button>
                 </div>
                 <div style="background:var(--surface2);border-radius:6px;padding:10px;font-size:.72rem;color:var(--text-muted);line-height:1.7">
                   <strong style="color:var(--text)">El backup incluye:</strong><br>
@@ -282,9 +282,9 @@
                     <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px">📤 Restaurar desde backup JSON</div>
                     <div style="font-size:.72rem;color:var(--text-muted)">Importa un backup guardado anteriormente para recuperar tus datos.</div>
                   </div>
-                  <button class="btn btn-ghost btn-sm" onclick="seleccionarRestaurar()">🔐 Restaurar con contraseña</button>
+                  <button class="btn btn-ghost btn-sm" onclick="document.getElementById('restoreInput').click()">📤 Restaurar</button>
                 </div>
-                <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="prepararRestauracion(event)">
+                <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restaurarBackup(event)">
                 <div style="background:rgba(244,185,66,.08);border:1px solid rgba(244,185,66,.2);border-radius:6px;padding:8px 10px;font-size:.72rem;color:var(--gold)">
                   ⚠️ Solo restaura pacientes y catálogo. No sobreescribe datos existentes — agrega los del backup.
                 </div>
@@ -313,33 +313,7 @@
   </div>
 </main>
 
-<!-- MODAL CONTRASEÑA -->
-<div class="modal-overlay" id="modalPassword">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header">
-      <div class="modal-title">🔐 Confirmación de seguridad</div>
-      <button class="modal-close" onclick="closeModal('modalPassword')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
-        Acción: <strong id="modalPassTitle" style="color:var(--text)"></strong><br>
-        Por seguridad, ingresa la contraseña de tu cuenta de administrador para continuar.
-      </div>
-      <div class="form-group">
-        <label class="form-label">Contraseña del administrador</label>
-        <input type="password" class="form-input" id="modalPassInput" placeholder="Tu contraseña actual"
-          onkeydown="if(event.key==='Enter') confirmarContrasena()">
-      </div>
-      <div id="modalPassError" style="display:none;color:var(--red);font-size:.75rem;margin-top:6px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modalPassword')">Cancelar</button>
-      <button class="btn btn-primary" id="btnConfirmPass" onclick="confirmarContrasena()">🔓 Confirmar</button>
-    </div>
-  </div>
-</div>
-
-
+<!-- SAVE FLOAT BUTTON -->
 <div class="save-float" id="saveFloat">
   <button class="btn btn-primary" onclick="guardarConfig()" style="box-shadow:0 4px 20px rgba(0,194,168,.4)">
     💾 Guardar cambios
@@ -631,172 +605,81 @@ window.cambiarPass = async function() {
   } catch(e) { showToast('Error: '+e.message,'error'); }
 };
 
-// ── MODAL DE CONTRASEÑA PARA ACCIONES CRÍTICAS ─────────────
-let _pendingAction = null;
-
-window.pedirContrasena = function(accion, callback) {
-  _pendingAction = callback;
-  document.getElementById('modalPassTitle').textContent = accion;
-  document.getElementById('modalPassInput').value = '';
-  document.getElementById('modalPassError').style.display = 'none';
-  openModal('modalPassword');
-  setTimeout(() => document.getElementById('modalPassInput').focus(), 200);
-};
-
-window.confirmarContrasena = async function() {
-  const pass = document.getElementById('modalPassInput').value;
-  const errEl = document.getElementById('modalPassError');
-  if (!pass) { errEl.textContent = 'Ingresa tu contraseña'; errEl.style.display = 'block'; return; }
-  const btn = document.getElementById('btnConfirmPass');
-  btn.disabled = true; btn.textContent = 'Verificando...';
-  try {
-    // Reautenticar con Firebase
-    const credential = firebase.auth.EmailAuthProvider.credential(SESSION.user.email, pass);
-    await auth.currentUser.reauthenticateWithCredential(credential);
-    closeModal('modalPassword');
-    if (_pendingAction) { await _pendingAction(); _pendingAction = null; }
-  } catch(e) {
-    errEl.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
-    errEl.style.display = 'block';
-  }
-  btn.disabled = false; btn.textContent = '🔓 Confirmar';
-};
-
-// ── EXPORTAR TODO (BACKUP COMPLETO) ───────────────────────
-window.exportarTodo = function() {
-  pedirContrasena('Exportar todos los datos', async () => {
-    showToast('Exportando datos...','info');
-    try {
-      const [pacientes,tratamientos,abonos,citas,catalogo,inventario,recibos,cotizaciones] = await Promise.all([
-        fsGetAll('pacientes'),
-        fsGetAll('tratamientos'),
-        fsGetAll('abonos'),
-        fsGetAll('citas'),
-        fsGetAll('catalogo'),
-        fsGetAll('inventario'),
-        fsGetAll('recibos'),
-        fsGetAll('cotizaciones'),
-      ]);
-      // Intentar también rx y notas clínicas
-      let rx=[], notas=[];
-      try { rx    = await fsGetAll('rx'); } catch(e){}
-      try { notas = await fsGetAll('notas-clinicas'); } catch(e){}
-
-      const backup = {
-        version: '2.0',
-        exportadoEl: new Date().toISOString(),
-        clinica: SESSION.clinica.nombre,
-        clinicaId: SESSION.clinica.id,
-        totalRegistros: pacientes.length + tratamientos.length + abonos.length,
-        // Datos completos
-        pacientes, tratamientos, abonos, citas,
-        catalogo, inventario, recibos, cotizaciones,
-        rx, notas,
-      };
-      const json = JSON.stringify(backup, null, 2);
-      const a = document.createElement('a');
-      a.href = 'data:application/json;charset=utf-8,\uFEFF'+encodeURIComponent(json);
-      a.download = `backup_${SESSION.clinica.nombre?.replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-      showToast(`Backup completo descargado — ${pacientes.length} pacientes, ${tratamientos.length} tratamientos`, 'success');
-    } catch(e) { showToast('Error al exportar: '+e.message,'error'); }
-  });
-};
-
 // ── RESTAURAR DESDE BACKUP JSON ───────────────────────────
-let _backupFile = null;
-
-window.seleccionarRestaurar = function() {
-  document.getElementById('restoreInput').click();
-};
-
-window.prepararRestauracion = function(e) {
+window.restaurarBackup = async function(e) {
   const file = e.target.files[0];
   if (!file) return;
-  _backupFile = file;
-  pedirContrasena('Restaurar datos desde backup', () => ejecutarRestauracion(_backupFile));
-  e.target.value = '';
-};
-
-async function ejecutarRestauracion(file) {
   const logEl = document.getElementById('restoreLog');
   logEl.style.display = 'block';
-  logEl.innerHTML = '';
+  logEl.innerHTML = '⏳ Leyendo archivo...';
   const addLog = (msg, color='var(--text-muted)') => {
-    const d = document.createElement('div');
-    d.style.color = color; d.innerHTML = msg;
-    logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
+    logEl.innerHTML += `<div style="color:${color}">${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
   };
   try {
     const text = await file.text();
     const backup = JSON.parse(text);
     if (!backup.pacientes && !backup.catalogo) {
-      addLog('❌ Archivo inválido — no es un backup de DentalOS','var(--red)'); return;
+      logEl.innerHTML = '<span style="color:var(--red)">❌ Archivo JSON inválido — no es un backup de DentalOS</span>'; return;
     }
-    addLog(`📋 Backup: <strong>${backup.clinica||'—'}</strong> · ${backup.exportadoEl?.slice(0,10)||''} · v${backup.version||'1.0'}`,'var(--teal)');
-    addLog(`📊 Contiene: ${backup.pacientes?.length||0} pacientes · ${backup.tratamientos?.length||0} trats · ${backup.abonos?.length||0} abonos · ${backup.catalogo?.length||0} catálogo`);
-    addLog('—————————————————————');
-
-    let totOk=0, totSkip=0, totErr=0;
-    const existing = await fsGetAll('pacientes');
-    const existNames = new Set(existing.map(p=>(p.nombre||'').toUpperCase().trim()));
-
+    addLog(`📋 Backup de: ${backup.clinica||'—'} · ${backup.exportadoEl?.slice(0,10)||''}`);
+    let ok=0, skip=0;
     // Restaurar pacientes
     if (backup.pacientes?.length) {
       addLog(`👤 Restaurando ${backup.pacientes.length} pacientes...`);
-      let ok=0, skip=0;
+      const existing = await fsGetAll('pacientes');
+      const existNames = new Set(existing.map(p=>(p.nombre||'').toUpperCase().trim()));
       for (const p of backup.pacientes) {
         if (!p.nombre) { skip++; continue; }
-        const dup = existNames.has((p.nombre||'').toUpperCase().trim());
-        if (dup) { addLog(`  ⚠️ ${p.nombre} — ya existe, omitido`,'var(--gold)'); skip++; continue; }
-        delete p.id; await fsCreate('pacientes',p); ok++;
-        existNames.add((p.nombre||'').toUpperCase().trim());
+        if (existNames.has((p.nombre||'').toUpperCase().trim())) {
+          addLog(`  ⚠️ ${p.nombre} — ya existe, omitido`,'var(--gold)'); skip++; continue;
+        }
+        delete p.id;
+        await fsCreate('pacientes', p);
+        ok++;
       }
-      addLog(`  ✅ ${ok} pacientes · ${skip} omitidos`,'var(--green)');
-      totOk+=ok; totSkip+=skip;
+      addLog(`  ✅ ${ok} pacientes restaurados, ${skip} omitidos`,'var(--green)');
     }
-
     // Restaurar catálogo
     if (backup.catalogo?.length) {
+      let catOk=0;
       addLog(`📚 Restaurando ${backup.catalogo.length} items del catálogo...`);
-      let ok=0;
-      const existCat = await fsGetAll('catalogo');
-      const existTrats = new Set(existCat.map(c=>(c.tratamiento||'').toLowerCase()));
       for (const c of backup.catalogo) {
-        if (!c.tratamiento || existTrats.has(c.tratamiento.toLowerCase())) continue;
-        delete c.id; await fsCreate('catalogo',c); ok++;
+        if (!c.tratamiento) continue;
+        delete c.id;
+        await fsCreate('catalogo', c);
+        catOk++;
       }
-      addLog(`  ✅ ${ok} items del catálogo`,'var(--green)'); totOk+=ok;
+      addLog(`  ✅ ${catOk} items del catálogo restaurados`,'var(--green)');
     }
-
-    // Restaurar inventario
-    if (backup.inventario?.length) {
-      addLog(`💊 Restaurando ${backup.inventario.length} productos de inventario...`);
-      let ok=0;
-      for (const item of backup.inventario) {
-        if (!item.nombre) continue;
-        delete item.id; await fsCreate('inventario',item); ok++;
-      }
-      addLog(`  ✅ ${ok} productos`,'var(--green)'); totOk+=ok;
-    }
-
-    // Nota sobre tratamientos/abonos/citas — NO se restauran automáticamente
-    if (backup.tratamientos?.length || backup.abonos?.length) {
-      addLog('');
-      addLog(`ℹ️ Tratamientos (${backup.tratamientos?.length||0}), abonos (${backup.abonos?.length||0}) y citas (${backup.citas?.length||0}) no se restauran automáticamente porque requieren que el paciente ya exista en el sistema. Importa primero los pacientes y luego contacta soporte si necesitas restaurar el historial completo.`,'var(--gold)');
-    }
-
-    addLog('');
-    addLog(`✅ Restauración completada — ${totOk} registros importados · ${totSkip} omitidos`,'var(--teal)');
-    showToast(`Restauración completada: ${totOk} registros importados`,'success');
+    addLog(`\n✅ Restauración completada`,'var(--teal)');
+    showToast('Backup restaurado correctamente','success');
   } catch(err) {
-    addLog(`❌ Error: ${err.message}`,'var(--red)');
-    showToast('Error al restaurar: '+err.message,'error');
+    logEl.innerHTML = `<span style="color:var(--red)">❌ Error: ${err.message}</span>`;
   }
-}
+  e.target.value = '';
+};
 
 // ── EXPORTAR TODO ─────────────────────────────────────────
-// (función arriba)
+window.exportarTodo = async function() {
+  showToast('Exportando datos...','info');
+  try {
+    const [pxList,trats,abonos,citas,cat] = await Promise.all([
+      fsGetAll('pacientes'),fsGetAll('tratamientos'),
+      fsGetAll('abonos'),fsGetAll('citas'),fsGetAll('catalogo'),
+    ]);
+    const backup = {
+      exportadoEl: new Date().toISOString(),
+      clinica: SESSION.clinica.nombre,
+      pacientes:pxList,tratamientos:trats,abonos,citas,catalogo:cat,
+    };
+    const a = document.createElement('a');
+    a.href = 'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(backup,null,2));
+    a.download = `backup_${SESSION.clinica.nombre?.replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    showToast('Backup descargado correctamente','success');
+  } catch(e) { showToast('Error al exportar: '+e.message,'error'); }
+};
 
 // ── APLICAR TEMA GUARDADO AL INICIO ──────────────────────
 (function() {
