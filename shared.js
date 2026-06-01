@@ -47,6 +47,56 @@ const ROLES = {
 // ── SESSION ───────────────────────────────────────────────────
 let SESSION = null; // { user, clinica }
 
+// Plan TRIAL — funciones permitidas en prueba
+const TRIAL_FEATURES = ['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','recibo','estado-cuenta'];
+
+// Aplicar tema guardado inmediatamente al cargar la página
+(function applyStoredTheme() {
+  const t = localStorage.getItem('dental_tema');
+  const c = localStorage.getItem('dental_color');
+  if (!t && !c) return;
+  const root = document.documentElement;
+  if (t === 'light') {
+    root.style.setProperty('--bg','#f8fafc');
+    root.style.setProperty('--surface','#ffffff');
+    root.style.setProperty('--surface2','#f0f4f8');
+    root.style.setProperty('--border','rgba(0,0,0,.08)');
+    root.style.setProperty('--border2','rgba(0,0,0,.15)');
+    root.style.setProperty('--text','#111827');
+    root.style.setProperty('--text-muted','rgba(17,24,39,.55)');
+    root.style.setProperty('--text-dim','rgba(17,24,39,.3)');
+  }
+  if (c) {
+    const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);
+    root.style.setProperty('--teal',c);
+    root.style.setProperty('--teal-dim',`rgba(${r},${g},${b},.12)`);
+    root.style.setProperty('--teal-glow',`rgba(${r},${g},${b},.25)`);
+  }
+})();
+
+// Banner de trial en la parte inferior
+function showTrialBannerIfNeeded() {
+  if (!SESSION) return;
+  const clinica = SESSION.clinica;
+  if (clinica.plan !== 'trial') return;
+  const trialEnd = clinica.trialEnd?.toDate ? clinica.trialEnd.toDate() : null;
+  if (!trialEnd) return;
+  const dias = Math.ceil((trialEnd - new Date()) / 86400000);
+  let banner = document.getElementById('_trial_banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = '_trial_banner';
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:300;background:linear-gradient(135deg,rgba(244,185,66,.97),rgba(255,154,60,.97));color:#060D14;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:\'DM Sans\',sans-serif;font-size:.82rem;font-weight:600;box-shadow:0 -4px 20px rgba(244,185,66,.3);';
+    document.body.appendChild(banner);
+    const main = document.querySelector('.main');
+    if (main) main.style.paddingBottom = '52px';
+  }
+  const txt = dias > 0
+    ? `⏳ Período de prueba · <strong>${dias} día${dias!==1?'s':''} restante${dias!==1?'s':''}</strong> · Activa un plan para continuar`
+    : `⚠️ <strong>Tu período de prueba terminó.</strong> Activa un plan para seguir usando el sistema.`;
+  banner.innerHTML = `<div>${txt}</div><a href="planes.html" style="background:#060D14;color:#F4B942;padding:6px 16px;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;flex-shrink:0;white-space:nowrap">💎 Ver planes →</a>`;
+}
+
 async function initSession(requiredFeature) {
   return new Promise((resolve) => {
     auth.onAuthStateChanged(async (user) => {
@@ -58,13 +108,29 @@ async function initSession(requiredFeature) {
         if (uData.activo === false) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
         const cSnap = await db.collection('clinicas').doc(uData.clinicaId).get();
         SESSION = { user: { uid: user.uid, email: user.email, ...uData }, clinica: { id: uData.clinicaId, ...cSnap.data() } };
-        // Plan feature guard — admin siempre pasa, otros usuarios verifican plan
+        // ── TRIAL: verificar expiración ────────────────────
+        const cData = cSnap.data() || {};
+        if (cData.plan === 'trial' && cData.trialEnd) {
+          const trialEndDate = cData.trialEnd.toDate ? cData.trialEnd.toDate() : new Date(cData.trialEnd);
+          const diasRestantes = Math.ceil((trialEndDate - new Date()) / 86400000);
+          if (diasRestantes <= 0) {
+            const allowed = ['planes','configuracion'];
+            const curPage = window.CURRENT_PAGE || '';
+            if (!allowed.includes(curPage)) {
+              window.location.href = 'planes.html?expired=1';
+              resolve(null); return;
+            }
+          }
+        }
+        // ── PLAN FEATURE GUARD ─────────────────────────────
         if (requiredFeature && requiredFeature !== 'any') {
           const isAdmin = uData.rol === 'admin';
           if (!isAdmin) {
             const planKey = cSnap.data()?.plan || 'basico';
-            const plan = PLANES[planKey] || PLANES.basico;
-            if (!plan.features.includes(requiredFeature)) {
+            const feats = planKey === 'trial'
+              ? TRIAL_FEATURES
+              : (PLANES[planKey] || PLANES.basico).features;
+            if (!feats.includes(requiredFeature)) {
               window.location.href = `upgrade.html?feat=${requiredFeature}`;
               resolve(null); return;
             }
@@ -72,6 +138,7 @@ async function initSession(requiredFeature) {
         }
         // Render sidebar
         renderSidebar();
+        showTrialBannerIfNeeded();
         resolve(SESSION);
       } catch(e) { console.error('Session error:', e); resolve(null); }
     });
@@ -134,11 +201,13 @@ function renderSidebar() {
     ${navItem('recordatorios','💬','Recordatorios WA','any')}
     ${navItem('importar-datos','📥','Importar desde Excel','any')}
     ${navItem('busqueda','🔍','Búsqueda Global','any')}
+    ${navItem('planes','💎','Planes & Precios','any')}
+    ${navItem('configuracion','⚙️','Configuración','any')}
   </nav>
   <div class="sidebar-footer">
     <div class="clinic-name">${clinica.nombre || 'Consultorio'}</div>
     <div class="clinic-info">${user.nombre || user.email} · ${ROLES[user.rol]?.label || 'Usuario'}</div>
-    <span class="plan-badge" style="background:${plan.color}22;color:${plan.color};border:1px solid ${plan.color}44">${plan.nombre}</span>
+    ${clinica.plan === 'trial' ? '<span class="plan-badge" style="background:rgba(244,185,66,.15);color:#F4B942;border:1px solid rgba(244,185,66,.3)">⏳ Trial</span>' : '<span class="plan-badge" style="background:'+plan.color+'22;color:'+plan.color+';border:1px solid '+plan.color+'44">'+plan.nombre+'</span>'}
     <br><button onclick="logout()" style="background:none;border:none;color:var(--text-dim);font-size:.7rem;cursor:pointer;margin-top:6px;padding:0">🚪 Cerrar sesión</button>
   </div>`;
 

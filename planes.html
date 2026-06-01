@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Planes & Precios</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.planes-wrap{max-width:1000px;margin:0 auto}
+/* TRIAL BANNER */
+.trial-banner{background:linear-gradient(135deg,rgba(244,185,66,.12),rgba(244,185,66,.04));border:1px solid rgba(244,185,66,.3);border-radius:var(--r-lg);padding:18px 24px;display:flex;align-items:center;gap:16px;margin-bottom:28px}
+.trial-banner-icon{font-size:1.8rem;flex-shrink:0}
+.trial-banner-text{flex:1}
+.trial-banner-title{font-weight:700;color:var(--text);margin-bottom:3px}
+.trial-banner-sub{font-size:.78rem;color:var(--text-muted)}
+.trial-days{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--gold);flex-shrink:0}
+/* PLANES GRID */
+.planes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.plan-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r-lg);padding:28px 24px;position:relative;overflow:hidden;transition:all .2s;display:flex;flex-direction:column}
+.plan-card:hover{transform:translateY(-3px);border-color:var(--border2)}
+.plan-card.popular{border-color:var(--teal);background:linear-gradient(180deg,var(--teal-dim),var(--surface))}
+.plan-card.current{border-color:var(--gold);opacity:.7}
+.plan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.plan-card.basico::before{background:var(--blue)}
+.plan-card.profesional::before{background:var(--teal)}
+.plan-card.premium::before{background:var(--gold)}
+.plan-badge{position:absolute;top:14px;right:14px;font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:100px;letter-spacing:.06em}
+.badge-popular{background:var(--teal);color:#060D14}
+.badge-current{background:var(--gold);color:#060D14}
+.plan-icon{font-size:1.8rem;margin-bottom:12px}
+.plan-nombre{font-family:var(--font-display);font-size:1.2rem;margin-bottom:4px}
+.plan-target{font-size:.72rem;color:var(--text-muted);margin-bottom:16px;font-style:italic}
+.plan-precio{margin-bottom:6px}
+.plan-precio-val{font-family:var(--font-mono);font-size:2rem;font-weight:700;line-height:1}
+.plan-precio-per{font-size:.75rem;color:var(--text-muted)}
+.plan-precio-anual{font-size:.7rem;color:var(--green);margin-bottom:16px}
+.plan-divider{height:1px;background:var(--border);margin:16px 0}
+.plan-feats{flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.feat-row{display:flex;align-items:flex-start;gap:8px;font-size:.78rem;color:var(--text-muted)}
+.feat-row .chk{flex-shrink:0;margin-top:1px;font-size:.8rem}
+.feat-row.included{color:var(--text)}
+.feat-row.excluded{opacity:.4}
+.feat-row.included .chk{color:var(--teal)}
+.feat-row.excluded .chk{color:var(--text-dim)}
+/* BOTÓN PLAN */
+.btn-plan{width:100%;padding:12px;border-radius:10px;font-family:var(--font-body);font-size:.85rem;font-weight:700;cursor:pointer;border:none;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn-plan-teal{background:var(--teal);color:#060D14}
+.btn-plan-teal:hover{background:#00d4b8}
+.btn-plan-gold{background:var(--gold);color:#060D14}
+.btn-plan-gold:hover{background:#f8c94e}
+.btn-plan-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+.btn-plan-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-plan-current{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);cursor:default}
+/* STRIPE NOTE */
+.stripe-note{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:center;font-size:.75rem;color:var(--text-muted);margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:10px}
+/* FAQ */
+.faq{margin-bottom:24px}
+.faq-title{font-size:.72rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:14px}
+.faq-item{border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+.faq-q{padding:14px 18px;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text);display:flex;justify-content:space-between;align-items:center;transition:background .15s}
+.faq-q:hover{background:var(--surface2)}
+.faq-a{padding:0 18px;font-size:.8rem;color:var(--text-muted);line-height:1.6;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s}
+.faq-item.open .faq-a{max-height:200px;padding:0 18px 14px}
+.faq-chevron{transition:transform .3s;font-size:.7rem}
+.faq-item.open .faq-chevron{transform:rotate(180deg)}
+/* COMPARATIVA */
+.comparativa{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:24px}
+.comp-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;background:var(--surface2);border-bottom:1px solid var(--border)}
+.comp-cell{padding:12px 16px;font-size:.72rem;font-weight:700;text-align:center}
+.comp-cell:first-child{text-align:left;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase}
+.comp-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;border-bottom:1px solid var(--border)}
+.comp-row:last-child{border-bottom:none}
+.comp-row:hover{background:var(--surface2)}
+.comp-feat{padding:11px 16px;font-size:.8rem;color:var(--text-muted)}
+.comp-val{padding:11px 16px;text-align:center;font-size:.8rem}
+@media(max-width:900px){.planes-grid{grid-template-columns:1fr}.comp-header,.comp-row{grid-template-columns:2fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">💎 Planes & Precios</div>
+    <div class="topbar-actions">
+      <a href="index.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+    </div>
+  </div>
+  <div class="content">
+    <div class="planes-wrap">
+
+      <!-- TRIAL BANNER -->
+      <div class="trial-banner" id="trialBanner" style="display:none">
+        <div class="trial-banner-icon">⏳</div>
+        <div class="trial-banner-text">
+          <div class="trial-banner-title">Estás en período de prueba gratuita</div>
+          <div class="trial-banner-sub" id="trialSub">Elige un plan para continuar usando DentalOS después del período de prueba.</div>
+        </div>
+        <div class="trial-days" id="trialDays"></div>
+      </div>
+
+      <!-- STRIPE NOTE -->
+      <div class="stripe-note">
+        🔒 Pagos procesados con <strong>Stripe</strong> — La plataforma de pagos más segura del mundo. Cancela cuando quieras.
+        <span style="opacity:.4;font-size:.65rem;margin-left:8px">(Pagos en línea próximamente)</span>
+      </div>
+
+      <!-- PLANES -->
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-family:var(--font-display);font-size:1.6rem;font-style:italic;margin-bottom:6px">Elige el plan ideal para tu consultorio</div>
+        <div style="font-size:.82rem;color:var(--text-muted)">Todos los planes incluyen 7 días de prueba gratis · Sin tarjeta de crédito</div>
+      </div>
+
+      <div class="planes-grid" id="planesGrid">
+        <!-- Generado por JS -->
+      </div>
+
+      <!-- COMPARATIVA COMPLETA -->
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-style:italic;margin-bottom:14px">📊 Comparativa completa</div>
+      <div class="comparativa">
+        <div class="comp-header">
+          <div class="comp-cell">Funcionalidad</div>
+          <div class="comp-cell" style="color:var(--blue)">🔵 Básico</div>
+          <div class="comp-cell" style="color:var(--teal)">🟢 Profesional</div>
+          <div class="comp-cell" style="color:var(--gold)">🟡 Premium</div>
+        </div>
+        <div id="comparativaBody"></div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="faq">
+        <div class="faq-title">Preguntas frecuentes</div>
+        <div id="faqList"></div>
+      </div>
+
+      <!-- CONTACTO -->
+      <div style="background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);border-radius:var(--r-lg);padding:22px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:6px">¿Necesitas un plan personalizado?</div>
+        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px">Para clínicas grandes, franquicias o necesidades especiales contáctanos directamente.</div>
+        <button class="btn btn-primary" onclick="whatsappContacto()">💬 Contactar por WhatsApp</button>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'planes';
+
+const PLANES_DATA = [
+  {
+    key:'basico', nombre:'Básico', icon:'🔵', target:'Para dentistas individuales',
+    precio:299, colorClass:'basico', colorVal:'var(--blue)',
+    btnClass:'btn-plan-ghost', btnText:'Contratar Básico',
+    feats:[
+      {label:'1 usuario con contraseña',     ok:true},
+      {label:'Hasta 50 pacientes',            ok:true},
+      {label:'Agenda de citas',               ok:true},
+      {label:'Expedientes digitales',         ok:true},
+      {label:'Control de tratamientos',       ok:true},
+      {label:'Abonos y pagos con IVA 16%',    ok:true},
+      {label:'Cotizaciones imprimibles',       ok:true},
+      {label:'Catálogo de precios',            ok:true},
+      {label:'Corte de caja diario',           ok:true},
+      {label:'Búsqueda global',               ok:true},
+      {label:'Recibo de pago',                ok:true},
+      {label:'Importar desde Excel/CSV',       ok:true},
+      {label:'Métricas avanzadas',             ok:false},
+      {label:'Odontograma interactivo',        ok:false},
+      {label:'Inventario de materiales',       ok:false},
+      {label:'Reportes PDF/CSV',               ok:false},
+      {label:'Recordatorios WhatsApp masivo',  ok:false},
+      {label:'Usuarios y roles',               ok:false},
+    ]
+  },
+  {
+    key:'profesional', nombre:'Profesional', icon:'🟢', target:'Para consultorios completos',
+    precio:599, colorClass:'profesional popular', colorVal:'var(--teal)',
+    btnClass:'btn-plan-teal', btnText:'Contratar Profesional', badge:'MÁS POPULAR', badgeClass:'badge-popular',
+    feats:[
+      {label:'5 usuarios con roles',           ok:true},
+      {label:'Pacientes ilimitados',            ok:true},
+      {label:'Todo el plan Básico',             ok:true},
+      {label:'Métricas y gráficas avanzadas',   ok:true},
+      {label:'Odontograma interactivo FDI',     ok:true},
+      {label:'Inventario de materiales',        ok:true},
+      {label:'Reportes exportables PDF/CSV',    ok:true},
+      {label:'Ofertas y promociones',           ok:true},
+      {label:'Recordatorios WA masivo',         ok:true},
+      {label:'Estado de cuenta por paciente',   ok:true},
+      {label:'Expediente completo + RX Drive',  ok:true},
+      {label:'Usuarios y roles',                ok:true},
+      {label:'Multi-sucursal',                  ok:false},
+      {label:'KPI avanzados comparativos',      ok:false},
+    ]
+  },
+  {
+    key:'premium', nombre:'Premium', icon:'🟡', target:'Para clínicas dentales',
+    precio:1199, colorClass:'premium', colorVal:'var(--gold)',
+    btnClass:'btn-plan-gold', btnText:'Contratar Premium',
+    feats:[
+      {label:'Usuarios ilimitados',             ok:true},
+      {label:'Pacientes ilimitados',            ok:true},
+      {label:'Todo el plan Profesional',        ok:true},
+      {label:'Multi-sucursal (varias sedes)',   ok:true},
+      {label:'KPI avanzados comparativos',      ok:true},
+      {label:'Portafolio de pacientes',         ok:true},
+      {label:'Automatizaciones',               ok:true},
+      {label:'Soporte prioritario WhatsApp',    ok:true},
+      {label:'Personalización de marca',        ok:true},
+    ]
+  }
+];
+
+const COMPARATIVA = [
+  {feat:'Usuarios',              b:'1',        p:'5',         pr:'Ilimitados'},
+  {feat:'Pacientes',             b:'Máx. 50',  p:'Ilimitados',pr:'Ilimitados'},
+  {feat:'Agenda de citas',       b:'✅',        p:'✅',        pr:'✅'},
+  {feat:'Tratamientos + IVA',    b:'✅',        p:'✅',        pr:'✅'},
+  {feat:'Cotizaciones / Recibos',b:'✅',        p:'✅',        pr:'✅'},
+  {feat:'Corte de caja',         b:'✅',        p:'✅',        pr:'✅'},
+  {feat:'Importar Excel/CSV',    b:'✅',        p:'✅',        pr:'✅'},
+  {feat:'Métricas avanzadas',    b:'❌',        p:'✅',        pr:'✅'},
+  {feat:'Odontograma FDI',       b:'❌',        p:'✅',        pr:'✅'},
+  {feat:'Inventario',            b:'❌',        p:'✅',        pr:'✅'},
+  {feat:'Reportes PDF',          b:'❌',        p:'✅',        pr:'✅'},
+  {feat:'WA masivo',             b:'❌',        p:'✅',        pr:'✅'},
+  {feat:'Usuarios y roles',      b:'❌',        p:'✅',        pr:'✅'},
+  {feat:'Multi-sucursal',        b:'❌',        p:'❌',        pr:'✅'},
+  {feat:'KPI comparativos',      b:'❌',        p:'❌',        pr:'✅'},
+  {feat:'Soporte prioritario',   b:'❌',        p:'❌',        pr:'✅'},
+];
+
+const FAQS = [
+  {q:'¿Puedo cambiar de plan en cualquier momento?', a:'Sí. Puedes subir o bajar de plan cuando quieras. El cambio aplica inmediatamente y tu información nunca se pierde.'},
+  {q:'¿Se pierde mi información si cancelo?', a:'No. Tus datos permanecen en el sistema por 30 días después de cancelar. Puedes exportarlos en cualquier momento desde la sección de Reportes.'},
+  {q:'¿Funciona en celular?', a:'Sí. DentalOS está optimizado para desktop, tablet y celular. Solo necesitas un navegador web, sin instalar nada.'},
+  {q:'¿Cuántos pacientes puedo registrar en el plan Básico?', a:'El plan Básico permite hasta 50 expedientes activos. Para consultorios más grandes, el plan Profesional no tiene límite.'},
+  {q:'¿Los datos de mis pacientes están seguros?', a:'Sí. Usamos Firebase de Google con cifrado de datos, reglas de seguridad estrictas y respaldo automático en la nube.'},
+  {q:'¿Cómo funciona el período de prueba?', a:'Tienes 7 días gratis con todas las funciones del plan que seleccionaste. No pedimos tarjeta de crédito. Al terminar el trial puedes contratar el plan o perderás acceso.'},
+  {q:'¿Incluye capacitación?', a:'Sí. El plan Profesional y Premium incluyen videollamada de capacitación de 1 hora. También tenemos tutoriales en video disponibles.'},
+];
+
+initSession('any').then(async session => {
+  if (!session) return;
+  const { clinica } = session;
+  const planActual = clinica.plan || 'trial';
+
+  // Mostrar banner de trial
+  if (planActual === 'trial' && clinica.trialEnd) {
+    const diasRestantes = Math.ceil((clinica.trialEnd.toDate() - new Date()) / 86400000);
+    const banner = document.getElementById('trialBanner');
+    banner.style.display = 'flex';
+    document.getElementById('trialDays').textContent = `${Math.max(0,diasRestantes)} días`;
+    document.getElementById('trialSub').textContent = diasRestantes > 0
+      ? `Te quedan ${diasRestantes} días de prueba. Contrata un plan para continuar.`
+      : '⚠️ Tu período de prueba ha terminado. Contrata un plan para seguir usando el sistema.';
+    if (diasRestantes <= 0) banner.style.borderColor = 'rgba(255,92,92,.4)';
+  }
+
+  // Renderizar planes
+  const grid = document.getElementById('planesGrid');
+  grid.innerHTML = PLANES_DATA.map(p => {
+    const isCurrent = planActual === p.key;
+    const anualDesc = `$${Math.round(p.precio*10).toLocaleString('es-MX')} MXN/año (2 meses gratis)`;
+    return `<div class="plan-card ${p.colorClass}">
+      ${p.badge ? `<div class="plan-badge ${p.badgeClass}">${p.badge}</div>` : ''}
+      ${isCurrent ? '<div class="plan-badge badge-current">PLAN ACTUAL</div>' : ''}
+      <div class="plan-icon">${p.icon}</div>
+      <div class="plan-nombre" style="color:${p.colorVal}">${p.nombre}</div>
+      <div class="plan-target">${p.target}</div>
+      <div class="plan-precio">
+        <span class="plan-precio-val" style="color:${p.colorVal}">$${p.precio.toLocaleString('es-MX')}</span>
+        <span class="plan-precio-per"> MXN/mes</span>
+      </div>
+      <div class="plan-precio-anual">💰 ${anualDesc}</div>
+      <div class="plan-divider"></div>
+      <div class="plan-feats">
+        ${p.feats.slice(0,8).map(f=>`<div class="feat-row ${f.ok?'included':'excluded'}"><span class="chk">${f.ok?'✓':'✗'}</span>${f.label}</div>`).join('')}
+      </div>
+      ${isCurrent
+        ? `<button class="btn-plan btn-plan-current" disabled>✅ Plan actual</button>`
+        : `<button class="btn-plan ${p.btnClass}" onclick="contratarPlan('${p.key}','${p.nombre}',${p.precio})">
+            💳 ${p.btnText}
+           </button>`}
+    </div>`;
+  }).join('');
+
+  // Comparativa
+  document.getElementById('comparativaBody').innerHTML = COMPARATIVA.map(r=>`
+    <div class="comp-row">
+      <div class="comp-feat">${r.feat}</div>
+      <div class="comp-val">${r.b}</div>
+      <div class="comp-val">${r.p}</div>
+      <div class="comp-val">${r.pr}</div>
+    </div>`).join('');
+
+  // FAQ
+  document.getElementById('faqList').innerHTML = FAQS.map((f,i)=>`
+    <div class="faq-item" id="faq${i}">
+      <div class="faq-q" onclick="toggleFaq(${i})">
+        ${f.q}<span class="faq-chevron">▼</span>
+      </div>
+      <div class="faq-a">${f.a}</div>
+    </div>`).join('');
+});
+
+window.toggleFaq = function(i) {
+  const el = document.getElementById('faq'+i);
+  el.classList.toggle('open');
+};
+
+window.contratarPlan = function(planKey, planNombre, precio) {
+  // STRIPE — DESACTIVADO TEMPORALMENTE
+  // ════════════════════════════════════════════════════════
+  // Para ACTIVAR Stripe:
+  // ARCHIVO: planes.html
+  // BUSCA esta función contratarPlan()
+  // REEMPLAZA el alert por tu integración de Stripe:
+  //
+  // const stripe = Stripe('pk_live_TU_PUBLISHABLE_KEY');
+  // stripe.redirectToCheckout({ lineItems: [...], mode: 'subscription', ... });
+  //
+  // Documentación: https://stripe.com/docs/billing/subscriptions/checkout
+  // ════════════════════════════════════════════════════════
+  showToast(`Plan ${planNombre} seleccionado. Pagos en línea próximamente disponibles.`, 'info');
+
+  // Por ahora: abrir WhatsApp para coordinar el pago manualmente
+  const msg = `Hola! Me interesa contratar el *Plan ${planNombre}* de DentalOS por $${precio.toLocaleString('es-MX')} MXN/mes.\n\nMi consultorio está en el sistema. ¿Cómo procedo con el pago?`;
+  setTimeout(() => {
+    if (confirm(`¿Deseas contactarnos por WhatsApp para activar el Plan ${planNombre}?`)) {
+      // Cambia este número por el tuyo
+      window.open(`https://wa.me/521XXXXXXXXXX?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }, 500);
+};
+
+window.whatsappContacto = function() {
+  const msg = `Hola! Necesito información sobre planes personalizados de DentalOS para mi clínica dental.`;
+  window.open(`https://wa.me/521XXXXXXXXXX?text=${encodeURIComponent(msg)}`, '_blank');
+};
+</script>
+</body>
+</html>

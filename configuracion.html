@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Configuración del Consultorio</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.config-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
+/* NAV VERTICAL */
+.config-nav{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;position:sticky;top:80px}
+.config-nav-item{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:.82rem;font-weight:500;color:var(--text-muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+.config-nav-item:hover{background:var(--surface2);color:var(--text)}
+.config-nav-item.active{background:var(--teal-dim);color:var(--teal);border-left-color:var(--teal)}
+.config-nav-item .nav-icon{font-size:1rem;flex-shrink:0}
+/* SECTIONS */
+.config-section{display:none}.config-section.active{display:block}
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin-bottom:16px}
+.section-title{font-family:var(--font-display);font-size:1.05rem;font-style:italic;margin-bottom:4px;color:var(--text)}
+.section-sub{font-size:.75rem;color:var(--text-muted);margin-bottom:20px}
+/* LOGO UPLOAD */
+.logo-upload{border:2px dashed var(--border);border-radius:var(--r-lg);padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;margin-bottom:16px}
+.logo-upload:hover{border-color:var(--teal);background:var(--teal-dim)}
+.logo-upload input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.logo-preview{width:100px;height:100px;border-radius:16px;object-fit:contain;margin:0 auto 12px;display:block;background:var(--surface2);padding:8px;border:1px solid var(--border)}
+.logo-empty-icon{font-size:2.5rem;margin-bottom:10px;opacity:.5}
+.logo-upload-hint{font-size:.75rem;color:var(--text-muted)}
+.logo-upload-hint strong{color:var(--text)}
+/* TEMA SELECTOR */
+.tema-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+.tema-card{border:2px solid var(--border);border-radius:var(--r-lg);padding:16px;cursor:pointer;transition:all .2s;text-align:center;position:relative}
+.tema-card:hover{border-color:var(--border2)}
+.tema-card.selected{border-color:var(--teal)}
+.tema-card.selected::after{content:'✓';position:absolute;top:8px;right:10px;font-size:.75rem;font-weight:700;color:var(--teal)}
+.tema-preview{height:60px;border-radius:8px;margin-bottom:10px;overflow:hidden;display:flex;gap:4px;padding:6px}
+.tema-preview-sidebar{width:30%;border-radius:5px}
+.tema-preview-main{flex:1;border-radius:5px}
+.tema-dark .tema-preview-sidebar{background:#0C1622}
+.tema-dark .tema-preview-main{background:#060D14}
+.tema-dark{background:#060D14;color:#E8F0F8}
+.tema-light .tema-preview-sidebar{background:#f0f4f8}
+.tema-light .tema-preview-main{background:#ffffff}
+.tema-light{background:#ffffff;color:#111827;border-color:#e5e7eb}
+.tema-card.selected.tema-light{border-color:var(--teal)}
+.tema-nombre{font-size:.82rem;font-weight:700}
+.tema-desc{font-size:.68rem;color:var(--text-muted)}
+/* COLOR ACCENT */
+.color-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.color-dot{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;position:relative;flex-shrink:0}
+.color-dot:hover{transform:scale(1.15)}
+.color-dot.selected{border-color:#fff;box-shadow:0 0 0 3px var(--teal)}
+.color-dot.selected::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff}
+/* PREVIEW LIVE */
+.preview-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px}
+.preview-box-title{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);padding:8px 14px;border-bottom:1px solid var(--border)}
+.preview-mini{height:120px;display:flex;overflow:hidden;border-radius:0 0 8px 8px}
+.preview-mini-sidebar{width:120px;padding:12px 8px;display:flex;flex-direction:column;gap:4px}
+.preview-mini-main{flex:1;padding:12px;display:flex;flex-direction:column;gap:6px}
+.preview-mini-logo{width:32px;height:32px;border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.preview-mini-item{height:6px;border-radius:3px;opacity:.4}
+.preview-mini-item.active{opacity:1}
+.preview-mini-card{border-radius:6px;padding:8px;flex:1}
+.preview-mini-text{height:6px;border-radius:3px;margin-bottom:4px;width:60%}
+.preview-mini-text2{height:5px;border-radius:3px;width:80%;opacity:.5}
+/* INFO FORM */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* SAVE FLOAT */
+.save-float{position:fixed;bottom:24px;right:24px;z-index:200;display:none;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* DANGER ZONE */
+.danger-zone{background:rgba(255,92,92,.05);border:1px solid rgba(255,92,92,.2);border-radius:var(--r-lg);padding:20px}
+.danger-title{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:12px}
+@media(max-width:900px){.config-layout{grid-template-columns:1fr}.config-nav{position:static;display:flex;overflow-x:auto;border-radius:var(--r)}.config-nav-item{flex-shrink:0;border-left:none;border-bottom:3px solid transparent}.config-nav-item.active{border-left:none;border-bottom-color:var(--teal)}.info-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">⚙️ Configuración del Consultorio</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="window.location.href='index.html'">← Dashboard</button>
+      <button class="btn btn-primary" id="btnGuardar" onclick="guardarConfig()">💾 Guardar cambios</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="config-layout">
+      <!-- NAV IZQUIERDO -->
+      <div class="config-nav">
+        <div class="config-nav-item active" onclick="showSection('identidad')" id="nav-identidad">
+          <span class="nav-icon">🏥</span> Identidad & Logo
+        </div>
+        <div class="config-nav-item" onclick="showSection('tema')" id="nav-tema">
+          <span class="nav-icon">🎨</span> Tema visual
+        </div>
+        <div class="config-nav-item" onclick="showSection('contacto')" id="nav-contacto">
+          <span class="nav-icon">📱</span> Datos de contacto
+        </div>
+        <div class="config-nav-item" onclick="showSection('fiscal')" id="nav-fiscal">
+          <span class="nav-icon">🧾</span> Datos fiscales
+        </div>
+        <div class="config-nav-item" onclick="showSection('cuenta')" id="nav-cuenta">
+          <span class="nav-icon">👤</span> Mi cuenta
+        </div>
+        <div class="config-nav-item" onclick="showSection('peligro')" id="nav-peligro" style="color:var(--red)">
+          <span class="nav-icon">⚠️</span> Zona de peligro
+        </div>
+      </div>
+
+      <!-- CONTENIDO -->
+      <div>
+
+        <!-- IDENTIDAD -->
+        <div class="config-section active" id="sec-identidad">
+          <div class="section-card">
+            <div class="section-title">🏥 Nombre e imagen del consultorio</div>
+            <div class="section-sub">Este nombre y logo aparecerán en cotizaciones, recibos y el encabezado del sistema.</div>
+            <!-- LOGO -->
+            <div style="font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Logo del consultorio</div>
+            <div class="logo-upload" id="logoDropzone">
+              <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(event)">
+              <div id="logoEmpty">
+                <div class="logo-empty-icon">🖼️</div>
+                <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:4px">Sube tu logo aquí</div>
+                <div class="logo-upload-hint">PNG, JPG o SVG · <strong>Máx. 2MB</strong> · Recomendado: fondo transparente</div>
+              </div>
+              <div id="logoPreviewWrap" style="display:none">
+                <img id="logoPreviewImg" class="logo-preview" src="" alt="Logo">
+                <div style="font-size:.75rem;color:var(--text-muted)">Clic para cambiar el logo</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:20px">
+              <button class="btn btn-ghost btn-sm" onclick="removeLogo()">✕ Quitar logo</button>
+              <div style="font-size:.72rem;color:var(--text-dim);margin-top:8px">Si no subes logo se usará el ícono 🦷</div>
+            </div>
+            <!-- NOMBRE -->
+            <div class="form-group">
+              <label class="form-label">Nombre del consultorio *</label>
+              <input class="form-input" id="cf-nombre" placeholder="Hersantych Dental" oninput="markDirty()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Eslogan / descripción corta</label>
+              <input class="form-input" id="cf-eslogan" placeholder="Tu sonrisa, nuestra pasión" oninput="markDirty()">
+            </div>
+          </div>
+        </div>
+
+        <!-- TEMA -->
+        <div class="config-section" id="sec-tema">
+          <div class="section-card">
+            <div class="section-title">🎨 Tema visual del sistema</div>
+            <div class="section-sub">Elige cómo se verá la interfaz para todos los usuarios de tu consultorio.</div>
+            <div style="font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Modo de color</div>
+            <div class="tema-grid">
+              <div class="tema-card tema-dark selected" id="tema-dark" onclick="selectTema('dark')">
+                <div class="tema-preview">
+                  <div class="tema-preview-sidebar" style="background:#0C1622"></div>
+                  <div class="tema-preview-main" style="background:#060D14"></div>
+                </div>
+                <div class="tema-nombre" style="color:#E8F0F8">🌙 Modo oscuro</div>
+                <div class="tema-desc" style="color:rgba(232,240,248,.5)">Fondo negro · Ideal para uso prolongado</div>
+              </div>
+              <div class="tema-card tema-light" id="tema-light" onclick="selectTema('light')">
+                <div class="tema-preview">
+                  <div class="tema-preview-sidebar" style="background:#f0f4f8"></div>
+                  <div class="tema-preview-main" style="background:#ffffff"></div>
+                </div>
+                <div class="tema-nombre" style="color:#111827">☀️ Modo claro</div>
+                <div class="tema-desc" style="color:#6b7280">Fondo blanco · Estilo tradicional</div>
+              </div>
+            </div>
+            <!-- COLOR ACENTO -->
+            <div style="font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 10px">Color de acento</div>
+            <div class="color-grid" id="colorGrid"></div>
+            <div style="font-size:.7rem;color:var(--text-dim);margin-bottom:16px">Este color se usa en botones, íconos activos y elementos resaltados</div>
+            <!-- PREVIEW -->
+            <div class="preview-box">
+              <div class="preview-box-title">Vista previa</div>
+              <div class="preview-mini" id="previewMini"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTACTO -->
+        <div class="config-section" id="sec-contacto">
+          <div class="section-card">
+            <div class="section-title">📱 Datos de contacto</div>
+            <div class="section-sub">Aparecen en cotizaciones, recibos y el pie de página del sistema.</div>
+            <div class="info-grid">
+              <div class="form-group"><label class="form-label">Teléfono principal</label><input class="form-input" id="cf-tel" placeholder="55 0000 0000" type="tel" oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">WhatsApp</label><input class="form-input" id="cf-wa" placeholder="55 0000 0000" type="tel" oninput="markDirty()"></div>
+              <div class="form-group full" style="grid-column:1/-1"><label class="form-label">Correo electrónico del consultorio</label><input type="email" class="form-input" id="cf-email" placeholder="contacto@miconsultorio.com" oninput="markDirty()"></div>
+              <div class="form-group full" style="grid-column:1/-1"><label class="form-label">Dirección completa</label><input class="form-input" id="cf-dir" placeholder="Calle, número, colonia, C.P., ciudad" oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" id="cf-ciudad" placeholder="Ciudad de México" oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">Sitio web (opcional)</label><input class="form-input" id="cf-web" placeholder="www.miconsultorio.com" oninput="markDirty()"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FISCAL -->
+        <div class="config-section" id="sec-fiscal">
+          <div class="section-card">
+            <div class="section-title">🧾 Datos fiscales</div>
+            <div class="section-sub">Se incluyen en recibos y cotizaciones oficiales.</div>
+            <div class="info-grid">
+              <div class="form-group full" style="grid-column:1/-1"><label class="form-label">Razón social</label><input class="form-input" id="cf-razon" placeholder="Consultorio Dental S.A. de C.V." oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">RFC</label><input class="form-input" id="cf-rfc" placeholder="XXXX000000XX0" oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">Cédula profesional</label><input class="form-input" id="cf-cedula" placeholder="Número de cédula" oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="cf-especialidad" placeholder="Cirujano Dentista" oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">Régimen fiscal</label>
+                <select class="form-select" id="cf-regimen" onchange="markDirty()">
+                  <option>Régimen Simplificado de Confianza (RESICO)</option>
+                  <option>Régimen de Honorarios</option>
+                  <option>Régimen de Actividades Empresariales</option>
+                  <option>Persona Moral - Régimen General</option>
+                </select>
+              </div>
+              <div class="form-group full" style="grid-column:1/-1"><label class="form-label">Leyenda del recibo</label><input class="form-input" id="cf-leyenda" placeholder="Gracias por su preferencia" oninput="markDirty()"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CUENTA -->
+        <div class="config-section" id="sec-cuenta">
+          <div class="section-card">
+            <div class="section-title">👤 Mi cuenta de administrador</div>
+            <div class="section-sub">Información de tu perfil personal en el sistema.</div>
+            <div class="info-grid">
+              <div class="form-group full" style="grid-column:1/-1"><label class="form-label">Nombre completo</label><input class="form-input" id="cf-miNombre" placeholder="Dr. Nombre Apellido" oninput="markDirty()"></div>
+              <div class="form-group"><label class="form-label">Correo electrónico</label><input class="form-input" id="cf-miEmail" readonly style="opacity:.6"></div>
+              <div class="form-group"><label class="form-label">Plan actual</label><input class="form-input" id="cf-plan" readonly style="opacity:.6"></div>
+            </div>
+            <div class="form-group" style="margin-top:8px">
+              <label class="form-label">Nueva contraseña (dejar vacío si no cambias)</label>
+              <input type="password" class="form-input" id="cf-pass" placeholder="Mínimo 6 caracteres">
+            </div>
+            <button class="btn btn-ghost" style="margin-top:4px" onclick="cambiarPass()">🔑 Actualizar contraseña</button>
+          </div>
+          <div class="section-card">
+            <div class="section-title">💎 Plan & Suscripción</div>
+            <div class="section-sub">Gestiona tu plan de DentalOS.</div>
+            <div id="planInfo" style="margin-bottom:14px;font-size:.82rem;color:var(--text-muted)"></div>
+            <a href="planes.html" class="btn btn-primary">💎 Ver planes y precios</a>
+          </div>
+        </div>
+
+        <!-- PELIGRO -->
+        <div class="config-section" id="sec-peligro">
+          <div class="danger-zone">
+            <div class="danger-title">⚠️ Zona de peligro</div>
+            <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px;line-height:1.6">
+              Las acciones en esta sección son <strong style="color:var(--red)">irreversibles</strong>. Piensa dos veces antes de continuar.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px">Exportar todos mis datos</div>
+                  <div style="font-size:.72rem;color:var(--text-muted)">Descarga todos tus pacientes, tratamientos y pagos en formato JSON.</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="exportarTodo()">📥 Exportar</button>
+              </div>
+              <div style="background:var(--surface);border:1px solid rgba(255,92,92,.2);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:var(--red);margin-bottom:2px">Cerrar sesión en todos los dispositivos</div>
+                  <div style="font-size:.72rem;color:var(--text-muted)">Cierra la sesión activa en todos los navegadores.</div>
+                </div>
+                <button class="btn btn-red btn-sm" onclick="logout()">🚪 Cerrar todo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- SAVE FLOAT BUTTON -->
+<div class="save-float" id="saveFloat">
+  <button class="btn btn-primary" onclick="guardarConfig()" style="box-shadow:0 4px 20px rgba(0,194,168,.4)">
+    💾 Guardar cambios
+  </button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'configuracion';
+
+const COLORES = [
+  {val:'#00C2A8',name:'Teal (defecto)'},{val:'#4A9EFF',name:'Azul'},{val:'#F4B942',name:'Dorado'},
+  {val:'#A78BFA',name:'Violeta'},{val:'#34D399',name:'Verde'},{val:'#FF6B6B',name:'Coral'},
+  {val:'#F97316',name:'Naranja'},{val:'#EC4899',name:'Rosa'},{val:'#6366F1',name:'Índigo'},
+];
+
+let selectedTema  = 'dark';
+let selectedColor = '#00C2A8';
+let logoBase64    = null;
+let isDirty       = false;
+let clinicaData   = null;
+
+initSession('any').then(async session => {
+  if (!session) return;
+  const { clinica, user } = session;
+  clinicaData = clinica;
+
+  // Cargar datos fiscales y config
+  const cSnap = await db.collection('clinicas').doc(clinica.id).get();
+  const data  = cSnap.data() || {};
+  const fiscal = data.fiscal || {};
+  const config = data.config || {};
+
+  // Identidad
+  document.getElementById('cf-nombre').value   = data.nombre  || '';
+  document.getElementById('cf-eslogan').value  = data.eslogan || '';
+  if (data.logoBase64) {
+    logoBase64 = data.logoBase64;
+    showLogoPreview(data.logoBase64);
+  }
+
+  // Tema
+  selectedTema  = config.tema  || data.tema  || 'dark';
+  selectedColor = config.color || data.color || '#00C2A8';
+  selectTema(selectedTema);
+  renderColorGrid();
+  renderPreview();
+
+  // Contacto
+  document.getElementById('cf-tel').value     = data.telefono     || '';
+  document.getElementById('cf-wa').value      = data.whatsapp     || data.telefono || '';
+  document.getElementById('cf-email').value   = data.emailClinica || '';
+  document.getElementById('cf-dir').value     = data.direccion    || '';
+  document.getElementById('cf-ciudad').value  = data.ciudad       || '';
+  document.getElementById('cf-web').value     = data.web          || '';
+
+  // Fiscal
+  document.getElementById('cf-razon').value       = fiscal.razon       || '';
+  document.getElementById('cf-rfc').value         = fiscal.rfc         || '';
+  document.getElementById('cf-cedula').value      = fiscal.cedula      || '';
+  document.getElementById('cf-especialidad').value= fiscal.especialidad|| '';
+  document.getElementById('cf-leyenda').value     = fiscal.leyenda     || '';
+  if (fiscal.regimen) document.getElementById('cf-regimen').value = fiscal.regimen;
+
+  // Cuenta
+  document.getElementById('cf-miNombre').value = user.nombre || '';
+  document.getElementById('cf-miEmail').value  = user.email  || '';
+  const planNames = {trial:'🔶 Trial (7 días)',basico:'🔵 Básico',profesional:'🟢 Profesional',premium:'🟡 Premium'};
+  document.getElementById('cf-plan').value = planNames[clinica.plan] || clinica.plan || '';
+
+  // Plan info
+  const trialEnd = data.trialEnd?.toDate ? data.trialEnd.toDate() : null;
+  const diasTrial = trialEnd ? Math.ceil((trialEnd - new Date())/86400000) : null;
+  document.getElementById('planInfo').innerHTML = clinica.plan === 'trial'
+    ? `<span style="color:var(--gold)">⏳ Período de prueba · ${Math.max(0,diasTrial||0)} días restantes</span><br><span style="font-size:.72rem">Plan deseado: <strong>${data.planSeleccionado||'—'}</strong></span>`
+    : `<span style="color:var(--teal)">✅ ${planNames[clinica.plan]||clinica.plan} activo</span>`;
+
+  // Aplicar tema guardado al cargar
+  applyTheme(selectedTema, selectedColor);
+});
+
+// ── NAVEGACIÓN DE SECCIONES ───────────────────────────────
+window.showSection = function(sec) {
+  document.querySelectorAll('.config-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.config-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-'+sec).classList.add('active');
+  document.getElementById('nav-'+sec).classList.add('active');
+};
+
+// ── LOGO ─────────────────────────────────────────────────
+window.handleLogo = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 2*1024*1024) { showToast('El logo debe ser menor a 2MB','error'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    logoBase64 = ev.target.result;
+    showLogoPreview(logoBase64);
+    markDirty();
+    renderPreview();
+  };
+  reader.readAsDataURL(file);
+};
+
+function showLogoPreview(src) {
+  document.getElementById('logoEmpty').style.display = 'none';
+  document.getElementById('logoPreviewWrap').style.display = 'block';
+  document.getElementById('logoPreviewImg').src = src;
+}
+
+window.removeLogo = function() {
+  logoBase64 = null;
+  document.getElementById('logoEmpty').style.display = 'block';
+  document.getElementById('logoPreviewWrap').style.display = 'none';
+  document.getElementById('logoInput').value = '';
+  markDirty();
+  renderPreview();
+};
+
+// ── TEMA ─────────────────────────────────────────────────
+window.selectTema = function(tema) {
+  selectedTema = tema;
+  document.getElementById('tema-dark').classList.toggle('selected', tema==='dark');
+  document.getElementById('tema-light').classList.toggle('selected', tema==='light');
+  renderPreview();
+  markDirty();
+};
+
+// ── COLORES ───────────────────────────────────────────────
+function renderColorGrid() {
+  const grid = document.getElementById('colorGrid');
+  grid.innerHTML = COLORES.map(c=>`
+    <div class="color-dot ${c.val===selectedColor?'selected':''}"
+      style="background:${c.val}" title="${c.name}"
+      onclick="selectColor('${c.val}')"></div>`).join('');
+}
+
+window.selectColor = function(color) {
+  selectedColor = color;
+  renderColorGrid();
+  renderPreview();
+  markDirty();
+};
+
+// ── PREVIEW EN VIVO ───────────────────────────────────────
+function renderPreview() {
+  const isDark = selectedTema === 'dark';
+  const bg     = isDark ? '#060D14' : '#f8fafc';
+  const sbBg   = isDark ? '#0C1622' : '#f0f4f8';
+  const cardBg = isDark ? '#111E2E' : '#ffffff';
+  const txtCol = isDark ? '#E8F0F8' : '#111827';
+  const txtDim = isDark ? 'rgba(232,240,248,.3)' : '#9ca3af';
+  const accent = selectedColor;
+  const nombre = document.getElementById('cf-nombre')?.value || 'Mi Consultorio';
+  const logoSrc = logoBase64;
+
+  document.getElementById('previewMini').innerHTML = `
+    <div class="preview-mini-sidebar" style="background:${sbBg};border-right:1px solid rgba(128,128,128,.1)">
+      <div class="preview-mini-logo" style="background:${accent}22;border:1px solid ${accent}44">
+        ${logoSrc ? `<img src="${logoSrc}" style="width:100%;height:100%;object-fit:contain;border-radius:4px">` : '<span style="font-size:12px">🦷</span>'}
+      </div>
+      <div style="font-size:6px;color:${accent};font-weight:700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nombre.slice(0,16)}</div>
+      ${['Dashboard','Agenda','Pacientes','Trats.'].map((t,i)=>`
+        <div class="preview-mini-item" style="background:${i===0?accent:txtDim}"></div>`).join('')}
+    </div>
+    <div class="preview-mini-main" style="background:${bg}">
+      <div style="display:flex;gap:4px;margin-bottom:6px">
+        ${[accent,accent+'66','#4A9EFF'].map(c=>`<div style="flex:1;height:28px;background:${c}22;border:1px solid ${c}33;border-radius:4px"></div>`).join('')}
+      </div>
+      <div class="preview-mini-card" style="background:${cardBg};border:1px solid rgba(128,128,128,.1)">
+        <div class="preview-mini-text" style="background:${accent}"></div>
+        <div class="preview-mini-text2" style="background:${txtDim}"></div>
+      </div>
+    </div>`;
+}
+
+// ── DIRTY STATE ───────────────────────────────────────────
+window.markDirty = function() {
+  isDirty = true;
+  document.getElementById('saveFloat').style.display = 'block';
+  renderPreview();
+};
+
+// ── GUARDAR CONFIG ────────────────────────────────────────
+window.guardarConfig = async function() {
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const fiscal = {
+      razon:        document.getElementById('cf-razon').value.trim(),
+      rfc:          document.getElementById('cf-rfc').value.trim().toUpperCase(),
+      cedula:       document.getElementById('cf-cedula').value.trim(),
+      especialidad: document.getElementById('cf-especialidad').value.trim(),
+      regimen:      document.getElementById('cf-regimen').value,
+      leyenda:      document.getElementById('cf-leyenda').value.trim(),
+    };
+    const configData = { tema: selectedTema, color: selectedColor };
+    const updates = {
+      nombre:       document.getElementById('cf-nombre').value.trim(),
+      eslogan:      document.getElementById('cf-eslogan').value.trim(),
+      telefono:     document.getElementById('cf-tel').value.trim(),
+      whatsapp:     document.getElementById('cf-wa').value.trim(),
+      emailClinica: document.getElementById('cf-email').value.trim(),
+      direccion:    document.getElementById('cf-dir').value.trim(),
+      ciudad:       document.getElementById('cf-ciudad').value.trim(),
+      web:          document.getElementById('cf-web').value.trim(),
+      fiscal, config: configData,
+      actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    // Logo — solo si cambió (base64 puede ser pesado)
+    if (logoBase64 !== null) updates.logoBase64 = logoBase64;
+    else if (logoBase64 === null && !clinicaData?.logoBase64) {
+      updates.logoBase64 = null;
+    }
+
+    await db.collection('clinicas').doc(SESSION.clinica.id).update(updates);
+
+    // Actualizar nombre del usuario si cambió
+    const miNombre = document.getElementById('cf-miNombre').value.trim();
+    if (miNombre && miNombre !== SESSION.user.nombre) {
+      await db.collection('usuarios').doc(SESSION.user.uid).update({ nombre: miNombre });
+      SESSION.user.nombre = miNombre;
+    }
+
+    // Aplicar tema inmediatamente
+    applyTheme(selectedTema, selectedColor);
+    SESSION.clinica.nombre = updates.nombre;
+    SESSION.clinica.config = configData;
+
+    isDirty = false;
+    document.getElementById('saveFloat').style.display = 'none';
+    showToast('Configuración guardada correctamente ✅','success');
+
+    // Re-renderizar sidebar con el nuevo nombre
+    renderSidebar();
+
+  } catch(e) { showToast('Error al guardar: '+e.message,'error'); }
+  btn.disabled = false; btn.textContent = '💾 Guardar cambios';
+};
+
+// ── APLICAR TEMA AL SISTEMA ───────────────────────────────
+function applyTheme(tema, color) {
+  const root = document.documentElement;
+  if (tema === 'light') {
+    root.style.setProperty('--bg',      '#f8fafc');
+    root.style.setProperty('--surface', '#ffffff');
+    root.style.setProperty('--surface2','#f0f4f8');
+    root.style.setProperty('--border',  'rgba(0,0,0,.08)');
+    root.style.setProperty('--border2', 'rgba(0,0,0,.15)');
+    root.style.setProperty('--text',    '#111827');
+    root.style.setProperty('--text-muted','rgba(17,24,39,.55)');
+    root.style.setProperty('--text-dim', 'rgba(17,24,39,.3)');
+    document.body.style.background = '#f8fafc';
+  } else {
+    root.style.setProperty('--bg',      '#060D14');
+    root.style.setProperty('--surface', '#0C1622');
+    root.style.setProperty('--surface2','#111E2E');
+    root.style.setProperty('--border',  'rgba(255,255,255,.07)');
+    root.style.setProperty('--border2', 'rgba(255,255,255,.12)');
+    root.style.setProperty('--text',    '#E8F0F8');
+    root.style.setProperty('--text-muted','rgba(232,240,248,.50)');
+    root.style.setProperty('--text-dim', 'rgba(232,240,248,.25)');
+    document.body.style.background = '#060D14';
+  }
+  // Color de acento
+  const hex = color || '#00C2A8';
+  const r   = parseInt(hex.slice(1,3),16);
+  const g   = parseInt(hex.slice(3,5),16);
+  const b   = parseInt(hex.slice(5,7),16);
+  root.style.setProperty('--teal',     hex);
+  root.style.setProperty('--teal-dim', `rgba(${r},${g},${b},.12)`);
+  root.style.setProperty('--teal-glow',`rgba(${r},${g},${b},.25)`);
+  // Guardar en localStorage para persistir entre páginas
+  localStorage.setItem('dental_tema',  tema);
+  localStorage.setItem('dental_color', hex);
+}
+
+// ── CAMBIAR CONTRASEÑA ────────────────────────────────────
+window.cambiarPass = async function() {
+  const pass = document.getElementById('cf-pass').value;
+  if (!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres','error'); return; }
+  try {
+    await auth.currentUser.updatePassword(pass);
+    document.getElementById('cf-pass').value = '';
+    showToast('Contraseña actualizada correctamente','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+// ── EXPORTAR TODO ─────────────────────────────────────────
+window.exportarTodo = async function() {
+  showToast('Exportando datos...','info');
+  try {
+    const [pxList,trats,abonos,citas,cat] = await Promise.all([
+      fsGetAll('pacientes'),fsGetAll('tratamientos'),
+      fsGetAll('abonos'),fsGetAll('citas'),fsGetAll('catalogo'),
+    ]);
+    const backup = {
+      exportadoEl: new Date().toISOString(),
+      clinica: SESSION.clinica.nombre,
+      pacientes:pxList,tratamientos:trats,abonos,citas,catalogo:cat,
+    };
+    const a = document.createElement('a');
+    a.href = 'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(backup,null,2));
+    a.download = `backup_${SESSION.clinica.nombre?.replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    showToast('Backup descargado correctamente','success');
+  } catch(e) { showToast('Error al exportar: '+e.message,'error'); }
+};
+
+// ── APLICAR TEMA GUARDADO AL INICIO ──────────────────────
+(function() {
+  const t = localStorage.getItem('dental_tema');
+  const c = localStorage.getItem('dental_color');
+  if (t || c) applyTheme(t||'dark', c||'#00C2A8');
+})();
+</script>
+</body>
+</html>
