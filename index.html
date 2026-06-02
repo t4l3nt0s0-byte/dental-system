@@ -416,7 +416,7 @@ function durEst(trat){
   const k=Object.keys(DURACIONES).find(k=>trat.toLowerCase().includes(k.toLowerCase()));
   return k?DURACIONES[k]:null;
 }
-function fmtDur(min){return min>=60?`${Math.floor(min/60)}h${min%60?` ${min%60}min`:''}`:min+'min';}
+function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'min':'')):min+'min';}
 
 // ── EN CONSULTA AHORA ────────────────────────────────────
 let _consultaTimer = null; // intervalo del cronómetro
