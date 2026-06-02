@@ -563,6 +563,614 @@ function buildConsultaCard(c){
           </span>
         </div>
 
+        <!-- 3 tarjetas de tiempo — tamaño uniforme -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center;height:64px;display:flex;flex-direction:column;justify-content:center;align-items:center">
+            <div style="font-size:.52rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">⏱ Estimado</div>
+            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:var(--teal)">${fmtDur(durMin)}</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center;height:64px;display:flex;flex-direction:column;justify-content:center;align-items:center">
+            <div style="font-size:.52rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">⏳ Tiempo real</div>
+            <div id="trReal_${c.id}" style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:${colBar}">${trHH}:${trMM}:${trSS}</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center;height:64px;display:flex;flex-direction:column;justify-content:center;align-items:center">
+            <div style="font-size:.52rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">⌛ Restante</div>
+            <div id="trRest_${c.id}" style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:${rest<=5?'var(--red)':rest<=10?'var(--gold)':'var(--text)'}">${rest<=0?'⏰':fmtDur(rest)}</div>
+          </div>
+        </div>
+
+        <!-- Barra de progreso -->
+        <div style="margin-bottom:4px">
+          <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--text-dim);margin-bottom:3px">
+            <span>${inicioStr}</span>
+            <span id="trTxt_${c.id}" style="font-family:var(--font-mono);color:${colBar};font-weight:700">${trans}min / ${durMin}min (${pct}%)</span>
+            <span>${finHora}</span>
+          </div>
+          <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
+            <div id="trBar_${c.id}" style="height:100%;width:${pct}%;background:${colBar};border-radius:4px;transition:width .5s"></div>
+          </div>
+          <div style="text-align:right;font-size:.6rem;margin-top:2px;color:${rest<=5?'var(--red)':rest<=10?'var(--gold)':'var(--text-dim)'}">
+            ${rest<=0?'⏰ Tiempo cumplido — finalizar':rest<=5?'⚠️ '+rest+'min restantes':rest+'min restantes'}
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:148px;flex-shrink:0">
+        ${(()=>{
+          const px = ALL_PACIENTES.find(p=>p.nombre===c.paciente||p.id===c.expId);
+          const telPx  = c.tel||px?.telefono||px?.tel||'';
+          const telFam = px?.telFamiliar||px?.telefonoFamiliar||px?.contactoEmergencia||'';
+          const nomFam = px?.nombreFamiliar||px?.familiar||'Familiar';
+          let btns='';
+          if(telPx) btns+=`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;font-size:.7rem" onclick="whatsapp('${telPx}','Hola ${(c.paciente||'').split(' ')[0]}, tu consulta está en proceso')">💬 Paciente</button>`;
+          if(telFam) btns+=`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.08);border-color:rgba(37,211,102,.25);color:#25D366;font-size:.7rem" onclick="whatsapp('${telFam}','Hola, le informamos sobre la consulta de ${c.paciente||'el paciente'}')">📞 Familiar</button>`;
+          if(!telPx&&!telFam) btns+=`<span style="font-size:.65rem;color:var(--text-dim);text-align:center">Sin teléfono</span>`;
+          return btns;
+        })()}g="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Panel Clínico</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── GREETING ── */
+.greeting{margin-bottom:24px}
+.greeting-title{font-family:var(--font-display);font-size:1.9rem;font-style:italic;color:var(--text);margin-bottom:4px}
+.greeting-sub{font-size:.82rem;color:var(--text-muted)}
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;transition:all .2s}
+.kpi-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.kpi-card.green::after{background:var(--teal)}
+.kpi-card.gold::after{background:var(--gold)}
+.kpi-card.blue::after{background:var(--blue)}
+.kpi-card.purple::after{background:var(--purple,#A78BFA)}
+.kpi-icon{font-size:1.4rem;margin-bottom:8px;display:block}
+.kpi-value{font-family:var(--font-mono);font-size:1.55rem;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi-label{font-size:.68rem;color:var(--text-muted);font-weight:600;letter-spacing:.04em}
+.kpi-delta{font-size:.68rem;margin-top:6px;display:flex;align-items:center;gap:4px}
+.kpi-delta.up{color:#34D399}.kpi-delta.down{color:#FF5C5C}.kpi-delta.neutral{color:var(--text-dim)}
+/* ── TURNO ── */
+.turno-card{background:linear-gradient(135deg,rgba(0,194,168,.08),rgba(0,194,168,.02));border:1px solid rgba(0,194,168,.25);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;position:relative;overflow:hidden}
+.turno-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue))}
+.turno-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.turno-dot{width:10px;height:10px;border-radius:50%;background:var(--teal);animation:pulse 1.5s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,194,168,.4)}50%{box-shadow:0 0 0 6px rgba(0,194,168,0)}}
+.turno-label{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)}
+.turno-body{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.turno-px-name{font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:3px}
+.turno-px-info{font-size:.78rem;color:var(--text-muted)}
+.turno-actions{display:flex;gap:8px;flex-shrink:0}
+.turno-next{margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,194,168,.15);display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--text-muted)}
+.turno-next .next-label{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-right:4px}
+.sin-citas{text-align:center;padding:20px;color:var(--text-dim);font-size:.82rem}
+/* ── META INGRESOS ── */
+.meta-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:20px}
+.meta-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.meta-title{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+.meta-values{display:flex;gap:20px;align-items:baseline;flex-wrap:wrap}
+.meta-actual{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--text)}
+.meta-target{font-family:var(--font-mono);font-size:.88rem;color:var(--text-dim)}
+.meta-pct{font-size:.8rem;font-weight:700;padding:2px 8px;border-radius:100px}
+.progress-track{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;margin-bottom:10px;position:relative}
+.progress-fill-meta{height:100%;border-radius:5px;transition:width 1s ease;position:relative}
+.progress-fill-meta::after{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:rgba(255,255,255,.4);border-radius:2px}
+.meta-prev-line{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.3);z-index:1}
+.meta-stats{display:flex;gap:16px;flex-wrap:wrap}
+.meta-stat{font-size:.72rem;color:var(--text-muted)}
+.meta-stat strong{color:var(--text)}
+/* ── DASHBOARD GRID ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.dash-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;overflow:hidden}
+.dash-card.full{grid-column:1/-1}
+.card-title{font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.card-title span:first-child{color:var(--teal)}
+/* ── CITAS ── */
+.cita-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);transition:background .15s}
+.cita-row:last-child{border-bottom:none}
+.cita-hora{font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--teal);min-width:40px}
+.cita-info{flex:1;min-width:0}
+.cita-px{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cita-trat{font-size:.68rem;color:var(--text-muted)}
+/* ── ADEUDOS ── */
+.adeudo-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.adeudo-row:last-child{border-bottom:none}
+.adeudo-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.adeudo-info{flex:1;min-width:0}
+.adeudo-px{font-size:.8rem;font-weight:600;color:var(--text)}
+.adeudo-trat{font-size:.65rem;color:var(--text-muted)}
+.adeudo-monto{font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--red,#FF5C5C);flex-shrink:0}
+/* ── EMBUDO ── */
+.funnel-wrap{display:flex;flex-direction:column;gap:6px}
+.funnel-step{display:flex;align-items:center;gap:10px}
+.funnel-bar-wrap{flex:1;height:28px;background:var(--surface2);border-radius:4px;overflow:hidden;position:relative}
+.funnel-bar{height:100%;border-radius:4px;transition:width 1s ease;display:flex;align-items:center;padding-left:10px}
+.funnel-bar-label{font-size:.7rem;font-weight:700;color:#fff;white-space:nowrap}
+.funnel-label{font-size:.7rem;color:var(--text-muted);min-width:90px;text-align:right}
+.funnel-count{font-family:var(--font-mono);font-size:.75rem;font-weight:700;min-width:28px;text-align:center}
+/* ── TOP FRECUENTES ── */
+.freq-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.freq-row:last-child{border-bottom:none}
+.freq-rank{font-family:var(--font-mono);font-size:.7rem;font-weight:700;color:var(--text-dim);min-width:18px}
+.freq-avatar{width:28px;height:28px;border-radius:50%;background:var(--teal-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.freq-name{flex:1;font-size:.78rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.freq-count{font-family:var(--font-mono);font-size:.72rem;color:var(--teal);font-weight:700}
+/* ── MODAL META ── */
+.meta-edit-btn{font-size:.68rem;cursor:pointer;color:var(--teal);background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);border-radius:6px;padding:3px 8px;transition:all .15s}
+.meta-edit-btn:hover{background:var(--teal);color:#060D14}
+/* ESTADO OPT en modal */
+.estado-opt{user-select:none;transition:all .15s}
+.estado-opt:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+/* Shimmer animación */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+/* EMPTY */
+.empty-mini{text-align:center;padding:20px;color:var(--text-dim);font-size:.78rem}
+/* CHART containers */
+.chart-wrap{position:relative;height:180px}
+.chart-wrap-tall{position:relative;height:220px}
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.dash-grid,.dash-grid-3{grid-template-columns:1fr}.turno-body{grid-template-columns:1fr}.turno-actions{margin-top:8px}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:1fr 1fr}.kpi-value{font-size:1.2rem}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📊 Panel Clínico</div>
+    <div class="topbar-actions" style="gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="topbarReloj" style="font-size:.78rem;color:var(--teal);font-family:var(--font-mono);font-weight:700;display:flex;align-items:center;gap:4px">
+          <span style="font-size:.75rem">🕐</span><span id="relojTxt">00:00:00</span>
+        </div>
+        <div id="topbarFecha" style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono)"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="window.location.href='agenda.html'">+ Nueva cita</button>
+    </div>
+  </div>
+  <div class="content" id="mainContent">
+  <!-- Banner de pausa del doctor -->
+  <div id="pausaBanner" style="display:none;background:linear-gradient(135deg,rgba(244,185,66,.15),rgba(244,185,66,.05));border:1px solid rgba(244,185,66,.3);border-radius:var(--r);padding:12px 18px;margin-bottom:14px;font-size:.85rem;font-weight:600;color:var(--gold);display:flex;align-items:center;justify-content:space-between">
+    <span id="pausaBannerTxt">▶️ Listo para el siguiente paciente</span>
+    <button onclick="document.getElementById('pausaBanner').style.display='none'" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;padding:0">✕</button>
+  </div>
+    <div class="loader" style="padding:60px;text-align:center"><div class="spinner"></div></div>
+  </div>
+</main>
+
+<!-- MODAL CONFIGURAR META -->
+<div class="modal-overlay" id="modalMeta">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">🎯 Configurar meta mensual</div>
+      <button class="modal-close" onclick="closeModal('modalMeta')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:16px">
+        Define cuánto quieres cobrar este mes. El sistema mostrará tu progreso en tiempo real.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meta de ingresos mensual (MXN)</label>
+        <input type="number" class="form-input" id="metaInput" placeholder="15000" min="1000" step="500">
+      </div>
+      <div style="font-size:.72rem;color:var(--text-dim)">💡 Tip: Multiplica tus citas promedio por semana × precio promedio × 4</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalMeta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMeta()">💾 Guardar meta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FINALIZAR CITA -->
+<div class="modal-overlay" id="modalFinCita">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">📋 Finalizar consulta</div>
+      <button class="modal-close" id="btnCerrarFinCita">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="finCitaInfo" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:.85rem;color:var(--text-muted)"></div>
+
+      <div class="form-group">
+        <label class="form-label">Estado de la cita *</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="estadoGrid">
+          <div class="opt-estado" data-val="Completado" style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.3rem;margin-bottom:4px">✅</div>
+            <div style="font-size:.78rem;font-weight:700;color:var(--teal)">Completado</div>
+            <div style="font-size:.63rem;color:var(--text-dim)">Cita realizada</div>
+          </div>
+          <div class="opt-estado" data-val="Extendido" style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.3rem;margin-bottom:4px">⏰</div>
+            <div style="font-size:.78rem;font-weight:700;color:var(--text)">Cita se extiende</div>
+            <div style="font-size:.63rem;color:var(--text-dim)">Complicaciones</div>
+          </div>
+          <div class="opt-estado" data-val="No Asistió" style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.3rem;margin-bottom:4px">❌</div>
+            <div style="font-size:.78rem;font-weight:700;color:var(--text)">No asistió</div>
+            <div style="font-size:.63rem;color:var(--text-dim)">Sin aviso previo</div>
+          </div>
+          <div class="opt-estado" data-val="Cancelado" style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.3rem;margin-bottom:4px">🚫</div>
+            <div style="font-size:.78rem;font-weight:700;color:var(--text)">Cancelado</div>
+            <div style="font-size:.63rem;color:var(--text-dim)">El paciente canceló</div>
+          </div>
+        </div>
+        <div id="tiempoExtraWrap" style="display:none;margin-top:10px;padding:10px;background:rgba(244,185,66,.08);border:1px solid rgba(244,185,66,.2);border-radius:8px">
+          <label class="form-label" style="color:var(--gold)">⏱ Tiempo adicional estimado</label>
+          <select class="form-select" id="tiempoExtraMin">
+            <option value="15">+15 minutos</option>
+            <option value="30" selected>+30 minutos</option>
+            <option value="45">+45 minutos</option>
+            <option value="60">+1 hora</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px;display:none" id="pausaSection">
+        <label class="form-label">🔔 Estado del doctor después de esta cita</label>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="pausaGrid">
+          <div class="opt-pausa" data-val="" style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.1rem;margin-bottom:3px">▶️</div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--teal)">Continúa</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Siguiente paciente</div>
+          </div>
+          <div class="opt-pausa" data-val="baño" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.1rem;margin-bottom:3px">🚻</div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">Pausa / Baño</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Regresa pronto</div>
+          </div>
+          <div class="opt-pausa" data-val="comida" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.1rem;margin-bottom:3px">🍽️</div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">Sale a comer</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Pausa larga</div>
+          </div>
+          <div class="opt-pausa" data-val="salida" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .15s">
+            <div style="font-size:1.1rem;margin-bottom:3px">🏠</div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">Hora de salida</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Fin de jornada</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Notas (opcional)</label>
+        <textarea class="form-textarea" id="finCitaNotas" rows="2" placeholder="Observaciones, indicaciones para el paciente..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancelarFinCita">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmFinCita">✅ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'index';
+let ALL_CITAS=[], ALL_ABONOS=[], ALL_PACIENTES=[], ALL_TRATS=[], ALL_COTIZACIONES=[], ALL_DOCTORES=[];
+let citaActualId=null, metaMensual=0, isAdmin=false;
+let _citaInicioReal=null; // hora real en que se inicia la consulta
+
+// ── HELPERS GLOBALES DE FECHA/HORA ────────────────────────
+function getCitasHoy(){
+  const hoyStr = todayISO();
+  return ALL_CITAS
+    .filter(c => c.fecha === hoyStr && c.hora)
+    .sort((a,b) => a.hora.localeCompare(b.hora));
+}
+function getHoraMin(){
+  const n = new Date();
+  return n.getHours()*60 + n.getMinutes();
+}
+
+const CHART_DEFAULTS = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, animation:{duration:800} };
+
+// ── RELOJ EN VIVO — inicia inmediatamente ────────────────
+function startClock(){
+  function tick(){
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    const el = document.getElementById('relojTxt');
+    if(el) el.textContent = `${h}:${m}:${s}`;
+    const hr = now.getHours() % 12;
+    const icons = ['🕛','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚'];
+    const iconEl = document.querySelector('#topbarReloj span:first-child');
+    if(iconEl) iconEl.textContent = icons[hr];
+    // Actualizar también la fecha
+    const fechaEl = document.getElementById('topbarFecha');
+    if(fechaEl && fechaEl.textContent === '') {
+      fechaEl.textContent = now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+// Arrancar el reloj inmediatamente sin esperar a Firebase
+startClock();
+
+// ── HELPERS ───────────────────────────────────────────────
+const hoy        = () => new Date().toISOString().slice(0,10);
+const mesActual  = () => {
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+};
+const mesAnterior= () => {
+  const d=new Date(); d.setMonth(d.getMonth()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+};
+const chartColor = (hex,a=1) => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; };
+const gridColor  = 'rgba(255,255,255,.05)';
+const textColor  = 'rgba(232,240,248,.4)';
+
+initSession('any').then(async session=>{
+  if(!session) return;
+  const {clinica,user}=session;
+  isAdmin = user.rol==='admin';
+
+  // Fecha en topbar
+  const now=new Date();
+  const fechaEl=document.getElementById('topbarFecha');
+  if(fechaEl) fechaEl.textContent=now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+  // Cargar datos con manejo individual de errores
+  const safeGet = async (col) => { try { return await fsGetAll(col); } catch(e) { console.warn('No se pudo cargar:', col, e.message); return []; } };
+
+  const [citas,abonos,pacientes,trats,cotizaciones,doctores] = await Promise.all([
+    safeGet('citas'),
+    safeGet('abonos'),
+    safeGet('pacientes'),
+    safeGet('tratamientos'),
+    safeGet('cotizaciones'),
+    safeGet('doctores'),
+  ]);
+  ALL_CITAS=citas; ALL_ABONOS=abonos; ALL_PACIENTES=pacientes; ALL_TRATS=trats; ALL_COTIZACIONES=cotizaciones; ALL_DOCTORES=doctores;
+
+  // Meta mensual
+  try {
+    const cSnap=await db.collection('clinicas').doc(clinica.id).get();
+    metaMensual=cSnap.data()?.metaMensual||0;
+  } catch(e) { metaMensual=0; }
+
+  try {
+    renderDashboard(clinica,user);
+  } catch(e) {
+    console.error('Error en renderDashboard:', e);
+    const mc2 = document.getElementById('mainContent');
+    if(mc2) mc2.innerHTML=
+      '<div style="padding:40px;text-align:center;color:#E8F0F8">' +
+      '<div style="font-size:2rem;margin-bottom:12px">⚠️</div>' +
+      '<div style="font-size:1rem;font-weight:600;margin-bottom:8px">Error: ' + e.message + '</div>' +
+      '<button onclick="location.reload()" style="background:#00C2A8;color:#060D14;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700">🔄 Recargar</button>' +
+      '</div>';
+  }
+});
+
+function renderDashboard(clinica,user){
+  const mc=document.getElementById('mainContent');
+  const greeting=greetingText();
+  const hora=new Date().getHours();
+  const emoji=hora<12?'👋':hora<19?'☀️':'🌙';
+  const nombre=user.nombre?.split(' ')[0]||user.email.split('@')[0];
+
+  // KPIs
+  const {cobradoMes,cobradoAnt,adeudoTotal,tiqMedio}=calcKPIs();
+  const {citasHoy,nuevosMes,nuevosAnt}=calcExtra();
+
+  // Variación %
+  const varIngresos=cobradoAnt>0?Math.round(((cobradoMes-cobradoAnt)/cobradoAnt)*100):null;
+  const varPacientes=nuevosAnt>0?Math.round(((nuevosMes-nuevosAnt)/nuevosAnt)*100):null;
+
+  mc.innerHTML=`
+  <!-- GREETING -->
+  <div class="greeting">
+    <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
+    <div class="greeting-sub">${clinica.nombre||'DentalOS'} · ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+  </div>
+
+  <!-- 1. EN CONSULTA AHORA -->
+  <div id="enConsultaSection"></div>
+
+  <!-- 2. PRÓXIMOS TURNOS -->
+  <div id="turnoSection"></div>
+
+  <!-- 3. CITAS DE HOY + GRÁFICO DEL DÍA -->
+  <div class="dash-grid" style="margin-bottom:20px">
+    <div class="dash-card">
+      <div class="card-title">
+        <span>📅 CITAS DE HOY</span>
+        <a href="agenda.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver agenda →</a>
+      </div>
+      <div id="citasHoyList"></div>
+    </div>
+    <div class="dash-card">
+      <div class="card-title">
+        <span>📊 PROGRESO DEL DÍA</span>
+        <span id="citasDiaResumen" style="font-size:.68rem;color:var(--text-muted)"></span>
+      </div>
+      <div style="position:relative;height:160px"><canvas id="chartDiaHoy"></canvas></div>
+      <div id="citasDiaLeyenda" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;justify-content:center"></div>
+    </div>
+  </div>
+
+  <!-- ACCESO RÁPIDO -->
+  <div class="dash-card" style="margin-bottom:16px">
+    <div class="card-title"><span>⚡ ACCESO RÁPIDO</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${[
+        ['agenda.html','📅','Nueva cita'],
+        ['pacientes.html','👤','Nuevo paciente'],
+        ['abonos.html','💰','Registrar pago'],
+        ['cotizacion.html','📝','Cotización'],
+        ['recibo.html','🧾','Recibo'],
+        ['estado-cuenta.html','📄','Estado cuenta'],
+        ['recordatorios.html','💬','Recordatorios'],
+        ['metricas.html','📊','Ver métricas'],
+      ].map(([href,icon,label])=>`<a href="${href}" class="btn btn-ghost btn-sm" style="flex:1;min-width:100px;justify-content:center">${icon} ${label}</a>`).join('')}
+    </div>
+  </div>
+`;
+
+  renderEnConsulta();
+  renderTurno();
+  renderCitasHoy();
+  renderChartDiaHoy();
+  // Actualizar todo cada minuto
+  setInterval(()=>{
+    renderEnConsulta();
+    renderTurno();
+    renderCitasHoy();
+    renderChartDiaHoy();
+  }, 60000);
+}
+
+// Duraciones estimadas por tratamiento (minutos)
+const DURACIONES = {
+  'Limpieza':30,'Profilaxis':30,'Blanqueamiento':60,'Consulta':20,
+  'Valoración':20,'Revisión':20,'Endodoncia':90,'Resina':45,
+  'Amalgama':45,'Corona':60,'Extracción':30,'Extracción simple':30,
+  'Extracción quirúrgica':60,'Ortodoncia':45,'Brackets':45,
+  'Radiografía':15,'Rx':15,'Implante':90,'Carilla':60,
+  'Incrustación':60,'Puente':60,'Prótesis':60,
+};
+function durEst(trat){
+  if(!trat) return null;
+  const k=Object.keys(DURACIONES).find(k=>trat.toLowerCase().includes(k.toLowerCase()));
+  return k?DURACIONES[k]:null;
+}
+function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'min':'')):min+'min';}
+
+// ── DURACIONES ESTIMADAS ─────────────────────────────────
+
+// ── EN CONSULTA AHORA (múltiples consultas simultáneas) ────
+// Estado por cita activa: { citaId: { inicioRealMin, inicioRealDate } }
+let _consultasActivas = {}; // mapa citaId -> { inicioRealMin, inicioRealDate }
+let _masterTimer = null;    // un solo setInterval para actualizar todas
+
+const ESTADOS_FINALES = ['Completado', 'No Asistió', 'Cancelado'];
+
+// Detectar todas las citas en curso ahora
+function getCitasEnCurso(){
+  const horaActual = getHoraMin();
+  return getCitasHoy().filter(c => {
+    if(ESTADOS_FINALES.includes(c.estado)) return false;
+    const [h,m] = (c.hora||'00:00').split(':').map(Number);
+    const minC  = h*60+m;
+    const dur   = (durEst(c.tratamiento)||30) + (c.tiempoExtra||0);
+    if(c.estado === 'En tratamiento') return true;
+    if(minC <= horaActual && c.doctor)  return true;
+    if(minC <= horaActual && horaActual < minC + dur + 15) return true;
+    return false;
+  });
+}
+
+function renderEnConsulta(){
+  const el = document.getElementById('enConsultaSection');
+  if(!el) return;
+
+  const citasEnCurso = getCitasEnCurso();
+
+  // Limpiar entradas de citas que ya terminaron
+  Object.keys(_consultasActivas).forEach(id => {
+    if(!citasEnCurso.find(c=>c.id===id)) delete _consultasActivas[id];
+  });
+
+  // Registrar inicio real para citas nuevas
+  const horaActual = getHoraMin();
+  citasEnCurso.forEach(c => {
+    if(!_consultasActivas[c.id]){
+      const [h,m] = (c.hora||'00:00').split(':').map(Number);
+      const minAgendado = h*60+m;
+      const inicioMin   = c.inicioRealMin || minAgendado;
+      const hoy = new Date();
+      const inicioDate  = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(),
+        Math.floor(inicioMin/60), inicioMin%60, 0);
+      _consultasActivas[c.id] = { inicioRealMin: inicioMin, inicioRealDate: inicioDate };
+    }
+  });
+
+  if(!citasEnCurso.length){
+    el.innerHTML = '';
+    if(_masterTimer){ clearInterval(_masterTimer); _masterTimer=null; }
+    return;
+  }
+
+  // Renderizar un bloque por cada cita activa
+  el.innerHTML = citasEnCurso.map(c => buildConsultaCard(c)).join('');
+
+  // Iniciar timer maestro que actualiza todas las barras
+  if(_masterTimer) clearInterval(_masterTimer);
+  _masterTimer = setInterval(() => tickAllConsultas(), 1000);
+}
+
+function buildConsultaCard(c){
+  const estado = _consultasActivas[c.id];
+  if(!estado) return '';
+
+  const horaActual  = getHoraMin();
+  const inicioMin   = estado.inicioRealMin;
+  const durBase     = durEst(c.tratamiento) || 30;
+  const durMin      = durBase + (c.tiempoExtra||0);
+  const finMin      = inicioMin + durMin;
+  const finHora     = String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
+  const inicioStr   = String(Math.floor(inicioMin/60)).padStart(2,'0')+':'+String(inicioMin%60).padStart(2,'0');
+  const trans       = Math.max(0, horaActual - inicioMin);
+  const rest        = Math.max(0, durMin - trans);
+  const pct         = Math.min(100, Math.round((trans/durMin)*100));
+  const colBar      = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+
+  // Tiempo real HH:MM:SS
+  const trMs  = Math.max(0, new Date() - estado.inicioRealDate);
+  const trHH  = String(Math.floor(trMs/3600000)).padStart(2,'0');
+  const trMM  = String(Math.floor((trMs%3600000)/60000)).padStart(2,'0');
+  const trSS  = String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
+
+  const medico   = c.doctor || SESSION?.user?.nombre || '—';
+  const doctorColor = ALL_DOCTORES.find(d=>d.nombre===medico)?.color || 'var(--teal)';
+
+  const retraso = inicioMin - (() => { const [h,m]=(c.hora||'00:00').split(':').map(Number); return h*60+m; })();
+  const retrasoTxt = retraso>1
+    ? `<span style="font-size:.62rem;color:var(--gold)">⚠️ +${retraso}min retraso</span>`
+    : `<span style="font-size:.62rem;color:var(--teal)">✅ Puntual</span>`;
+
+  return `
+  <div id="consulta_${c.id}" style="background:linear-gradient(135deg,rgba(0,194,168,.09),rgba(0,194,168,.02));border:1px solid rgba(0,194,168,.3);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:12px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${doctorColor}"></div>
+
+    <!-- Header: etiqueta + retraso -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="turno-dot"></div>
+        <span style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)">EN CONSULTA</span>
+        ${retrasoTxt}
+      </div>
+      <div style="font-size:.72rem;color:var(--text-muted);font-family:var(--font-mono)">
+        Inicio: <strong style="color:var(--text)">${inicioStr}</strong>
+        &nbsp;·&nbsp; Fin est.: <strong style="color:var(--teal)">${finHora}</strong>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">
+      <div>
+        <!-- Paciente + tratamiento -->
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:3px">${c.paciente||'—'}</div>
+        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px">
+          🦷 <strong style="color:var(--text)">${c.tratamiento||'Sin tratamiento'}</strong>
+          &nbsp;·&nbsp;
+          <span style="display:inline-flex;align-items:center;gap:4px">
+            <span style="width:8px;height:8px;border-radius:50%;background:${doctorColor};display:inline-block"></span>
+            <strong style="color:var(--text)">${medico}</strong>
+          </span>
+        </div>
+
         <!-- 3 tarjetas de tiempo -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px;text-align:center">

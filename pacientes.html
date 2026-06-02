@@ -103,8 +103,19 @@
               <select class="form-select" id="f-genero"><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
             </div>
           </div>
-          <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-tel" placeholder="55 0000 0000" type="tel"></div>
+          <div class="form-group"><label class="form-label">Teléfono del paciente</label><input class="form-input" id="f-tel" placeholder="55 0000 0000" type="tel"></div>
           <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" class="form-input" id="f-email" placeholder="paciente@correo.com"></div>
+          <!-- Contacto de emergencia / familiar -->
+          <div style="font-size:.68rem;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 10px">📞 Contacto de emergencia</div>
+          <div class="form-group"><label class="form-label">Nombre del familiar</label><input class="form-input" id="f-familiar" placeholder="Nombre completo del familiar"></div>
+          <div class="form-group"><label class="form-label">Parentesco</label>
+            <select class="form-select" id="f-parentesco">
+              <option value="">Seleccionar...</option>
+              <option>Mamá</option><option>Papá</option><option>Esposo/a</option>
+              <option>Hijo/a</option><option>Hermano/a</option><option>Otro</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Teléfono del familiar</label><input class="form-input" id="f-telFamiliar" placeholder="55 0000 0000" type="tel"></div>
           <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="f-dir" placeholder="Calle, número, colonia, ciudad"></div>
           <div class="form-group"><label class="form-label">Cómo nos conoció</label>
             <select class="form-select" id="f-referido"><option value="">Seleccionar...</option><option>Recomendación</option><option>Redes sociales</option><option>Google</option><option>Publicidad</option><option>Otro</option></select>
@@ -226,13 +237,19 @@ function renderGrid() {
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editPaciente('${p.id}')">✏️ Editar</button>
           ${p.tel ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();whatsapp('${p.tel}','Hola ${p.nombre?.split(' ')[0]||''}')">💬 WA</button>` : '<div style="flex:1"></div>'}
         </div>
-        
+        <!-- 🗑️ ELIMINAR — DESACTIVADO TEMPORALMENTE
+             ════════════════════════════════════════
+             Para REACTIVAR el botón eliminar:
+             ARCHIVO: pacientes.html
+             BUSCA este bloque de comentario y
+             reemplázalo con la siguiente línea:
 
              <div class="px-actions-row">
                <button class="btn btn-ghost btn-sm" style="color:var(--red);flex:1" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️ Eliminar</button>
              </div>
 
-             
+             La función deletePaciente() está en la línea ~314
+             ════════════════════════════════════════ -->
       </div>
     </div>`;
   }).join('');
@@ -244,7 +261,7 @@ function openNewModal() {
   document.getElementById('searchInput').value = '';
   document.getElementById('filterGenero').value = '';
   document.getElementById('modalPxTitle').textContent = 'Nuevo Paciente';
-  ['f-nombre','f-tel','f-email','f-dir','f-alergias','f-padecimientos','f-medicamentos','f-obs'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['f-nombre','f-tel','f-email','f-dir','f-alergias','f-padecimientos','f-medicamentos','f-obs','f-familiar','f-telFamiliar'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-fnac').value = '';
   document.getElementById('f-genero').value = 'Masculino';
   document.getElementById('f-embarazo').value = 'No';
@@ -263,6 +280,9 @@ function editPaciente(id) {
   document.getElementById('f-tel').value = p.tel||'';
   document.getElementById('f-email').value = p.email||'';
   document.getElementById('f-dir').value = p.direccion||'';
+  document.getElementById('f-familiar').value = p.nombreFamiliar||p.familiar||'';
+  document.getElementById('f-parentesco').value = p.parentesco||'';
+  document.getElementById('f-telFamiliar').value = p.telFamiliar||'';
   document.getElementById('f-alergias').value = p.alergias||'';
   document.getElementById('f-padecimientos').value = p.padecimientos||'';
   document.getElementById('f-medicamentos').value = p.medicamentos||'';
@@ -295,6 +315,9 @@ async function savePaciente() {
     tel: document.getElementById('f-tel').value.trim(),
     email: document.getElementById('f-email').value.trim().toLowerCase(),
     direccion: document.getElementById('f-dir').value.trim(),
+    nombreFamiliar: document.getElementById('f-familiar').value.trim(),
+    parentesco: document.getElementById('f-parentesco').value,
+    telFamiliar: document.getElementById('f-telFamiliar').value.trim(),
     alergias: document.getElementById('f-alergias').value.trim()||'Ninguna',
     padecimientos: document.getElementById('f-padecimientos').value.trim()||'Ninguno',
     medicamentos: document.getElementById('f-medicamentos').value.trim()||'Ninguno',
