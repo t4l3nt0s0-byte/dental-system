@@ -445,251 +445,203 @@ function durEst(trat){
 }
 function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'min':'')):min+'min';}
 
+// ── DURACIONES ESTIMADAS ─────────────────────────────────
+const DURACIONES = {
+  'Limpieza':30,'Profilaxis':30,'Blanqueamiento':60,'Consulta':20,
+  'Valoración':20,'Revisión':20,'Endodoncia':90,'Resina':45,
+  'Amalgama':45,'Corona':60,'Extracción':30,'Extracción simple':30,
+  'Extracción quirúrgica':60,'Ortodoncia':45,'Brackets':45,
+  'Radiografía':15,'Rx':15,'Implante':90,'Carilla':60,
+  'Incrustación':60,'Puente':60,'Prótesis':60,
+};
+function durEst(trat){
+  if(!trat) return null;
+  const k=Object.keys(DURACIONES).find(k=>trat.toLowerCase().includes(k.toLowerCase()));
+  return k?DURACIONES[k]:null;
+}
+function fmtDur(min){
+  if(!min) return '';
+  return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'min':'')):min+'min';
+}
+
+// ── HELPER: citas de hoy ──────────────────────────────────
+function getCitasHoy(){
+  const hoyStr = todayISO();
+  return ALL_CITAS
+    .filter(c => c.fecha === hoyStr && c.hora)
+    .sort((a,b) => a.hora.localeCompare(b.hora));
+}
+function getHoraMin(){
+  const n = new Date();
+  return n.getHours()*60 + n.getMinutes();
+}
+
 // ── EN CONSULTA AHORA ────────────────────────────────────
-let _consultaTimer = null; // intervalo del cronómetro
+let _consultaTimer = null;
 
 function renderEnConsulta(){
   const el = document.getElementById('enConsultaSection');
-  if (!el) return;
-  const ahora = new Date();
-  const horaActual = ahora.getHours()*60 + ahora.getMinutes();
-  const citasHoy = ALL_CITAS
-    .filter(c=>c.fecha===hoy()&&c.hora&&!['Completado','No Asistió','Cancelado'].includes(c.estado))
-    .sort((a,b)=>a.hora.localeCompare(b.hora));
+  if(!el) return;
+  const horaActual = getHoraMin();
+  const citasHoy = getCitasHoy();
 
-  // Cita en curso: inició hace menos de 90 min y no terminó
-  const enCurso = citasHoy.find(c=>{
-    const [h,m]=c.hora.split(':').map(Number);
-    const minC=h*60+m;
-    return minC<=horaActual && horaActual<minC+90;
+  // Cita en curso: comenzó <= ahora y no ha terminado (ventana 90 min)
+  const enCurso = citasHoy.find(c => {
+    if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
+    const [h,m] = c.hora.split(':').map(Number);
+    const minC = h*60+m;
+    const dur  = durEst(c.tratamiento) || 30;
+    return minC <= horaActual && horaActual < minC + dur + 15;
   });
 
-  if (!enCurso) { el.innerHTML=''; return; }
+  if(!enCurso){ el.innerHTML=''; return; }
 
-  // Calcular tiempos
-  const [hh,mm] = enCurso.hora.split(':').map(Number);
+  const [hh,mm]  = enCurso.hora.split(':').map(Number);
   const inicioMin = hh*60+mm;
-  const durMin = durEst(enCurso.tratamiento) || 30;
-  const finMin  = inicioMin + durMin;
-  const finHora = `${String(Math.floor(finMin/60)).padStart(2,'0')}:${String(finMin%60).padStart(2,'0')}`;
-  const transcurrido = Math.max(0, horaActual - inicioMin);
-  const pctTiempo = Math.min(100, Math.round((transcurrido/durMin)*100));
-  const restante  = Math.max(0, durMin - transcurrido);
+  const durMin   = durEst(enCurso.tratamiento) || 30;
+  const finMin   = inicioMin + durMin;
+  const finHora  = String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
+  const trans    = Math.max(0, horaActual - inicioMin);
+  const rest     = Math.max(0, durMin - trans);
+  const pct      = Math.min(100, Math.round((trans/durMin)*100));
+  const colBar   = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+  const medico   = enCurso.doctor || enCurso.medico || SESSION?.user?.nombre || 'Dr. Administrador';
 
-  // Médico que atiende (del campo doctor de la cita o del usuario actual)
-  const medico = enCurso.doctor || enCurso.medico || SESSION?.user?.nombre || 'Dr. Administrador';
-
-  // Color barra tiempo
-  const colorTiempo = pctTiempo<60?'var(--teal)':pctTiempo<85?'var(--gold)':'var(--red)';
-
-  el.innerHTML=`
-  <div style="background:linear-gradient(135deg,rgba(0,194,168,.1),rgba(0,194,168,.03));border:1px solid rgba(0,194,168,.35);border-radius:var(--r-lg);padding:20px;margin-bottom:14px;position:relative;overflow:hidden">
-    <!-- Línea superior animada -->
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue));animation:shimmer 2s linear infinite"></div>
-
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+  el.innerHTML = `
+  <div style="background:linear-gradient(135deg,rgba(0,194,168,.1),rgba(0,194,168,.03));border:1px solid rgba(0,194,168,.35);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:14px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue))"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
       <div class="turno-dot"></div>
       <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)">ESTATUS AL MOMENTO — EN CONSULTA</span>
     </div>
-
     <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start">
       <div>
-        <!-- Paciente y tratamiento -->
-        <div style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:6px">${enCurso.paciente||'—'}</div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted);margin-bottom:12px">
-          <span>🦷 ${enCurso.tratamiento||'Sin tratamiento'}</span>
-          <span>👨‍⚕️ ${medico}</span>
+        <div style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:8px">${enCurso.paciente||'—'}</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted);margin-bottom:14px">
+          <span>🦷 <strong style="color:var(--text)">${enCurso.tratamiento||'Sin tratamiento'}</strong></span>
+          <span>👨‍⚕️ <strong style="color:var(--text)">${medico}</strong></span>
           <span>🕐 Inicio: <strong style="color:var(--text)">${enCurso.hora}</strong></span>
-          <span>🕐 Fin est.: <strong style="color:var(--teal)">${finHora}</strong></span>
-          <span>⏱ Duración est.: <strong style="color:var(--text)">${fmtDur(durMin)}</strong></span>
+          <span>🏁 Fin est.: <strong style="color:var(--teal)">${finHora}</strong></span>
+          <span>⏱ ~<strong style="color:var(--text)">${fmtDur(durMin)}</strong></span>
         </div>
-
-        <!-- Barra de progreso de tiempo -->
-        <div style="margin-bottom:6px">
+        <div>
           <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-dim);margin-bottom:4px">
-            <span>Tiempo transcurrido</span>
-            <span id="timerTxt" style="font-family:var(--font-mono);color:${colorTiempo};font-weight:700">${transcurrido}min / ${durMin}min</span>
+            <span>${enCurso.hora}</span>
+            <span id="timerTxt" style="font-family:var(--font-mono);color:${colBar};font-weight:700">${trans}min / ${durMin}min</span>
+            <span>${finHora}</span>
           </div>
           <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
-            <div id="timerBar" style="height:100%;width:${pctTiempo}%;background:${colorTiempo};border-radius:4px;transition:width .5s"></div>
+            <div id="timerBar" style="height:100%;width:${pct}%;background:${colBar};border-radius:4px;transition:width .5s"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--text-dim);margin-top:3px">
-            <span>${enCurso.hora}</span>
-            <span style="color:${restante<=5?'var(--red)':'var(--text-dim)'}">${restante<=0?'⏰ Tiempo cumplido':restante<=5?`⚠️ ${restante}min restantes`:`${restante}min restantes`}</span>
-            <span>${finHora}</span>
+          <div style="text-align:right;font-size:.65rem;margin-top:3px;color:${rest<=5?'var(--red)':'var(--text-dim)'}">
+            ${rest<=0?'⏰ Tiempo cumplido':rest<=5?'⚠️ '+rest+' min restantes':rest+' min restantes'}
           </div>
         </div>
       </div>
-
-      <!-- Acciones -->
-      <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:140px">
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:150px">
         ${enCurso.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${enCurso.tel}','Hola ${(enCurso.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${enCurso.id}','${(enCurso.paciente||'').replace(/'/g,"\'")}','${(enCurso.tratamiento||'').replace(/'/g,"\'")}')">✅ Finalizar consulta</button>
-        <a href="expediente.html?px=${enCurso.expId||''}" class="btn btn-ghost btn-sm" style="text-align:center">📋 Ver expediente</a>
+        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${enCurso.id}','${(enCurso.paciente||'').replace(/'/g,"\\'")}','${(enCurso.tratamiento||'').replace(/'/g,"\\'")}')">✅ Finalizar consulta</button>
+        ${enCurso.expId?`<a href="expediente.html?px=${enCurso.expId}" class="btn btn-ghost btn-sm" style="text-align:center">📋 Expediente</a>`:''}
       </div>
     </div>
   </div>`;
 
-  // Iniciar cronómetro en tiempo real
-  if (_consultaTimer) clearInterval(_consultaTimer);
-  const startSec = ahora.getSeconds();
+  // Cronómetro cada 30s
+  if(_consultaTimer) clearInterval(_consultaTimer);
   _consultaTimer = setInterval(()=>{
-    const now=new Date();
-    const minAhora=now.getHours()*60+now.getMinutes();
-    const trans=Math.max(0,minAhora-inicioMin);
-    const rest=Math.max(0,durMin-trans);
-    const pct=Math.min(100,Math.round((trans/durMin)*100));
-    const col=pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
-    const bar=document.getElementById('timerBar');
-    const txt=document.getElementById('timerTxt');
-    if(bar) bar.style.width=pct+'%', bar.style.background=col;
-    if(txt) txt.textContent=`${trans}min / ${durMin}min`, txt.style.color=col;
-  }, 30000); // actualiza cada 30 seg
+    const now  = getHoraMin();
+    const t    = Math.max(0, now-inicioMin);
+    const r    = Math.max(0, durMin-t);
+    const p    = Math.min(100, Math.round((t/durMin)*100));
+    const col  = p<60?'var(--teal)':p<85?'var(--gold)':'var(--red)';
+    const bar  = document.getElementById('timerBar');
+    const txt  = document.getElementById('timerTxt');
+    if(bar){ bar.style.width=p+'%'; bar.style.background=col; }
+    if(txt){ txt.textContent=t+'min / '+durMin+'min'; txt.style.color=col; }
+  }, 30000);
 }
 
-// ── TURNO ACTUAL ──────────────────────────────────────────
-
+// ── PRÓXIMO TURNO ─────────────────────────────────────────
 function renderTurno(){
-  const ahora=new Date();
-  const horaActual=ahora.getHours()*60+ahora.getMinutes();
-  const citasHoy=ALL_CITAS
-    .filter(c=>c.fecha===hoy()&&c.hora)
-    .sort((a,b)=>a.hora.localeCompare(b.hora));
-
-  // Clasificar citas
-  const enCurso = null; // La cita en curso se muestra en 'Estatus al momento'
-  const enEspera = citasHoy.filter(c=>c.estado==='En sala de espera');
-  const proximas = citasHoy.filter(c=>{
-    if(['Completado','No Asistió','Cancelado','En sala de espera'].includes(c.estado)) return false;
-    const [h,m]=c.hora.split(':').map(Number);
-    return h*60+m>horaActual;
-  });
-  const proxima = enEspera[0] || proximas[0];
-  const siguiente = enCurso
-    ? (enEspera[0] || proximas[0])
-    : proxima
-      ? (enEspera.find(c=>c.id!==proxima.id) || proximas.find(c=>c.id!==proxima.id))
-      : null;
-
-  const el=document.getElementById('turnoSection');
+  const el = document.getElementById('turnoSection');
   if(!el) return;
+  const horaActual = getHoraMin();
+  const citasHoy   = getCitasHoy();
 
-  if(!enCurso&&!proxima){
-    el.innerHTML=`<div class="turno-card" style="margin-bottom:20px;background:var(--surface2)">
-      <div class="sin-citas" style="padding:18px">📋 Sin turnos pendientes para hoy</div>
+  // Excluir citas ya terminadas y la que está en curso
+  const pendientes = citasHoy.filter(c => {
+    if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
+    const [h,m] = c.hora.split(':').map(Number);
+    const minC  = h*60+m;
+    const dur   = durEst(c.tratamiento)||30;
+    // excluir la que está en curso ahora
+    if(minC <= horaActual && horaActual < minC+dur+15) return false;
+    return true;
+  });
+
+  // Próximo = primero en espera, o primero futuro
+  const enEspera = pendientes.filter(c => c.estado==='En sala de espera');
+  const futuros  = pendientes.filter(c => {
+    const [h,m] = c.hora.split(':').map(Number);
+    return h*60+m > horaActual;
+  });
+  const proxima  = enEspera[0] || futuros[0];
+
+  if(!proxima){
+    el.innerHTML = `<div class="turno-card" style="background:var(--surface2);border:1px solid var(--border);margin-bottom:14px">
+      <div style="text-align:center;padding:16px;font-size:.82rem;color:var(--text-dim)">📋 Sin turnos pendientes para hoy</div>
     </div>`;
     return;
   }
 
-  const cita=enCurso||proxima;
-  citaActualId=cita.id;
-  const dur=durEst(cita.tratamiento);
-  const isEnCurso=!!enCurso;
-  const isEnEspera=cita.estado==='En sala de espera';
+  const durP     = durEst(proxima.tratamiento);
+  const medP     = proxima.doctor || proxima.medico || SESSION?.user?.nombre || 'Dr. Administrador';
+  const isEspera = proxima.estado==='En sala de espera';
+  const accent   = isEspera?'var(--gold)':'var(--blue)';
+  const lbl      = isEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO';
+  const dot      = isEspera?'🪑':'⏰';
 
-  // Etiqueta y colores
-  const lbl    = isEnCurso?'EN CONSULTA AHORA':isEnEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO';
-  const accent = isEnCurso?'var(--teal)':isEnEspera?'var(--gold)':'var(--blue)';
-  const cardBg = isEnCurso?'rgba(0,194,168,.08)':isEnEspera?'rgba(244,185,66,.06)':'rgba(74,158,255,.06)';
-  const cardBorder = isEnCurso?'rgba(0,194,168,.3)':isEnEspera?'rgba(244,185,66,.25)':'rgba(74,158,255,.22)';
-  const dotHtml = isEnCurso
-    ? '<div class="turno-dot"></div>'
-    : isEnEspera
-      ? '<span style="font-size:.85rem">🪑</span>'
-      : '<span style="font-size:.85rem">⏰</span>';
+  // Siguiente después del próximo
+  const restList = pendientes.filter(c=>c.id!==proxima.id);
+  const siguiente = (enEspera.find(c=>c.id!==proxima.id)) || (futuros.find(c=>c.id!==proxima.id));
 
-  // Hora de inicio estimada
-  const [hh,mm]=cita.hora.split(':').map(Number);
-  const minInicio=hh*60+mm;
-  const transcurrido=isEnCurso?horaActual-minInicio:null;
-  const transcurridoStr=transcurrido!==null&&transcurrido>0?`${transcurrido} min en curso`:'';
-
-  // Tarjeta del turno actual
-  let turnoHtml=`
-  <div class="turno-card" style="margin-bottom:12px;background:linear-gradient(135deg,${cardBg},transparent);border-color:${cardBorder}">
-    <div class="turno-header">${dotHtml}<span class="turno-label" style="color:${accent}">${lbl}</span>${transcurridoStr?`<span style="font-size:.65rem;color:var(--text-dim);margin-left:auto;font-family:var(--font-mono)">⏱ ${transcurridoStr}</span>`:''}
+  el.innerHTML = `
+  <div class="turno-card" style="background:linear-gradient(135deg,rgba(74,158,255,.07),transparent);border-color:rgba(74,158,255,.25);margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="font-size:.9rem">${dot}</span>
+      <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${accent}">${lbl}</span>
     </div>
-    <div class="turno-body">
-      <div style="flex:1;min-width:0">
-        <div class="turno-px-name">${cita.paciente||'—'}</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:5px">
-          <span class="turno-px-info">🦷 ${cita.tratamiento||'Sin tratamiento'}</span>
-          <span class="turno-px-info">⏰ ${cita.hora}</span>
-          ${dur?`<span class="turno-px-info" style="color:${accent}">⏱ ~${fmtDur(dur)} est.</span>`:''}
-          <span class="badge ${cita.estado==='Confirmado'?'badge-teal':cita.estado==='En sala de espera'?'badge-gold':'badge-gold'}" style="font-size:.6rem">${cita.estado||'Agendado'}</span>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center">
+      <div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:6px">${proxima.paciente||'—'}</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted)">
+          <span>🦷 <strong style="color:var(--text)">${proxima.tratamiento||'Sin tratamiento'}</strong></span>
+          <span>⏰ <strong style="color:${accent}">${proxima.hora}</strong></span>
+          ${durP?`<span>⏱ ~<strong style="color:var(--text)">${fmtDur(durP)}</strong></span>`:''}
+          <span>👨‍⚕️ <strong style="color:var(--text)">${medP}</strong></span>
+          <span class="badge ${proxima.estado==='Confirmado'?'badge-teal':isEspera?'badge-gold':'badge-gold'}" style="font-size:.6rem">${proxima.estado||'Agendado'}</span>
         </div>
       </div>
-      <div class="turno-actions">
-        ${cita.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" title="Enviar WhatsApp" onclick="whatsapp('${cita.tel}','Hola ${(cita.paciente||'').split(' ')[0]}')">💬</button>`:''}
-        ${!isEnCurso&&cita.estado!=='Confirmado'&&cita.estado!=='En sala de espera'?`<button class="btn btn-ghost btn-sm" title="Confirmar cita" onclick="confirmarCita('${cita.id}')">✓ Confirmar</button>`:''}
-        ${!isEnCurso&&cita.estado!=='En sala de espera'?`<button class="btn btn-ghost btn-sm" style="color:var(--gold)" title="Marcar en sala de espera" onclick="marcarEspera('${cita.id}')">🪑 En sala</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${cita.id}','${(cita.paciente||'').replace(/'/g,"\'")}','${(cita.tratamiento||'').replace(/'/g,"\'")}')">📋 Estado</button>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:140px">
+        ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬</button>`:''}
+        ${proxima.estado!=='Confirmado'&&!isEspera?`<button class="btn btn-ghost btn-sm" onclick="confirmarCita('${proxima.id}')">✓ Confirmar</button>`:''}
+        ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:var(--gold)" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${(proxima.tratamiento||'').replace(/'/g,"\\'")}')">📋 Estado</button>
       </div>
-    </div>`;
-
-  // Sección siguiente turno
-  if(siguiente){
-    const durSig=durEst(siguiente.tratamiento);
-    const sigEsEspera=siguiente.estado==='En sala de espera';
-    turnoHtml+=`
-    <div class="turno-next" style="margin-top:10px;padding-top:10px;border-top:1px solid ${cardBorder}">
-      <span class="next-label">SIGUIENTE</span>
-      ${sigEsEspera?'<span style="font-size:.82rem">🪑</span>':'<span style="font-size:.82rem">👤</span>'}
+    </div>
+    ${siguiente?`
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(74,158,255,.15);display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text-muted);flex-wrap:wrap">
+      <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">DESPUÉS</span>
+      <span>${siguiente.estado==='En sala de espera'?'🪑':'👤'}</span>
       <span style="color:var(--text);font-weight:600">${siguiente.paciente||'—'}</span>
       <span style="color:var(--text-dim)">·</span>
-      <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--teal)">${siguiente.hora}</span>
+      <span style="font-family:var(--font-mono);color:var(--teal)">${siguiente.hora}</span>
       <span style="color:var(--text-dim)">·</span>
-      <span style="color:var(--text-muted)">${siguiente.tratamiento||'Sin tratamiento'}</span>
-      ${durSig?`<span style="color:var(--text-dim)">·</span><span style="font-size:.7rem;color:var(--text-dim)">~${fmtDur(durSig)}</span>`:''}
-      ${sigEsEspera?'<span class="badge badge-gold" style="font-size:.58rem;margin-left:4px">En sala</span>':''}
-    </div>`;
-  }
-
-  turnoHtml+=`</div>`;
-
-  // Mostrar lista de espera si hay más
-  if(enEspera.length>1){
-    turnoHtml+=`<div style="background:rgba(244,185,66,.06);border:1px solid rgba(244,185,66,.2);border-radius:var(--r);padding:12px 16px;margin-bottom:20px">
-      <div style="font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">🪑 SALA DE ESPERA (${enEspera.length})</div>
-      ${enEspera.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:${i<enEspera.length-1?'1px solid rgba(244,185,66,.1)':'none'};font-size:.78rem">
-        <span style="font-family:var(--font-mono);color:var(--gold);min-width:20px">${i+1}</span>
-        <span style="font-weight:600;color:var(--text);flex:1">${c.paciente||'—'}</span>
-        <span style="color:var(--text-muted)">${c.hora} · ${c.tratamiento||'—'}</span>
-        <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.65rem" onclick="abrirFinCita('${c.id}','${(c.paciente||'').replace(/'/g,"\'")}','${(c.tratamiento||'').replace(/'/g,"\'")}')">📋</button>
-      </div>`).join('')}
-    </div>`;
-  } else {
-    turnoHtml+=`<div style="height:8px"></div>`;
-  }
-
-  el.innerHTML=turnoHtml;
+      <span>${siguiente.tratamiento||'Sin tratamiento'}</span>
+      ${durEst(siguiente.tratamiento)?`<span style="color:var(--text-dim)">· ~${fmtDur(durEst(siguiente.tratamiento))}</span>`:''}
+    </div>`:''}
+  </div>`;
 }
-// Estado seleccionado en el modal
-let _estadoSeleccionado = 'Completado';
-
-window.selEstado = function(val) {
-  _estadoSeleccionado = val;
-  document.querySelectorAll('.estado-opt').forEach(el => {
-    const isSelected = el.dataset.val === val;
-    el.style.border  = isSelected ? '2px solid var(--teal)' : '2px solid var(--border)';
-    el.style.background = isSelected ? 'var(--teal-dim)' : 'transparent';
-    // Colores específicos por estado
-    const colors = {
-      'Completado':'var(--teal)','En sala de espera':'var(--gold)',
-      'No Asistió':'var(--red)','Cancelado':'var(--red)'
-    };
-    if(isSelected){
-      el.style.border = `2px solid ${colors[val]||'var(--teal)'}`;
-      el.style.background = val==='Completado'?'var(--teal-dim)':
-        val==='En sala de espera'?'rgba(244,185,66,.12)':'rgba(255,92,92,.1)';
-      el.querySelector('div:nth-child(2)').style.color = colors[val]||'var(--teal)';
-    } else {
-      el.querySelector('div:nth-child(2)').style.color = 'var(--text)';
-    }
-  });
-};
-
 window.abrirFinCita = function(id, paciente, trat) {
   citaActualId = id;
   const cita = ALL_CITAS.find(c=>c.id===id);
