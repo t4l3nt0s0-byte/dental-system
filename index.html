@@ -124,6 +124,11 @@
     </div>
   </div>
   <div class="content" id="mainContent">
+  <!-- Banner de pausa del doctor -->
+  <div id="pausaBanner" style="display:none;background:linear-gradient(135deg,rgba(244,185,66,.15),rgba(244,185,66,.05));border:1px solid rgba(244,185,66,.3);border-radius:var(--r);padding:12px 18px;margin-bottom:14px;font-size:.85rem;font-weight:600;color:var(--gold);display:flex;align-items:center;justify-content:space-between">
+    <span id="pausaBannerTxt">▶️ Listo para el siguiente paciente</span>
+    <button onclick="document.getElementById('pausaBanner').style.display='none'" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;padding:0">✕</button>
+  </div>
     <div class="loader" style="padding:60px;text-align:center"><div class="spinner"></div></div>
   </div>
 </main>
@@ -154,13 +159,16 @@
 
 <!-- MODAL FINALIZAR CITA -->
 <div class="modal-overlay" id="modalFinCita">
-  <div class="modal" style="max-width:440px">
+  <div class="modal" style="max-width:460px">
     <div class="modal-header">
-      <div class="modal-title">📋 Registrar estado de cita</div>
+      <div class="modal-title">📋 Finalizar consulta</div>
       <button class="modal-close" onclick="closeModal('modalFinCita')">✕</button>
     </div>
     <div class="modal-body">
+      <!-- Info paciente -->
       <div id="finCitaInfo" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:.85rem;color:var(--text-muted)"></div>
+
+      <!-- Estado de la cita -->
       <div class="form-group">
         <label class="form-label">Estado de la cita *</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="estadoGrid">
@@ -186,14 +194,42 @@
           </div>
         </div>
       </div>
+
+      <!-- Alerta al doctor (pausa) -->
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">🔔 Estado del doctor después de esta cita</label>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="pausaGrid">
+          <div class="estado-opt" data-pausa="" onclick="selPausa('',this)" style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:.75rem">
+            <div style="font-size:1.1rem;margin-bottom:2px">▶️</div>
+            <div style="font-weight:700;color:var(--teal)">Continúa</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Siguiente paciente</div>
+          </div>
+          <div class="estado-opt" data-pausa="baño" onclick="selPausa('baño',this)" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:.75rem">
+            <div style="font-size:1.1rem;margin-bottom:2px">🚻</div>
+            <div style="font-weight:700;color:var(--text)">Pausa / Baño</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Regresa pronto</div>
+          </div>
+          <div class="estado-opt" data-pausa="comida" onclick="selPausa('comida',this)" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:.75rem">
+            <div style="font-size:1.1rem;margin-bottom:2px">🍽️</div>
+            <div style="font-weight:700;color:var(--text)">Sale a comer</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Pausa larga</div>
+          </div>
+          <div class="estado-opt" data-pausa="salida" onclick="selPausa('salida',this)" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:.75rem">
+            <div style="font-size:1.1rem;margin-bottom:2px">🏠</div>
+            <div style="font-weight:700;color:var(--text)">Hora de salida</div>
+            <div style="font-size:.62rem;color:var(--text-dim)">Fin de jornada</div>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group" style="margin-top:12px">
-        <label class="form-label">Notas de la cita (opcional)</label>
-        <textarea class="form-textarea" id="finCitaNotas" rows="2" placeholder="Observaciones, indicaciones, próxima cita..."></textarea>
+        <label class="form-label">Notas (opcional)</label>
+        <textarea class="form-textarea" id="finCitaNotas" rows="2" placeholder="Observaciones, indicaciones para el paciente..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalFinCita')">Cancelar</button>
-      <button class="btn btn-primary" id="btnConfirmFinCita" onclick="confirmarFinCita()">✅ Guardar estado</button>
+      <button class="btn btn-primary" id="btnConfirmFinCita" onclick="confirmarFinCita()">✅ Confirmar</button>
     </div>
   </div>
 </div>
@@ -463,52 +499,79 @@ function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'
 // ── DURACIONES ESTIMADAS ─────────────────────────────────
 
 // ── EN CONSULTA AHORA ────────────────────────────────────
-let _consultaTimer = null;
-let _citaEnCursoId = null;
+// Estado de la consulta activa
+let _consultaTimer  = null;
+let _citaEnCursoId  = null;
+let _inicioRealMin  = null; // minutos desde medianoche (hora inicio real)
+let _inicioRealDate = null; // Date object del inicio real
 
 function renderEnConsulta(){
   const el = document.getElementById('enConsultaSection');
   if(!el) return;
+
   const horaActual = getHoraMin();
   const citasHoy   = getCitasHoy();
 
+  // Buscar cita que ya debería estar en curso:
+  // hora agendada <= ahora Y no terminada Y no cancelada
   const enCurso = citasHoy.find(c => {
     if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
     const [h,m] = c.hora.split(':').map(Number);
     const minC  = h*60+m;
-    const dur   = durEst(c.tratamiento)||30;
-    return minC <= horaActual && horaActual < minC+dur+15;
+    // Está en curso si su hora ya llegó (o ya inició según campo inicioReal)
+    const inicioReal = c.inicioRealMin || minC;
+    const durEstim   = durEst(c.tratamiento)||30;
+    return inicioReal <= horaActual;
   });
 
   if(!enCurso){ el.innerHTML=''; _citaEnCursoId=null; return; }
 
-  // Si es cita nueva → registrar hora real de inicio
+  // Si es cita nueva → registrar inicio real
   if(_citaEnCursoId !== enCurso.id){
-    _citaEnCursoId  = enCurso.id;
-    _citaInicioReal = new Date();
+    _citaEnCursoId = enCurso.id;
+    // Usar inicioReal guardado en Firebase, o la hora agendada
+    const [hA,mA] = enCurso.hora.split(':').map(Number);
+    _inicioRealMin  = enCurso.inicioRealMin || (hA*60+mA);
+    // Reconstruir Date del inicio real
+    const hoy = new Date();
+    _inicioRealDate = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(),
+      Math.floor(_inicioRealMin/60), _inicioRealMin%60, 0);
   }
 
-  const [hh,mm]   = enCurso.hora.split(':').map(Number);
-  const inicioMin = hh*60+mm;
-  const durMin    = durEst(enCurso.tratamiento)||30;
-  const finMin    = inicioMin+durMin;
-  const finHora   = String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
-  const trans     = Math.max(0, horaActual-inicioMin);
-  const rest      = Math.max(0, durMin-trans);
-  const pct       = Math.min(100, Math.round((trans/durMin)*100));
-  const colBar    = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+  const [hAg,mAg] = enCurso.hora.split(':').map(Number);
+  const minAgendado = hAg*60+mAg;
+  const durMin      = durEst(enCurso.tratamiento)||30;
 
-  // Calcular tiempo real transcurrido desde inicio real
-  const transRealMs  = _citaInicioReal ? (new Date()-_citaInicioReal) : 0;
-  const transRealMin = Math.floor(transRealMs/60000);
-  const horaInicioReal = _citaInicioReal
-    ? String(_citaInicioReal.getHours()).padStart(2,'0')+':'+String(_citaInicioReal.getMinutes()).padStart(2,'0')
-    : enCurso.hora;
+  // Tiempos
+  const transAgend  = Math.max(0, horaActual - minAgendado);       // vs hora agendada
+  const transReal   = Math.max(0, horaActual - _inicioRealMin);    // vs inicio real
+  const restante    = Math.max(0, durMin - transReal);
+  const pct         = Math.min(100, Math.round((transReal/durMin)*100));
+  const colBar      = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
 
-  // Doctor asignado (del campo doctor o seleccionado)
-  const doctorAsignado = enCurso.doctor || enCurso.medico || '';
+  // Formato hora inicio real
+  const hIR  = Math.floor(_inicioRealMin/60);
+  const mIR  = _inicioRealMin%60;
+  const finRealMin  = _inicioRealMin + durMin;
+  const finHora     = String(Math.floor(finRealMin/60)).padStart(2,'0')+':'+String(finRealMin%60).padStart(2,'0');
+  const inicioHoraStr = String(hIR).padStart(2,'0')+':'+String(mIR).padStart(2,'0');
 
-  // Opciones de doctores para el selector
+  // Tiempo real cronómetro HH:MM:SS
+  const trMs  = _inicioRealDate ? Math.max(0, new Date()-_inicioRealDate) : 0;
+  const trHH  = String(Math.floor(trMs/3600000)).padStart(2,'0');
+  const trMM  = String(Math.floor((trMs%3600000)/60000)).padStart(2,'0');
+  const trSS  = String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
+
+  // Retraso respecto a hora agendada
+  const retraso = _inicioRealMin - minAgendado;
+  const retrasoTxt = retraso>0
+    ? `<span style="color:var(--gold);font-size:.68rem">⚠️ Inicio con ${retraso}min de retraso</span>`
+    : retraso<0
+      ? `<span style="color:var(--teal);font-size:.68rem">✅ Inicio ${Math.abs(retraso)}min antes</span>`
+      : `<span style="color:var(--teal);font-size:.68rem">✅ Puntual</span>`;
+
+  // Doctor selector
+  const doctorAsignado = enCurso.doctor || '';
   const docOpts = ALL_DOCTORES.map(d=>
     `<option value="${d.nombre}" ${d.nombre===doctorAsignado?'selected':''}>${d.nombre}${d.especialidad?' — '+d.especialidad:''}</option>`
   ).join('');
@@ -518,103 +581,167 @@ function renderEnConsulta(){
     <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue))"></div>
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-      <div class="turno-dot"></div>
-      <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)">ESTATUS AL MOMENTO — EN CONSULTA</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="turno-dot"></div>
+        <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)">EN CONSULTA AHORA</span>
+        ${retrasoTxt}
+      </div>
+      <!-- Hora de inicio ajustable -->
+      <div style="display:flex;align-items:center;gap:8px;font-size:.75rem;color:var(--text-muted)">
+        <span>🕐 Inicio real:</span>
+        <input type="time" id="inputInicioReal" value="${inicioHoraStr}"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none"
+          onchange="ajustarInicioReal('${enCurso.id}',this.value)"
+          title="Ajusta si el doctor no inició a la hora agendada">
+        <span style="font-size:.65rem;color:var(--text-dim)">(agendada: ${enCurso.hora})</span>
+      </div>
     </div>
+
+    <!-- Paciente -->
+    <div style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:6px">${enCurso.paciente||'—'}</div>
+    <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:14px">🦷 <strong style="color:var(--text)">${enCurso.tratamiento||'Sin tratamiento'}</strong></div>
 
     <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start">
       <div>
-        <!-- Paciente y tratamiento -->
-        <div style="font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:8px">${enCurso.paciente||'—'}</div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted);margin-bottom:14px">
-          <span>🦷 <strong style="color:var(--text)">${enCurso.tratamiento||'Sin tratamiento'}</strong></span>
-        </div>
-
-        <!-- Datos de tiempo -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+        <!-- 3 tarjetas de tiempo -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">🕐 Hora agendada</div>
-            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:var(--text)">${enCurso.hora}</div>
-          </div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⏱ Duración estimada</div>
+            <div style="font-size:.55rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⏱ Est. duración</div>
             <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:var(--teal)">${fmtDur(durMin)}</div>
           </div>
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⏳ Tiempo real</div>
-            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:${colBar}" id="tiempoReal">${transRealMin>0?fmtDur(transRealMin):'00:00'}</div>
+            <div style="font-size:.55rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⏳ Tiempo real</div>
+            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:${colBar}" id="tiempoReal">${trHH}:${trMM}:${trSS}</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:.55rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⌛ Restantes</div>
+            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:${restante<=5?'var(--red)':restante<=10?'var(--gold)':'var(--text)'}">${restante<=0?'Finalizado':fmtDur(restante)}</div>
           </div>
         </div>
 
         <!-- Barra de progreso -->
         <div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-dim);margin-bottom:4px">
-            <span>Inicio: ${horaInicioReal}</span>
-            <span id="timerTxt" style="font-family:var(--font-mono);color:${colBar};font-weight:700">${trans}min / ${durMin}min</span>
-            <span>Fin est.: ${finHora}</span>
+            <span>${inicioHoraStr}</span>
+            <span id="timerTxt" style="font-family:var(--font-mono);color:${colBar};font-weight:700">${transReal}min / ${durMin}min (${pct}%)</span>
+            <span>${finHora}</span>
           </div>
           <div style="height:10px;background:var(--surface2);border-radius:5px;overflow:hidden">
-            <div id="timerBar" style="height:100%;width:${pct}%;background:${colBar};border-radius:5px;transition:width .5s;position:relative">
-              <div style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:.5rem;font-weight:700;color:rgba(0,0,0,.5)">${pct>20?pct+'%':''}</div>
-            </div>
+            <div id="timerBar" style="height:100%;width:${pct}%;background:${colBar};border-radius:5px;transition:width .5s"></div>
           </div>
-          <div style="text-align:right;font-size:.65rem;margin-top:3px;color:${rest<=5?'var(--red)':'var(--text-dim)'}">
-            ${rest<=0?'⏰ Tiempo cumplido':rest<=5?'⚠️ '+rest+' min restantes':rest+' min restantes'}
+          <div style="display:flex;justify-content:space-between;font-size:.63rem;margin-top:3px;color:var(--text-dim)">
+            <span>Fin estimado: <strong style="color:var(--text)">${finHora}</strong></span>
+            <span style="color:${restante<=5?'var(--red)':restante<=10?'var(--gold)':'var(--text-dim)'}">
+              ${restante<=0?'⏰ Tiempo cumplido — finalizar consulta':restante<=5?'⚠️ '+restante+' min restantes':restante+' min restantes'}
+            </span>
           </div>
         </div>
 
-        <!-- Doctor que atiende -->
+        <!-- Doctor -->
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-size:.75rem;color:var(--text-muted);white-space:nowrap">👨‍⚕️ Atiende:</span>
-          <select id="doctorEnCursoSelect" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:.78rem;outline:none;flex:1;min-width:160px" onchange="cambiarDoctorCita('${enCurso.id}',this.value)">
+          <select id="doctorEnCursoSelect"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:.78rem;outline:none;flex:1;min-width:160px"
+            onchange="cambiarDoctorCita('${enCurso.id}',this.value)">
             <option value="">— Seleccionar doctor —</option>
             ${docOpts}
-            ${ALL_DOCTORES.length===0?'<option disabled>Sin doctores registrados — ve a Configuración</option>':''}
+            ${ALL_DOCTORES.length===0?'<option disabled style="color:#888">Sin doctores — ve a Configuración → Doctores</option>':''}
           </select>
-          ${ALL_DOCTORES.length===0?`<a href="configuracion.html?sec=doctores" style="font-size:.72rem;color:var(--teal);white-space:nowrap">+ Registrar doctores</a>`:''}
+          ${ALL_DOCTORES.length===0?`<a href="configuracion.html" style="font-size:.7rem;color:var(--teal);white-space:nowrap">+ Registrar</a>`:''}
         </div>
       </div>
 
-      <!-- Acciones -->
-      <div style="display:flex;flex-direction:column;gap:8px;min-width:150px;flex-shrink:0">
+      <!-- Botones de acción -->
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:155px;flex-shrink:0">
         ${enCurso.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${enCurso.tel}','Hola ${(enCurso.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${enCurso.id}','${(enCurso.paciente||'').replace(/'/g,"\\'")}','${(enCurso.tratamiento||'').replace(/'/g,"\\'")}')">✅ Finalizar consulta</button>
+        <button class="btn btn-primary btn-sm" style="background:var(--teal)" onclick="abrirFinalizarConsulta('${enCurso.id}','${(enCurso.paciente||'').replace(/'/g,"\\'")}','${(enCurso.tratamiento||'').replace(/'/g,"\\'")}',${transReal},${durMin})">
+          ✅ Finalizar consulta
+        </button>
         ${enCurso.expId?`<a href="expediente.html?px=${enCurso.expId}" class="btn btn-ghost btn-sm" style="text-align:center">📋 Expediente</a>`:''}
       </div>
     </div>
   </div>`;
 
-  // Cronómetro en tiempo real (segundos)
+  // Cronómetro en tiempo real — cada segundo
   if(_consultaTimer) clearInterval(_consultaTimer);
   _consultaTimer = setInterval(()=>{
-    // Barra de progreso
     const nowMin = getHoraMin();
-    const t   = Math.max(0, nowMin-inicioMin);
-    const r   = Math.max(0, durMin-t);
-    const p   = Math.min(100, Math.round((t/durMin)*100));
-    const col = p<60?'var(--teal)':p<85?'var(--gold)':'var(--red)';
+    const tR     = Math.max(0, nowMin - _inicioRealMin);
+    const r      = Math.max(0, durMin - tR);
+    const p      = Math.min(100, Math.round((tR/durMin)*100));
+    const col    = p<60?'var(--teal)':p<85?'var(--gold)':'var(--red)';
+    // Barra
     const bar = document.getElementById('timerBar');
     const txt = document.getElementById('timerTxt');
     if(bar){ bar.style.width=p+'%'; bar.style.background=col; }
-    if(txt){ txt.textContent=t+'min / '+durMin+'min'; txt.style.color=col; }
-    // Tiempo real transcurrido
-    const trMs  = _citaInicioReal ? (new Date()-_citaInicioReal) : 0;
-    const trMin = Math.floor(trMs/60000);
-    const trSec = Math.floor((trMs%60000)/1000);
-    const trEl  = document.getElementById('tiempoReal');
-    if(trEl) trEl.textContent = String(Math.floor(trMs/3600000)).padStart(2,'0')+':'+String(trMin%60).padStart(2,'0')+':'+String(trSec).padStart(2,'0');
-  }, 1000); // cada segundo para el tiempo real
+    if(txt){ txt.textContent=tR+'min / '+durMin+'min ('+p+'%)'; txt.style.color=col; }
+    // Tiempo real HH:MM:SS
+    const trMs2 = _inicioRealDate ? Math.max(0,new Date()-_inicioRealDate) : 0;
+    const el2 = document.getElementById('tiempoReal');
+    if(el2){
+      const h2=String(Math.floor(trMs2/3600000)).padStart(2,'0');
+      const m2=String(Math.floor((trMs2%3600000)/60000)).padStart(2,'0');
+      const s2=String(Math.floor((trMs2%60000)/1000)).padStart(2,'0');
+      el2.textContent=h2+':'+m2+':'+s2;
+      el2.style.color=col;
+    }
+  }, 1000);
 }
 
-// Cambiar doctor asignado a la cita en curso
+// ── AJUSTAR HORA DE INICIO REAL ───────────────────────────
+window.ajustarInicioReal = async function(citaId, horaStr){
+  const [h,m] = horaStr.split(':').map(Number);
+  const minutos = h*60+m;
+  _inicioRealMin  = minutos;
+  const hoy = new Date();
+  _inicioRealDate = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), h, m, 0);
+  try{
+    await fsUpdate('citas', citaId, {inicioRealMin: minutos, inicioRealHora: horaStr});
+    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId?{...c,inicioRealMin:minutos,inicioRealHora:horaStr}:c);
+    showToast('Hora de inicio ajustada a '+horaStr,'success');
+    renderEnConsulta(); // re-renderizar con nueva hora
+  }catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
+// ── CAMBIAR DOCTOR EN CITA ────────────────────────────────
 window.cambiarDoctorCita = async function(citaId, doctorNombre){
   if(!citaId||!doctorNombre) return;
   try{
     await fsUpdate('citas', citaId, {doctor: doctorNombre});
     ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId?{...c,doctor:doctorNombre}:c);
-    showToast('Doctor asignado: '+doctorNombre,'success');
+    showToast('Dr. '+doctorNombre+' asignado','success');
   }catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
+// ── ABRIR MODAL DE FINALIZAR CONSULTA ────────────────────
+window.abrirFinalizarConsulta = function(id, paciente, trat, tiempoRealMin, durEstMin){
+  citaActualId = id;
+  const tiempoStr = tiempoRealMin>0 ? fmtDur(tiempoRealMin) : '—';
+  document.getElementById('finCitaInfo').innerHTML =
+    `<div style="font-weight:700;color:var(--text);font-size:.92rem;margin-bottom:6px">👤 ${paciente}</div>
+     <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted)">
+       <span>🦷 ${trat||'Sin tratamiento'}</span>
+       <span>⏱ Estimado: ${fmtDur(durEstMin)}</span>
+       <span style="color:var(--teal)">⏳ Tiempo real: <strong>${tiempoStr}</strong></span>
+     </div>`;
+  _estadoSeleccionado = 'Completado';
+  selEstado('Completado');
+  document.getElementById('finCitaNotas').value = '';
+  openModal('modalFinCita');
+};
+
+// Mantener compatibilidad con abrirFinCita (usado en próximo turno)
+window.abrirFinCita = function(id, paciente, trat){
+  citaActualId = id;
+  const cita = ALL_CITAS.find(c=>c.id===id);
+  document.getElementById('finCitaInfo').innerHTML =
+    `<div style="font-weight:700;color:var(--text);font-size:.92rem;margin-bottom:4px">👤 ${paciente}</div>
+     <div style="font-size:.8rem;color:var(--text-muted)">🦷 ${trat||'Sin tratamiento'}${cita?.hora?' · ⏰ '+cita.hora:''}</div>`;
+  _estadoSeleccionado = 'Completado';
+  selEstado('Completado');
+  document.getElementById('finCitaNotas').value = cita?.notas || '';
+  openModal('modalFinCita');
 };
 // ── PRÓXIMO TURNO ─────────────────────────────────────────
 function renderTurno(){
@@ -737,39 +864,81 @@ window.marcarEspera = async function(id) {
   } catch(e) { showToast('Error: '+e.message,'error'); }
 };
 
+
+// Estado de cita seleccionado en el modal
+let _estadoSeleccionado = 'Completado';
+window.selEstado = function(val) {
+  _estadoSeleccionado = val;
+  document.querySelectorAll('#estadoGrid .estado-opt').forEach(el => {
+    const isSel = el.dataset.val === val;
+    const colors = {'Completado':'var(--teal)','En sala de espera':'var(--gold)','No Asistió':'var(--red)','Cancelado':'var(--red)'};
+    el.style.border     = isSel ? '2px solid '+(colors[val]||'var(--teal)') : '2px solid var(--border)';
+    el.style.background = isSel ? (val==='Completado'?'var(--teal-dim)':val==='En sala de espera'?'rgba(244,185,66,.12)':'rgba(255,92,92,.1)') : 'transparent';
+    const lbl = el.querySelector('div:nth-child(2)');
+    if(lbl) lbl.style.color = isSel ? (colors[val]||'var(--teal)') : 'var(--text)';
+  });
+};
+
 window.confirmarFinCita = async function() {
   const estado = _estadoSeleccionado;
+  const pausa  = _pausaSeleccionada;
   const notas  = document.getElementById('finCitaNotas').value.trim();
   const btn    = document.getElementById('btnConfirmFinCita');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    // Calcular tiempo real de la consulta
-    const tiempoRealMs  = _citaInicioReal ? (new Date()-_citaInicioReal) : 0;
-    const tiempoRealMin = Math.floor(tiempoRealMs/60000);
+    // Tiempo real de la consulta
+    const trMs  = _inicioRealDate ? Math.max(0,new Date()-_inicioRealDate) : 0;
+    const trMin = Math.floor(trMs/60000);
+    const ahoraStr = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
 
     await fsUpdate('citas', citaActualId, {
       estado, notas,
-      finalizadoEn:   new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
-      tiempoRealMin,
-      actualizadoEn:  firebase.firestore.FieldValue.serverTimestamp(),
+      finalizadoEn:  ahoraStr,
+      tiempoRealMin: trMin,
+      pausaDoctor:   pausa,
+      actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     });
-    const iconos = {'Completado':'✅','En sala de espera':'🪑','No Asistió':'❌','Cancelado':'🚫'};
-    showToast(iconos[estado]||'📋'+' '+estado,'success');
-    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaActualId?{...c,estado,notas}:c);
 
-    // Resetear timer y cita en curso
+    // Alerta visual de pausa del doctor
+    const pausaMsgs = {
+      'baño':   '🚻 Doctor en pausa — Regresa pronto',
+      'comida': '🍽️ Doctor salió a comer',
+      'salida': '🏠 Doctor finalizó su jornada por hoy',
+      '':       '▶️ Listo para el siguiente paciente',
+    };
+    const pausaMsg = pausaMsgs[pausa]||'';
+
+    const iconos = {'Completado':'✅','En sala de espera':'🪑','No Asistió':'❌','Cancelado':'🚫'};
+    showToast((iconos[estado]||'📋')+' '+estado+(trMin>0?' · Duración real: '+fmtDur(trMin):''),'success');
+
+    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaActualId?{...c,estado,notas,tiempoRealMin:trMin}:c);
+
+    // Resetear estado de consulta
     if(_consultaTimer){ clearInterval(_consultaTimer); _consultaTimer=null; }
-    _citaInicioReal = null;
+    _inicioRealDate = null;
+    _inicioRealMin  = null;
     _citaEnCursoId  = null;
 
     closeModal('modalFinCita');
 
-    // Re-renderizar para activar siguiente paciente automáticamente
+    // Mostrar banner de pausa si aplica
+    if(pausa){
+      const pausaBanner = document.getElementById('pausaBanner');
+      if(pausaBanner){
+        pausaBanner.textContent = pausaMsg;
+        pausaBanner.style.display = 'block';
+        // Auto-ocultar después de 5 min si es baño
+        if(pausa==='baño') setTimeout(()=>{ pausaBanner.style.display='none'; }, 300000);
+      }
+    }
+
+    // Activar siguiente paciente automáticamente
     renderEnConsulta();
     renderTurno();
     renderCitasHoy();
+    _pausaSeleccionada = '';
   } catch(e) { showToast('Error: '+e.message,'error'); }
-  btn.disabled = false; btn.textContent = '✅ Guardar estado';
+  btn.disabled = false; btn.textContent = '✅ Confirmar';
 };
 
 // ── CITAS HOY ─────────────────────────────────────────────
@@ -1064,3 +1233,16 @@ function greetingText(){
 </script>
 </body>
 </html>
+// Pausa del doctor
+let _pausaSeleccionada = '';
+window.selPausa = function(val,el){
+  _pausaSeleccionada=val;
+  document.querySelectorAll('#pausaGrid .estado-opt').forEach(e=>{
+    const s=e.dataset.pausa===val;
+    e.style.border=s?'2px solid var(--teal)':'2px solid var(--border)';
+    e.style.background=s?'var(--teal-dim)':'transparent';
+    const t=e.querySelector('div:nth-child(2)'); if(t) t.style.color=s?'var(--teal)':'var(--text)';
+  });
+};
+
+
