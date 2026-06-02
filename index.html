@@ -430,7 +430,14 @@ function renderDashboard(clinica,user){
 }
 
 // Duraciones estimadas por tratamiento (minutos)
-
+const DURACIONES = {
+  'Limpieza':30,'Profilaxis':30,'Blanqueamiento':60,'Consulta':20,
+  'Valoración':20,'Revisión':20,'Endodoncia':90,'Resina':45,
+  'Amalgama':45,'Corona':60,'Extracción':30,'Extracción simple':30,
+  'Extracción quirúrgica':60,'Ortodoncia':45,'Brackets':45,
+  'Radiografía':15,'Rx':15,'Implante':90,'Carilla':60,
+  'Incrustación':60,'Puente':60,'Prótesis':60,
+};
 function durEst(trat){
   if(!trat) return null;
   const k=Object.keys(DURACIONES).find(k=>trat.toLowerCase().includes(k.toLowerCase()));
