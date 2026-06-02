@@ -349,9 +349,19 @@ function fmtDateLong(ts) {
 function fmtDateInput(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toISOString().slice(0,10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
-function todayISO() { return new Date().toISOString().slice(0,10); }
+// Usa la zona horaria local del navegador (no UTC)
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
 function IVA(n)    { return Number(n||0)*0.16; }
 function conIVA(n) { return Number(n||0)*1.16; }
 
