@@ -537,21 +537,16 @@ function buildConsultaCard(c){
   <div id="consulta_${c.id}" style="background:linear-gradient(135deg,rgba(0,194,168,.09),rgba(0,194,168,.02));border:1px solid rgba(0,194,168,.3);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:12px;position:relative;overflow:hidden">
     <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${doctorColor}"></div>
 
-    <!-- Header -->
+    <!-- Header: etiqueta + retraso -->
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="turno-dot"></div>
         <span style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)">EN CONSULTA</span>
         ${retrasoTxt}
       </div>
-      <!-- Hora inicio editable -->
-      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text-muted)">
-        <span>🕐 Inicio:</span>
-        <input type="time" value="${inicioStr}"
-          style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px 7px;color:var(--text);font-family:var(--font-mono);font-size:.75rem;outline:none"
-          onchange="ajustarInicioReal('${c.id}',this.value)"
-          title="Ajustar hora de inicio">
-        <span style="color:var(--text-dim)">(ag: ${c.hora})</span>
+      <div style="font-size:.72rem;color:var(--text-muted);font-family:var(--font-mono)">
+        Inicio: <strong style="color:var(--text)">${inicioStr}</strong>
+        &nbsp;·&nbsp; Fin est.: <strong style="color:var(--teal)">${finHora}</strong>
       </div>
     </div>
 
@@ -705,83 +700,120 @@ function renderTurno(){
   }
 
   listaProximas.forEach((proxima, index) => {
-    const durP     = (durEst(proxima.tratamiento)||30) + (proxima.tiempoExtra||0);
-    const isEspera = proxima.estado==='En sala de espera';
-    const accent   = isEspera?'var(--gold)':'var(--blue)';
-    const lbl      = index===0
+    const durP        = (durEst(proxima.tratamiento)||30) + (proxima.tiempoExtra||0);
+    const isEspera    = proxima.estado==='En sala de espera';
+    const accent      = isEspera?'var(--gold)':'var(--blue)';
+    const lbl         = index===0
       ? (isEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO')
-      : `TURNO ${index+1}`;
-    const dot      = isEspera?'🪑':'⏰';
+      : ('TURNO '+(index+1));
+    const dot         = isEspera?'🪑':'⏰';
+    const doctorAsig  = proxima.doctor || '';
 
-    // Doctor asignado o selector
-    const doctorAsignado = proxima.doctor || '';
-    const docSelector = ALL_DOCTORES.length > 0
-      ? `<select id="docSelect_${proxima.id}"
-          style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:.75rem;outline:none;min-width:150px;flex:1"
-          onchange="asignarDoctorTurno('${proxima.id}',this.value)">
-          <option value="">— Asignar doctor —</option>
-          ${ALL_DOCTORES.map(d=>{
-            const ocupado = getCitasHoy().some(c =>
-              c.doctor===d.nombre && c.id!==proxima.id &&
-              !['Completado','No Asistió','Cancelado'].includes(c.estado) &&
-              (() => {
-                if(!c.hora) return false;
-                const [h,mm] = c.hora.split(':').map(Number);
-                const minC = h*60+mm;
-                const dur  = (durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
-                return minC <= horaActual && horaActual < minC+dur+15;
-              })()
-            );
-            return '<option value="'+d.nombre+'" '+(d.nombre===doctorAsignado?'selected':'')+' '+(ocupado?'disabled':'')+'>'+
-              (ocupado?'🔴 ':'🟢 ')+d.nombre+(d.especialidad?' · '+d.especialidad:'')+(ocupado?' (en consulta)':'')+
-            '</option>';
-          }).join('')}
-        </select>`
-      : doctorAsignado
-        ? `<span style="font-size:.78rem;color:var(--text)">👨‍⚕️ ${doctorAsignado}</span>`
-        : `<span style="font-size:.72rem;color:var(--text-dim)">Sin doctor asignado</span>`;
+    // Verificar disponibilidad de doctores
+    const hayDoctoresLibres = ALL_DOCTORES.length===0 ||
+      doctoresDisponibles.length > 0;
+
+    // Selector de doctor con indicador de disponibilidad
+    let docSelector = '';
+    if(ALL_DOCTORES.length === 0){
+      // Sin doctores registrados
+      docSelector = `<span style="font-size:.72rem;color:var(--text-dim)">
+        Sin doctores — <a href="configuracion.html" style="color:var(--teal)">Registrar en Configuración</a>
+      </span>`;
+    } else if(doctoresDisponibles.length === 0 && !doctorAsig){
+      // Todos ocupados
+      docSelector = `<span style="font-size:.75rem;font-weight:600;color:var(--red)">
+        🔴 Todos los doctores están en consulta
+      </span>`;
+    } else {
+      docSelector = `<select id="docSelect_${proxima.id}"
+        style="background:var(--surface2);border:1px solid ${doctorAsig?'var(--teal)':'var(--border)'};border-radius:6px;padding:4px 8px;color:var(--text);font-size:.75rem;outline:none;min-width:160px;flex:1"
+        onchange="asignarDoctorTurno('${proxima.id}',this.value)">
+        <option value="">— Asignar doctor —</option>
+        ${ALL_DOCTORES.map(d=>{
+          const enConsulta = getCitasHoy().some(c =>
+            c.doctor===d.nombre && c.id!==proxima.id &&
+            c.estado==='En tratamiento'
+          );
+          const sel = d.nombre===doctorAsig ? 'selected' : '';
+          const dis = enConsulta ? 'disabled' : '';
+          const ico = enConsulta ? '🔴' : '🟢';
+          const suf = enConsulta ? ' (en consulta)' : ' (disponible)';
+          return '<option value="'+d.nombre+'" '+sel+' '+dis+'>'+ico+' '+d.nombre+(d.especialidad?'  —  '+d.especialidad:'')+suf+'</option>';
+        }).join('')}
+      </select>`;
+    }
+
+    // Botón iniciar: deshabilitado si todos ocupados y sin doctor asignado
+    const todosOcupados = ALL_DOCTORES.length>0 && doctoresDisponibles.length===0 && !doctorAsig;
+    const btnIniciar = todosOcupados
+      ? `<button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:.72rem;opacity:.4;cursor:not-allowed" disabled title="No hay doctores disponibles">
+           ⏳ Sin doctor disponible
+         </button>`
+      : `<button class="btn btn-primary btn-sm" style="padding:5px 8px;font-size:.75rem;font-weight:700"
+           onclick="iniciarTratamiento('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}')">
+           ▶️ Iniciar tratamiento
+         </button>`;
+
+    // Formatear fecha de la cita
+    let fechaCitaStr = '';
+    if(proxima.fecha){
+      try{
+        const [y,m,d] = proxima.fecha.split('-').map(Number);
+        const fd = new Date(y,m-1,d);
+        fechaCitaStr = fd.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+      }catch(e){ fechaCitaStr = proxima.fecha; }
+    }
 
     html += `
-    <div class="turno-card" style="background:linear-gradient(135deg,rgba(74,158,255,.07),transparent);border-color:rgba(74,158,255,.22);margin-bottom:10px;${index>0?'opacity:.85':''}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:.9rem">${dot}</span>
-        <span style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${accent}">${lbl}</span>
-        ${isEspera?'<span class="badge badge-gold" style="font-size:.58rem">En sala</span>':''}
+    <div class="turno-card" style="background:linear-gradient(135deg,rgba(74,158,255,.07),transparent);border-color:rgba(74,158,255,.22);margin-bottom:10px;${index>0?'opacity:.9':''}">
+
+      <!-- Header: etiqueta + fecha -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.9rem">${dot}</span>
+          <span style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${accent}">${lbl}</span>
+          ${isEspera?'<span class="badge badge-gold" style="font-size:.58rem">En sala</span>':''}
+        </div>
+        <!-- Fecha y hora de la cita -->
+        <div style="display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--text-muted)">
+          ${fechaCitaStr?`<span>📅 <strong style="color:var(--text)">${fechaCitaStr}</strong></span>`:''}
+          <span>⏰ <strong style="color:${accent}">${proxima.hora||'—'}</strong></span>
+          <span>⏱ ~${fmtDur(durP)}</span>
+        </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
         <div>
-          <!-- Paciente -->
-          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:5px">${proxima.paciente||'—'}</div>
-          <!-- Datos cita -->
-          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:.78rem;color:var(--text-muted);margin-bottom:10px">
-            <span>🦷 <strong style="color:var(--text)">${proxima.tratamiento||'Sin tratamiento'}</strong></span>
-            <span>⏰ <strong style="color:${accent}">${proxima.hora}</strong></span>
-            <span>⏱ ~<strong style="color:var(--text)">${fmtDur(durP)}</strong></span>
-            <span class="badge ${proxima.estado==='Confirmado'?'badge-teal':isEspera?'badge-gold':'badge-gold'}" style="font-size:.58rem">${proxima.estado||'Agendado'}</span>
+          <!-- Paciente + tratamiento -->
+          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:4px">${proxima.paciente||'—'}</div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px">
+            🦷 <strong style="color:var(--text)">${proxima.tratamiento||'Sin tratamiento'}</strong>
           </div>
-          <!-- Asignación de doctor -->
+
+          <!-- Selector de doctor -->
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span style="font-size:.72rem;color:var(--text-muted);white-space:nowrap">👨‍⚕️ Doctor:</span>
             ${docSelector}
           </div>
+
+          ${todosOcupados?`<div style="font-size:.68rem;color:var(--gold);margin-top:6px">⚠️ Espera a que un doctor finalice su consulta para asignar.</div>`:''}
         </div>
 
         <!-- Botones -->
-        <div style="display:flex;flex-direction:column;gap:5px;min-width:130px;flex-shrink:0">
-          ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;padding:4px 8px" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬 WA</button>`:''}
+        <div style="display:flex;flex-direction:column;gap:5px;min-width:140px;flex-shrink:0">
+          ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;padding:4px 8px" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
           ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:var(--gold);padding:4px 8px" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
-          <button class="btn btn-primary btn-sm" style="padding:5px 8px;font-size:.75rem;font-weight:700"
-            onclick="iniciarTratamiento('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}')">
-            ▶️ Iniciar tratamiento
+          ${btnIniciar}
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:.7rem"
+            onclick="abrirEstadoPrevio('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${proxima.hora||''}','${proxima.fecha||''}')">
+            📋 Estado
           </button>
-          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:.7rem" onclick="abrirFinCita('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${(proxima.tratamiento||'').replace(/'/g,"\\'")}')">📋 Estado</button>
         </div>
       </div>
     </div>`;
   });
 
-  // Si hay más citas fuera de las 3 mostradas
   const resto = [...enEspera,...futuros].length - listaProximas.length;
   if(resto > 0){
     html += `<div style="text-align:center;padding:8px;font-size:.72rem;color:var(--text-dim)">
@@ -791,6 +823,7 @@ function renderTurno(){
 
   el.innerHTML = html;
 }
+
 
 // ── ASIGNAR DOCTOR A TURNO ───────────────────────────────
 window.asignarDoctorTurno = async function(citaId, doctorNombre){
@@ -826,6 +859,136 @@ window.abrirFinCita = function(id, paciente, trat) {
   openModal('modalFinCita');
 };
 
+// ── MODAL ESTADO PREVIO (antes de consulta) ──────────────
+// Estados posibles antes de que el paciente sea atendido
+window.abrirEstadoPrevio = function(citaId, paciente, hora, fecha){
+  citaActualId = citaId;
+  let fechaStr = fecha;
+  if(fecha){
+    try{
+      const [y,m,d]=fecha.split('-').map(Number);
+      fechaStr=new Date(y,m-1,d).toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+    }catch(e){}
+  }
+  const infoEl = document.getElementById('finCitaInfo');
+  if(infoEl) infoEl.innerHTML =
+    '<div style="font-weight:700;color:var(--text);font-size:.92rem;margin-bottom:6px">👤 '+paciente+'</div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted)">'+
+    (fechaStr?'<span>📅 '+fechaStr+'</span>':'')+
+    (hora?'<span>⏰ '+hora+'</span>':'')+
+    '</div>';
+
+  // Configurar modal para estado PREVIO a consulta
+  document.getElementById('estadoGrid').innerHTML = `
+    <div class="opt-estado" data-val="En sala de espera"
+      style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">🪑</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--teal)">En sala de espera</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Paciente ya llegó</div>
+    </div>
+    <div class="opt-estado" data-val="No Asistió"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">❌</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">No asistió</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Sin previo aviso</div>
+    </div>
+    <div class="opt-estado" data-val="Reagendar"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">📅</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Llamó a reagendar</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Necesita nueva fecha</div>
+    </div>
+    <div class="opt-estado" data-val="Cancelado"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">🚫</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Canceló</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">El paciente canceló</div>
+    </div>
+    <div class="opt-estado" data-val="En camino"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">🚗</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Va en camino</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Llegará pronto</div>
+    </div>
+    <div class="opt-estado" data-val="Agendado"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">📋</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Mantener agendado</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Sin cambios</div>
+    </div>`;
+
+  // Ocultar tiempo extra y pausa (no aplican aquí)
+  const extraWrap = document.getElementById('tiempoExtraWrap');
+  if(extraWrap) extraWrap.style.display='none';
+  const pausaGrid = document.getElementById('pausaGrid');
+  const pausaLabel = pausaGrid?.previousElementSibling;
+  if(pausaGrid){ pausaGrid.style.display='none'; }
+  if(pausaLabel){ pausaLabel.style.display='none'; }
+
+  // Seleccionar primera opción
+  _estadoSeleccionado = 'En sala de espera';
+  // Re-init listeners para las nuevas opciones
+  initModalEvents();
+
+  document.getElementById('finCitaNotas').value='';
+  openModal('modalFinCita');
+};
+
+// ── ABRIR MODAL DE FINALIZAR EN CONSULTA ─────────────────
+// (restaura opciones completas: completado, se extiende, etc. + pausa doctor)
+window.abrirFinalizarConsulta = function(id, paciente, trat, tiempoRealMin, durEstMin){
+  citaActualId = id;
+  const infoEl = document.getElementById('finCitaInfo');
+  if(infoEl) infoEl.innerHTML =
+    '<div style="font-weight:700;color:var(--text);font-size:.92rem;margin-bottom:6px">👤 '+paciente+'</div>'+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted)">'+
+    '<span>🦷 '+(trat||'Sin tratamiento')+'</span>'+
+    '<span>⏱ Estimado: '+fmtDur(durEstMin)+'</span>'+
+    (tiempoRealMin>0?'<span style="color:var(--teal)">⏳ Real: <strong>'+fmtDur(tiempoRealMin)+'</strong></span>':'')+
+    '</div>';
+
+  // Restaurar opciones de estado para cita EN CONSULTA
+  document.getElementById('estadoGrid').innerHTML = `
+    <div class="opt-estado" data-val="Completado"
+      style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">✅</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--teal)">Completado</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Cita realizada</div>
+    </div>
+    <div class="opt-estado" data-val="Extendido"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">⏰</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Cita se extiende</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Complicaciones</div>
+    </div>
+    <div class="opt-estado" data-val="No Asistió"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">❌</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">No asistió</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">Sin aviso</div>
+    </div>
+    <div class="opt-estado" data-val="Cancelado"
+      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
+      <div style="font-size:1.3rem;margin-bottom:4px">🚫</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Cancelado</div>
+      <div style="font-size:.63rem;color:var(--text-dim)">El paciente canceló</div>
+    </div>`;
+
+  // Mostrar tiempo extra y pausa doctor
+  const extraWrap = document.getElementById('tiempoExtraWrap');
+  if(extraWrap) extraWrap.style.display='none'; // se muestra al seleccionar Extendido
+  const pausaGrid = document.getElementById('pausaGrid');
+  const pausaLabel = pausaGrid?.previousElementSibling;
+  if(pausaGrid){ pausaGrid.style.display='grid'; }
+  if(pausaLabel){ pausaLabel.style.display='block'; }
+
+  _estadoSeleccionado = 'Completado';
+  _pausaSeleccionada  = '';
+  initModalEvents();
+  document.getElementById('finCitaNotas').value='';
+  openModal('modalFinCita');
+};
+
 // ── INICIAR TRATAMIENTO (manual, desde próximo turno) ────
 window.iniciarTratamiento = async function(citaId, paciente){
   const cita = ALL_CITAS.find(c=>c.id===citaId);
@@ -834,27 +997,34 @@ window.iniciarTratamiento = async function(citaId, paciente){
   // Validar que tenga doctor asignado
   if(!cita.doctor){
     showToast('⚠️ Asigna un doctor antes de iniciar el tratamiento','error');
-    // Hacer parpadear el selector de doctor
     const sel = document.getElementById('docSelect_'+citaId);
-    if(sel){ sel.style.border='2px solid var(--red)'; setTimeout(()=>sel.style.border='',2000); }
+    if(sel){ sel.style.border='2px solid var(--red)'; setTimeout(()=>sel.style.border='1px solid var(--border)',2500); }
     return;
   }
 
-  const horaActual = getHoraMin();
-  const inicioHora = String(Math.floor(horaActual/60)).padStart(2,'0')+':'+String(horaActual%60).padStart(2,'0');
+  // Verificar que el doctor no esté ya en otra consulta
+  const doctorOcupado = getCitasEnCurso().some(c => c.doctor===cita.doctor && c.id!==citaId);
+  if(doctorOcupado){
+    showToast('🔴 '+cita.doctor+' ya está en consulta — elige otro doctor','error');
+    return;
+  }
+
+  // Hora de inicio = AHORA (automático, sin entrada manual)
+  const ahora    = new Date();
+  const horaMin  = ahora.getHours()*60+ahora.getMinutes();
+  const horaStr  = String(ahora.getHours()).padStart(2,'0')+':'+String(ahora.getMinutes()).padStart(2,'0');
 
   try{
     await fsUpdate('citas', citaId, {
       estado:        'En tratamiento',
-      inicioRealMin:  horaActual,
-      inicioRealHora: inicioHora,
+      inicioRealMin:  horaMin,
+      inicioRealHora: horaStr,
     });
     ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId
-      ?{...c, estado:'En tratamiento', inicioRealMin:horaActual, inicioRealHora:inicioHora}
+      ?{...c, estado:'En tratamiento', inicioRealMin:horaMin, inicioRealHora:horaStr}
       :c
     );
-    showToast('▶️ Tratamiento iniciado — '+paciente,'success');
-    // Re-renderizar: aparece en "En consulta", sale de "Próximo turno"
+    showToast('▶️ '+paciente+' en consulta con '+cita.doctor+' · '+horaStr,'success');
     renderEnConsulta();
     renderTurno();
     renderCitasHoy();
