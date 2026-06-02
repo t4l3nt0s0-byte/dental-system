@@ -1520,62 +1520,80 @@ window.abrirFinCita = function(id, paciente, trat){
 
 // Confirmar finalización
 async function confirmarFinCita(){
-  const estado = _estadoSeleccionado;
-  const pausa  = _pausaSeleccionada;
-  const notas  = (document.getElementById('finCitaNotas')||{}).value || '';
-  const extraMin = estado==='Extendido' ? parseInt((document.getElementById('tiempoExtraMin')||{}).value||30) : 0;
-  const btn    = document.getElementById('btnConfirmFinCita');
+  const estado   = _estadoSeleccionado;
+  const pausa    = _pausaSeleccionada || '';
+  const notas    = (document.getElementById('finCitaNotas')||{}).value || '';
+  const extraMin = estado==='Extendido'
+    ? parseInt((document.getElementById('tiempoExtraMin')||{}).value||30)
+    : 0;
+  const btn = document.getElementById('btnConfirmFinCita');
   if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
 
   try{
-    const est   = _consultasActivas[id];
-    const trMs  = est ? Math.max(0,new Date()-est.inicioRealDate) : 0;
+    // Calcular tiempo real usando citaActualId (no 'id')
+    const est   = _consultasActivas[citaActualId];
+    const trMs  = est ? Math.max(0, new Date()-est.inicioRealDate) : 0;
     const trMin = Math.floor(trMs/60000);
 
     const update = {
-      estado:        estado==='Extendido'?'Agendado':estado, // Extendido sigue activo
+      estado:        estado,
       notas,
-      finalizadoEn:  new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
       tiempoRealMin: trMin,
       pausaDoctor:   pausa,
     };
-    if(estado==='Extendido' && extraMin>0){
-      // Guardar tiempo extra acumulado en Firebase
+
+    // Casos especiales
+    if(estado === 'Extendido'){
       const citaActual = ALL_CITAS.find(c=>c.id===citaActualId);
-      const extraAcum  = (citaActual?.tiempoExtra||0) + extraMin;
-      update.tiempoExtra = extraAcum;
+      update.tiempoExtra = (citaActual?.tiempoExtra||0) + extraMin;
       update.estado      = 'En tratamiento';
-      // NO actualizar finalizadoEn ni resetear timer
-      delete update.finalizadoEn;
+    } else {
+      update.finalizadoEn = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    }
+
+    // Reagendar = limpiar doctor y estado pero no marcar completado
+    if(estado === 'Reagendar'){
+      update.estado = 'Agendado';
+      update.doctor = null;
     }
 
     await fsUpdate('citas', citaActualId, update);
 
-    // Mensaje de confirmación
-    const iconos = {'Completado':'✅','Extendido':'⏰','No Asistió':'❌','Cancelado':'🚫','En tratamiento':'⏰'};
-    const msg = (iconos[estado]||'📋')+' '+(estado==='Extendido'?'Cita extendida +'+extraMin+'min':estado)+(trMin>0?' · Real: '+fmtDur(trMin):'');
-    showToast(msg,'success');
+    // Actualizar array local
+    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaActualId ? {...c,...update} : c);
 
-    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaActualId?{...c,...update}:c);
+    // Mensaje
+    const iconos = {
+      'Completado':'✅','Extendido':'⏰','No Asistió':'❌',
+      'Cancelado':'🚫','En sala de espera':'🪑','Reagendar':'📅',
+      'En camino':'🚗','Agendado':'📋','En tratamiento':'⏰'
+    };
+    const estadoMostrar = estado==='Extendido'?'Cita extendida +'+extraMin+'min':estado;
+    showToast((iconos[estado]||'📋')+' '+estadoMostrar+(trMin>0?' · Real: '+fmtDur(trMin):''),'success');
 
-    // Si terminó: limpiar del mapa de consultas activas
-    const estadoFinal = ['Completado','No Asistió','Cancelado'];
-    if(estadoFinal.includes(estado)){
+    // Limpiar consulta activa si terminó
+    const estadosFin = ['Completado','No Asistió','Cancelado','Reagendar','Agendado'];
+    if(estadosFin.includes(estado)){
       delete _consultasActivas[citaActualId];
-      // Si ya no hay consultas activas, detener master timer
       if(Object.keys(_consultasActivas).length===0 && _masterTimer){
         clearInterval(_masterTimer); _masterTimer=null;
       }
     }
-    // Si se extendió: el timer sigue, renderEnConsulta suma tiempoExtra a durMin
 
-    // Banner de pausa
-    const pausaBanner = document.getElementById('pausaBanner');
-    const pausaBannerTxt = document.getElementById('pausaBannerTxt');
-    const pausaMsgs = {'baño':'🚻 Doctor en pausa — regresa pronto','comida':'🍽️ Doctor salió a comer','salida':'🏠 Doctor finalizó su jornada','':'▶️ Listo para el siguiente paciente'};
-    if(pausaBanner && pausa){
-      if(pausaBannerTxt) pausaBannerTxt.textContent = pausaMsgs[pausa]||'';
-      pausaBanner.style.display = 'flex';
+    // Banner pausa doctor
+    if(pausa && estado!=='Extendido'){
+      const banner = document.getElementById('pausaBanner');
+      const bannerTxt = document.getElementById('pausaBannerTxt');
+      const msgs = {
+        'baño':   '🚻 Doctor en pausa · Regresa pronto',
+        'comida': '🍽️ Doctor salió a comer',
+        'salida': '🏠 Doctor finalizó su jornada',
+        '':       ''
+      };
+      if(banner && msgs[pausa]){
+        if(bannerTxt) bannerTxt.textContent = msgs[pausa];
+        banner.style.display='flex';
+      }
     }
 
     closeModal('modalFinCita');
@@ -1583,7 +1601,11 @@ async function confirmarFinCita(){
     renderTurno();
     renderCitasHoy();
     renderChartDiaHoy();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+
+  }catch(e){
+    console.error('confirmarFinCita error:', e);
+    showToast('Error: '+e.message,'error');
+  }
   if(btn){ btn.disabled=false; btn.textContent='✅ Confirmar'; }
 }
 window.confirmarFinCita = confirmarFinCita;
