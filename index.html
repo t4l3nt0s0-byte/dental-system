@@ -96,6 +96,8 @@
 /* ESTADO OPT en modal */
 .estado-opt{user-select:none;transition:all .15s}
 .estado-opt:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+/* Shimmer animación */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 /* EMPTY */
 .empty-mini{text-align:center;padding:20px;color:var(--text-dim);font-size:.78rem}
 /* CHART containers */
@@ -282,8 +284,29 @@ function renderDashboard(clinica,user){
     <div class="greeting-sub">${clinica.nombre||'DentalOS'} · ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
   </div>
 
-  <!-- KPIs -->
-  <div class="kpi-grid">
+  <!-- 1. EN CONSULTA AHORA (nuevo) -->
+  <div id="enConsultaSection"></div>
+
+  <!-- 2. PRÓXIMO TURNO -->
+  <div id="turnoSection"></div>
+
+  <!-- 3. CITAS DE HOY + ADEUDOS -->
+  <div class="dash-grid" style="margin-bottom:20px">
+    <div class="dash-card">
+      <div class="card-title"><span>📅 CITAS DE HOY</span><a href="agenda.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver agenda →</a></div>
+      <div id="citasHoyList"></div>
+    </div>
+    <div class="dash-card">
+      <div class="card-title"><span>❗ MAYORES ADEUDOS</span><a href="abonos.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver todos →</a></div>
+      <div id="adeudosList"></div>
+    </div>
+  </div>
+
+  <!-- 4. META MENSUAL -->
+  ${isAdmin?`<div id="metaSection"></div>`:''}
+
+  <!-- 5. KPIs -->
+  <div class="kpi-grid" style="margin-bottom:20px">
     <div class="kpi-card green">
       <span class="kpi-icon">💵</span>
       <div class="kpi-value" style="color:var(--teal)">${fmtMXN(cobradoMes)}</div>
@@ -298,7 +321,7 @@ function renderDashboard(clinica,user){
     </div>
     <div class="kpi-card blue">
       <span class="kpi-icon">✅</span>
-      <div class="kpi-value" style="color:var(--blue)">${ALL_TRATS.filter(t=>t.estado==='Liquidado'&&t.updatedAt?.slice?.(0,7)===mesActual()).length}/${ALL_TRATS.filter(t=>t.updatedAt?.slice?.(0,7)===mesActual()||t.creadoEn?.slice?.(0,7)===mesActual()).length||1}</div>
+      <div class="kpi-value" style="color:var(--blue)">${ALL_TRATS.filter(t=>t.estado==='Liquidado'&&(t.updatedAt||t.creadoEn||'').slice(0,7)===mesActual()).length}/${ALL_TRATS.filter(t=>(t.creadoEn||'').slice(0,7)===mesActual()).length||0}</div>
       <div class="kpi-label">Liquidados este mes</div>
       <div class="kpi-delta neutral">Tiq. medio: ${fmtMXN(tiqMedio)}</div>
     </div>
@@ -310,27 +333,8 @@ function renderDashboard(clinica,user){
     </div>
   </div>
 
-  <!-- TURNO ACTUAL -->
-  <div id="turnoSection"></div>
-
-  <!-- META INGRESOS -->
-  ${isAdmin?`<div id="metaSection"></div>`:''}
-
-  <!-- GRID PRINCIPAL: Citas + Adeudos -->
-  <div class="dash-grid" style="margin-bottom:20px">
-    <div class="dash-card">
-      <div class="card-title"><span>📅 CITAS DE HOY</span><a href="agenda.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver agenda →</a></div>
-      <div id="citasHoyList"></div>
-    </div>
-    <div class="dash-card">
-      <div class="card-title"><span>❗ MAYORES ADEUDOS</span><a href="abonos.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver todos →</a></div>
-      <div id="adeudosList"></div>
-    </div>
-  </div>
-
-  <!-- GRÁFICAS — solo admin -->
+  <!-- 6. GRÁFICAS ADMIN -->
   ${isAdmin?`
-  <!-- FILA 1: Ingresos + Pacientes nuevos -->
   <div class="dash-grid" style="margin-bottom:16px">
     <div class="dash-card">
       <div class="card-title"><span>📈 INGRESOS DIARIOS — MES ACTUAL VS ANTERIOR</span></div>
@@ -341,7 +345,6 @@ function renderDashboard(clinica,user){
       <div class="chart-wrap"><canvas id="chartPacNuevos"></canvas></div>
     </div>
   </div>
-  <!-- FILA 2: Top tratamientos + Frecuentes -->
   <div class="dash-grid" style="margin-bottom:16px">
     <div class="dash-card">
       <div class="card-title"><span>🦷 TOP 5 TRATAMIENTOS POR INGRESO</span></div>
@@ -352,7 +355,6 @@ function renderDashboard(clinica,user){
       <div id="frecuentesList"></div>
     </div>
   </div>
-  <!-- FILA 3: Embudo comercial -->
   <div class="dash-grid" style="margin-bottom:16px">
     <div class="dash-card">
       <div class="card-title"><span>🔽 EMBUDO COMERCIAL</span><span style="font-size:.65rem;color:var(--text-dim)">${mesActual()}</span></div>
@@ -365,7 +367,7 @@ function renderDashboard(clinica,user){
   </div>
   `:''}
 
-  <!-- ACCESO RÁPIDO -->
+  <!-- 7. ACCESO RÁPIDO -->
   <div class="dash-card" style="margin-bottom:16px">
     <div class="card-title"><span>⚡ ACCESO RÁPIDO</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -381,8 +383,9 @@ function renderDashboard(clinica,user){
       ].map(([href,icon,label])=>`<a href="${href}" class="btn btn-ghost btn-sm" style="flex:1;min-width:100px;justify-content:center">${icon} ${label}</a>`).join('')}
     </div>
   </div>
-  `;
+`;
 
+  renderEnConsulta();
   renderTurno();
   renderCitasHoy();
   renderAdeudos();
@@ -395,6 +398,111 @@ function renderDashboard(clinica,user){
     renderEmbudo();
     renderChartDias();
   }
+  // Actualizar en consulta cada minuto
+  setInterval(()=>{ renderEnConsulta(); renderTurno(); }, 60000);
+}
+
+// ── EN CONSULTA AHORA ────────────────────────────────────
+let _consultaTimer = null; // intervalo del cronómetro
+
+function renderEnConsulta(){
+  const el = document.getElementById('enConsultaSection');
+  if (!el) return;
+  const ahora = new Date();
+  const horaActual = ahora.getHours()*60 + ahora.getMinutes();
+  const citasHoy = ALL_CITAS
+    .filter(c=>c.fecha===hoy()&&c.hora&&!['Completado','No Asistió','Cancelado'].includes(c.estado))
+    .sort((a,b)=>a.hora.localeCompare(b.hora));
+
+  // Cita en curso: inició hace menos de 90 min y no terminó
+  const enCurso = citasHoy.find(c=>{
+    const [h,m]=c.hora.split(':').map(Number);
+    const minC=h*60+m;
+    return minC<=horaActual && horaActual<minC+90;
+  });
+
+  if (!enCurso) { el.innerHTML=''; return; }
+
+  // Calcular tiempos
+  const [hh,mm] = enCurso.hora.split(':').map(Number);
+  const inicioMin = hh*60+mm;
+  const durMin = durEst(enCurso.tratamiento) || 30;
+  const finMin  = inicioMin + durMin;
+  const finHora = `${String(Math.floor(finMin/60)).padStart(2,'0')}:${String(finMin%60).padStart(2,'0')}`;
+  const transcurrido = Math.max(0, horaActual - inicioMin);
+  const pctTiempo = Math.min(100, Math.round((transcurrido/durMin)*100));
+  const restante  = Math.max(0, durMin - transcurrido);
+
+  // Médico que atiende (del campo doctor de la cita o del usuario actual)
+  const medico = enCurso.doctor || enCurso.medico || SESSION?.user?.nombre || 'Dr. Administrador';
+
+  // Color barra tiempo
+  const colorTiempo = pctTiempo<60?'var(--teal)':pctTiempo<85?'var(--gold)':'var(--red)';
+
+  el.innerHTML=`
+  <div style="background:linear-gradient(135deg,rgba(0,194,168,.1),rgba(0,194,168,.03));border:1px solid rgba(0,194,168,.35);border-radius:var(--r-lg);padding:20px;margin-bottom:14px;position:relative;overflow:hidden">
+    <!-- Línea superior animada -->
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue));animation:shimmer 2s linear infinite"></div>
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <div class="turno-dot"></div>
+      <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)">ESTATUS AL MOMENTO — EN CONSULTA</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start">
+      <div>
+        <!-- Paciente y tratamiento -->
+        <div style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:6px">${enCurso.paciente||'—'}</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted);margin-bottom:12px">
+          <span>🦷 ${enCurso.tratamiento||'Sin tratamiento'}</span>
+          <span>👨‍⚕️ ${medico}</span>
+          <span>🕐 Inicio: <strong style="color:var(--text)">${enCurso.hora}</strong></span>
+          <span>🕐 Fin est.: <strong style="color:var(--teal)">${finHora}</strong></span>
+          <span>⏱ Duración est.: <strong style="color:var(--text)">${fmtDur(durMin)}</strong></span>
+        </div>
+
+        <!-- Barra de progreso de tiempo -->
+        <div style="margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-dim);margin-bottom:4px">
+            <span>Tiempo transcurrido</span>
+            <span id="timerTxt" style="font-family:var(--font-mono);color:${colorTiempo};font-weight:700">${transcurrido}min / ${durMin}min</span>
+          </div>
+          <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
+            <div id="timerBar" style="height:100%;width:${pctTiempo}%;background:${colorTiempo};border-radius:4px;transition:width .5s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--text-dim);margin-top:3px">
+            <span>${enCurso.hora}</span>
+            <span style="color:${restante<=5?'var(--red)':'var(--text-dim)'}">${restante<=0?'⏰ Tiempo cumplido':restante<=5?`⚠️ ${restante}min restantes`:`${restante}min restantes`}</span>
+            <span>${finHora}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:140px">
+        ${enCurso.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${enCurso.tel}','Hola ${(enCurso.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${enCurso.id}','${(enCurso.paciente||'').replace(/'/g,"\'")}','${(enCurso.tratamiento||'').replace(/'/g,"\'")}')">✅ Finalizar consulta</button>
+        <a href="expediente.html?px=${enCurso.expId||''}" class="btn btn-ghost btn-sm" style="text-align:center">📋 Ver expediente</a>
+      </div>
+    </div>
+  </div>`;
+
+  // Iniciar cronómetro en tiempo real
+  if (_consultaTimer) clearInterval(_consultaTimer);
+  const startSec = ahora.getSeconds();
+  _consultaTimer = setInterval(()=>{
+    const now=new Date();
+    const minAhora=now.getHours()*60+now.getMinutes();
+    const trans=Math.max(0,minAhora-inicioMin);
+    const rest=Math.max(0,durMin-trans);
+    const pct=Math.min(100,Math.round((trans/durMin)*100));
+    const col=pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+    const bar=document.getElementById('timerBar');
+    const txt=document.getElementById('timerTxt');
+    if(bar) bar.style.width=pct+'%', bar.style.background=col;
+    if(txt) txt.textContent=`${trans}min / ${durMin}min`, txt.style.color=col;
+  }, 30000); // actualiza cada 30 seg
 }
 
 // ── TURNO ACTUAL ──────────────────────────────────────────
@@ -422,12 +530,7 @@ function renderTurno(){
     .sort((a,b)=>a.hora.localeCompare(b.hora));
 
   // Clasificar citas
-  const enCurso = citasHoy.find(c=>{
-    if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
-    const [h,m]=c.hora.split(':').map(Number);
-    const minC=h*60+m;
-    return minC<=horaActual&&horaActual<minC+60;
-  });
+  const enCurso = null; // La cita en curso se muestra en 'Estatus al momento'
   const enEspera = citasHoy.filter(c=>c.estado==='En sala de espera');
   const proximas = citasHoy.filter(c=>{
     if(['Completado','No Asistió','Cancelado','En sala de espera'].includes(c.estado)) return false;
