@@ -103,6 +103,9 @@
         <div class="config-nav-item" onclick="showSection('cuenta')" id="nav-cuenta">
           <span class="nav-icon">👤</span> Mi cuenta
         </div>
+        <div class="config-nav-item" onclick="showSection('doctores')" id="nav-doctores">
+          <span class="nav-icon">🦷</span> Doctores del consultorio
+        </div>
         <div class="config-nav-item" onclick="window.location.href='legal.html'" id="nav-legal">
           <span class="nav-icon">⚖️</span> Legalidad
         </div>
@@ -269,6 +272,36 @@
             <div class="section-sub">Gestiona tu plan de DentalOS.</div>
             <div id="planInfo" style="margin-bottom:14px;font-size:.82rem;color:var(--text-muted)"></div>
             <a href="planes.html" class="btn btn-primary">💎 Ver planes y precios</a>
+          </div>
+        </div>
+
+        <!-- DOCTORES -->
+        <div class="config-section" id="sec-doctores">
+          <div class="section-card">
+            <div class="section-title">🦷 Doctores del consultorio</div>
+            <div class="section-sub">Registra los dentistas de tu clínica. Aparecerán como opciones al registrar citas y en el panel de turnos.</div>
+
+            <!-- LISTA DE DOCTORES -->
+            <div id="doctoresList" style="margin-bottom:16px"></div>
+
+            <!-- AGREGAR DOCTOR -->
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px">
+              <div style="font-size:.72rem;font-weight:700;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px" id="doctorFormTitle">➕ Agregar doctor</div>
+              <div class="info-grid">
+                <div class="form-group full"><label class="form-label">Nombre completo *</label><input class="form-input" id="doc-nombre" placeholder="Dr. Juan García López"></div>
+                <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="doc-especialidad" placeholder="Cirujano Dentista"></div>
+                <div class="form-group"><label class="form-label">Cédula profesional</label><input class="form-input" id="doc-cedula" placeholder="Número de cédula"></div>
+                <div class="form-group"><label class="form-label">Teléfono de contacto</label><input class="form-input" id="doc-tel" placeholder="55 0000 0000" type="tel"></div>
+                <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="doc-email" placeholder="doctor@consultorio.com"></div>
+                <div class="form-group"><label class="form-label">Color identificador</label>
+                  <div style="display:flex;gap:8px;align-items:center;margin-top:4px" id="docColorGrid"></div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <button class="btn btn-primary" id="btnSaveDoctor" onclick="saveDoctor()">💾 Guardar doctor</button>
+                <button class="btn btn-ghost" id="btnCancelDoctor" style="display:none" onclick="cancelEditDoctor()">Cancelar</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -910,6 +943,132 @@ async function ejecutarRestauracion(file) {
   const c = localStorage.getItem('dental_color');
   if (t || c) applyTheme(t||'dark', c||'#00C2A8');
 })();
+
+// ── DOCTORES DEL CONSULTORIO ──────────────────────────────
+const DOC_COLORS = ['#00C2A8','#4A9EFF','#F4B942','#A78BFA','#34D399','#FF6B6B','#F97316','#EC4899'];
+let allDoctores = [], editDoctorId = null, selectedDocColor = '#00C2A8';
+
+async function loadDoctores(){
+  allDoctores = await fsGetAll('doctores');
+  renderDoctoresList();
+  renderDocColorGrid();
+}
+
+function renderDocColorGrid(){
+  const grid = document.getElementById('docColorGrid');
+  if(!grid) return;
+  grid.innerHTML = DOC_COLORS.map(c=>`
+    <div onclick="selDocColor('${c}')"
+      style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c===selectedDocColor?'#fff':'transparent'};box-shadow:${c===selectedDocColor?'0 0 0 2px '+c:'none'};transition:all .15s;flex-shrink:0"></div>
+  `).join('');
+}
+
+window.selDocColor = function(color){
+  selectedDocColor = color;
+  renderDocColorGrid();
+};
+
+function renderDoctoresList(){
+  const el = document.getElementById('doctoresList');
+  if(!el) return;
+  if(!allDoctores.length){
+    el.innerHTML = '<div style="text-align:center;padding:20px;font-size:.82rem;color:var(--text-dim)">No hay doctores registrados todavía</div>';
+    return;
+  }
+  el.innerHTML = allDoctores.map(d=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:50%;background:${d.color||'var(--teal)'};display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:#fff;flex-shrink:0">
+        ${(d.nombre||'?').split(' ').filter(w=>w[0]===w[0]?.toUpperCase()).slice(0,2).map(w=>w[0]).join('')}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.88rem;font-weight:700;color:var(--text)">${d.nombre||'—'}</div>
+        <div style="font-size:.72rem;color:var(--text-muted);display:flex;gap:10px;flex-wrap:wrap;margin-top:2px">
+          ${d.especialidad?`<span>🎓 ${d.especialidad}</span>`:''}
+          ${d.cedula?`<span>📋 Céd: ${d.cedula}</span>`:''}
+          ${d.tel?`<span>📱 ${d.tel}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-ghost btn-sm" onclick="editDoctor('${d.id}')">✏️</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteDoctor('${d.id}','${(d.nombre||'').replace(/'/g,"\\'")}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+window.saveDoctor = async function(){
+  const nombre = document.getElementById('doc-nombre').value.trim();
+  if(!nombre){ showToast('El nombre es obligatorio','error'); return; }
+  const btn = document.getElementById('btnSaveDoctor');
+  btn.disabled=true; btn.textContent='Guardando...';
+  const data = {
+    nombre, color: selectedDocColor,
+    especialidad: document.getElementById('doc-especialidad').value.trim(),
+    cedula:       document.getElementById('doc-cedula').value.trim(),
+    tel:          document.getElementById('doc-tel').value.trim(),
+    email:        document.getElementById('doc-email').value.trim().toLowerCase(),
+  };
+  try{
+    if(editDoctorId){
+      await fsUpdate('doctores', editDoctorId, data);
+      showToast('Doctor actualizado','success');
+    } else {
+      await fsCreate('doctores', data);
+      showToast('Doctor registrado correctamente','success');
+    }
+    clearDoctorForm();
+    await loadDoctores();
+  }catch(e){ showToast('Error: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='💾 Guardar doctor';
+};
+
+window.editDoctor = function(id){
+  const d = allDoctores.find(x=>x.id===id); if(!d) return;
+  editDoctorId = id;
+  document.getElementById('doc-nombre').value       = d.nombre||'';
+  document.getElementById('doc-especialidad').value = d.especialidad||'';
+  document.getElementById('doc-cedula').value        = d.cedula||'';
+  document.getElementById('doc-tel').value           = d.tel||'';
+  document.getElementById('doc-email').value         = d.email||'';
+  selectedDocColor = d.color || '#00C2A8';
+  renderDocColorGrid();
+  document.getElementById('doctorFormTitle').textContent = '✏️ Editar doctor';
+  document.getElementById('btnCancelDoctor').style.display = 'inline-flex';
+  document.getElementById('btnSaveDoctor').textContent = '💾 Actualizar';
+  document.getElementById('doc-nombre').focus();
+};
+
+window.cancelEditDoctor = function(){
+  editDoctorId = null;
+  clearDoctorForm();
+};
+
+function clearDoctorForm(){
+  ['doc-nombre','doc-especialidad','doc-cedula','doc-tel','doc-email'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  selectedDocColor = '#00C2A8';
+  renderDocColorGrid();
+  document.getElementById('doctorFormTitle').textContent = '➕ Agregar doctor';
+  document.getElementById('btnCancelDoctor').style.display = 'none';
+  document.getElementById('btnSaveDoctor').textContent = '💾 Guardar doctor';
+  editDoctorId = null;
+}
+
+window.deleteDoctor = async function(id, nombre){
+  if(!await confirmDialog('¿Eliminar al Dr. '+nombre+'?\nSus citas no se verán afectadas.')) return;
+  try{
+    await fsDelete('doctores', id);
+    showToast('Doctor eliminado','success');
+    await loadDoctores();
+  }catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
+// Cargar doctores cuando se abre la sección
+const _origShowSection = window.showSection;
+window.showSection = function(sec){
+  if(typeof _origShowSection === 'function') _origShowSection(sec);
+  if(sec==='doctores') loadDoctores();
+};
 </script>
 </body>
 </html>
