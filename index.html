@@ -206,6 +206,19 @@
 window.CURRENT_PAGE = 'index';
 let ALL_CITAS=[], ALL_ABONOS=[], ALL_PACIENTES=[], ALL_TRATS=[], ALL_COTIZACIONES=[];
 let citaActualId=null, metaMensual=0, isAdmin=false;
+
+// ── HELPERS GLOBALES DE FECHA/HORA ────────────────────────
+function getCitasHoy(){
+  const hoyStr = todayISO();
+  return ALL_CITAS
+    .filter(c => c.fecha === hoyStr && c.hora)
+    .sort((a,b) => a.hora.localeCompare(b.hora));
+}
+function getHoraMin(){
+  const n = new Date();
+  return n.getHours()*60 + n.getMinutes();
+}
+
 const CHART_DEFAULTS = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, animation:{duration:800} };
 
 // ── RELOJ EN VIVO — inicia inmediatamente ────────────────
@@ -279,11 +292,11 @@ initSession('any').then(async session=>{
     renderDashboard(clinica,user);
   } catch(e) {
     console.error('Error en renderDashboard:', e);
-    document.getElementById('mainContent').innerHTML=
+    const mc2 = document.getElementById('mainContent');
+    if(mc2) mc2.innerHTML=
       '<div style="padding:40px;text-align:center;color:#E8F0F8">' +
       '<div style="font-size:2rem;margin-bottom:12px">⚠️</div>' +
-      '<div style="font-size:1rem;font-weight:600;margin-bottom:8px">Error al cargar el dashboard</div>' +
-      '<div style="font-size:.82rem;color:rgba(232,240,248,.5);margin-bottom:16px">' + e.message + '</div>' +
+      '<div style="font-size:1rem;font-weight:600;margin-bottom:8px">Error: ' + e.message + '</div>' +
       '<button onclick="location.reload()" style="background:#00C2A8;color:#060D14;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700">🔄 Recargar</button>' +
       '</div>';
   }
@@ -417,13 +430,13 @@ function renderDashboard(clinica,user){
   renderCitasHoy();
   renderAdeudos();
   if(isAdmin){
-    renderMeta();
-    renderChartIngresos();
-    renderChartPacNuevos();
-    renderChartTratamientos();
-    renderFrecuentes();
-    renderEmbudo();
-    renderChartDias();
+    try{ renderMeta(); } catch(e){ console.warn('renderMeta:',e.message); }
+    try{ renderChartIngresos(); } catch(e){ console.warn('chartIngresos:',e.message); }
+    try{ renderChartPacNuevos(); } catch(e){ console.warn('chartPac:',e.message); }
+    try{ renderChartTratamientos(); } catch(e){ console.warn('chartTrat:',e.message); }
+    try{ renderFrecuentes(); } catch(e){ console.warn('frecuentes:',e.message); }
+    try{ renderEmbudo(); } catch(e){ console.warn('embudo:',e.message); }
+    try{ renderChartDias(); } catch(e){ console.warn('chartDias:',e.message); }
   }
   // Actualizar en consulta cada minuto
   setInterval(()=>{ renderEnConsulta(); renderTurno(); }, 60000);
@@ -789,6 +802,7 @@ function chartDefaults(extra={}){
 }
 
 function renderChartIngresos(){
+  try{
   const ctx=document.getElementById('chartIngresos')?.getContext('2d'); if(!ctx) return;
   const diasMes=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
   const labels=Array.from({length:diasMes},(_,i)=>`${i+1}`);
@@ -811,9 +825,10 @@ function renderChartIngresos(){
     {label:'Este mes',data:acAct,borderColor:'#00C2A8',backgroundColor:chartColor('#00C2A8',.1),borderWidth:2,pointRadius:0,tension:.4,fill:true},
     {label:'Mes anterior',data:acAnt,borderColor:'#4A9EFF',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.4,borderDash:[4,3]},
   ]},options:{...chartDefaults(),plugins:{...chartDefaults().plugins,legend:{display:true,labels:{color:textColor,font:{size:10},boxWidth:10}}}}});
+} catch(e){ console.warn("renderChartIngresos:", e.message); }
 }
-
 function renderChartPacNuevos(){
+  try{
   const ctx=document.getElementById('chartPacNuevos')?.getContext('2d'); if(!ctx) return;
   // Últimos 6 meses
   const meses=[]; const datos=[];
@@ -830,9 +845,10 @@ function renderChartPacNuevos(){
     borderColor:datos.map((_,i)=>i===5?'#00C2A8':'rgba(0,194,168,.5)'),
     borderWidth:1,borderRadius:4,
   }]},options:{...chartDefaults(),scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},stepSize:1}}}}});
+} catch(e){ console.warn("renderChartPacNuevos:", e.message); }
 }
-
 function renderChartTratamientos(){
+  try{
   const ctx=document.getElementById('chartTratamientos')?.getContext('2d'); if(!ctx) return;
   // Agrupar ingresos por tipo de tratamiento
   const map={};
@@ -854,8 +870,8 @@ function renderChartTratamientos(){
       }
     }
   });
+} catch(e){ console.warn("renderChartTratamientos:", e.message); }
 }
-
 function renderFrecuentes(){
   const el=document.getElementById('frecuentesList'); if(!el) return;
   // Contar citas por paciente este mes
@@ -915,6 +931,7 @@ function renderEmbudo(){
 }
 
 function renderChartDias(){
+  try{
   const ctx=document.getElementById('chartDias')?.getContext('2d'); if(!ctx) return;
   const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const counts=Array(7).fill(0);
@@ -928,9 +945,8 @@ function renderChartDias(){
     borderColor:counts.map((v,i)=>v===Math.max(...counts)?'#00C2A8':'rgba(0,194,168,.4)'),
     borderWidth:1,borderRadius:6,
   }]},options:{...chartDefaults(),scales:{x:{grid:{display:false},ticks:{color:textColor,font:{size:11}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},stepSize:1}}}}});
+} catch(e){ console.warn("renderChartDias:", e.message); }
 }
-
-// ── CÁLCULOS ──────────────────────────────────────────────
 function calcCobradoMes(offset=0){
   const d=new Date(); d.setMonth(d.getMonth()+offset);
   const ym=d.toISOString().slice(0,7);
