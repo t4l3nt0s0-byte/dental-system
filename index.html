@@ -934,60 +934,6 @@ window.abrirEstadoPrevio = function(citaId, paciente, hora, fecha){
   openModal('modalFinCita');
 };
 
-// ── ABRIR MODAL DE FINALIZAR EN CONSULTA ─────────────────
-// (restaura opciones completas: completado, se extiende, etc. + pausa doctor)
-window.abrirFinalizarConsulta = function(id, paciente, trat, tiempoRealMin, durEstMin){
-  citaActualId = id;
-  const infoEl = document.getElementById('finCitaInfo');
-  if(infoEl) infoEl.innerHTML =
-    '<div style="font-weight:700;color:var(--text);font-size:.92rem;margin-bottom:6px">👤 '+paciente+'</div>'+
-    '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted)">'+
-    '<span>🦷 '+(trat||'Sin tratamiento')+'</span>'+
-    '<span>⏱ Estimado: '+fmtDur(durEstMin)+'</span>'+
-    (tiempoRealMin>0?'<span style="color:var(--teal)">⏳ Real: <strong>'+fmtDur(tiempoRealMin)+'</strong></span>':'')+
-    '</div>';
-
-  // Restaurar opciones de estado para cita EN CONSULTA
-  document.getElementById('estadoGrid').innerHTML = `
-    <div class="opt-estado" data-val="Completado"
-      style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
-      <div style="font-size:1.3rem;margin-bottom:4px">✅</div>
-      <div style="font-size:.78rem;font-weight:700;color:var(--teal)">Completado</div>
-      <div style="font-size:.63rem;color:var(--text-dim)">Cita realizada</div>
-    </div>
-    <div class="opt-estado" data-val="Extendido"
-      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
-      <div style="font-size:1.3rem;margin-bottom:4px">⏰</div>
-      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Cita se extiende</div>
-      <div style="font-size:.63rem;color:var(--text-dim)">Complicaciones</div>
-    </div>
-    <div class="opt-estado" data-val="No Asistió"
-      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
-      <div style="font-size:1.3rem;margin-bottom:4px">❌</div>
-      <div style="font-size:.78rem;font-weight:700;color:var(--text)">No asistió</div>
-      <div style="font-size:.63rem;color:var(--text-dim)">Sin aviso</div>
-    </div>
-    <div class="opt-estado" data-val="Cancelado"
-      style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .15s">
-      <div style="font-size:1.3rem;margin-bottom:4px">🚫</div>
-      <div style="font-size:.78rem;font-weight:700;color:var(--text)">Cancelado</div>
-      <div style="font-size:.63rem;color:var(--text-dim)">El paciente canceló</div>
-    </div>`;
-
-  // Mostrar tiempo extra y pausa doctor
-  const extraWrap = document.getElementById('tiempoExtraWrap');
-  if(extraWrap) extraWrap.style.display='none'; // se muestra al seleccionar Extendido
-  const pausaGrid = document.getElementById('pausaGrid');
-  const pausaLabel = pausaGrid?.previousElementSibling;
-  if(pausaGrid){ pausaGrid.style.display='grid'; }
-  if(pausaLabel){ pausaLabel.style.display='block'; }
-
-  _estadoSeleccionado = 'Completado';
-  _pausaSeleccionada  = '';
-  initModalEvents();
-  document.getElementById('finCitaNotas').value='';
-  openModal('modalFinCita');
-};
 
 // ── INICIAR TRATAMIENTO (manual, desde próximo turno) ────
 window.iniciarTratamiento = async function(citaId, paciente){
@@ -1049,72 +995,6 @@ window.marcarEspera = async function(id) {
     renderTurno(); renderCitasHoy();
   } catch(e) { showToast('Error: '+e.message,'error'); }
 };
-
-
-
-window.confirmarFinCita = async function() {
-  const estado = _estadoSeleccionado;
-  const pausa  = _pausaSeleccionada;
-  const notas  = document.getElementById('finCitaNotas').value.trim();
-  const btn    = document.getElementById('btnConfirmFinCita');
-  btn.disabled = true; btn.textContent = 'Guardando...';
-  try {
-    // Tiempo real de la consulta
-    const est   = _consultasActivas[id];
-    const trMs  = est ? Math.max(0,new Date()-est.inicioRealDate) : 0;
-    const trMin = Math.floor(trMs/60000);
-    const ahoraStr = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-
-    await fsUpdate('citas', citaActualId, {
-      estado, notas,
-      finalizadoEn:  ahoraStr,
-      tiempoRealMin: trMin,
-      pausaDoctor:   pausa,
-      actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    // Alerta visual de pausa del doctor
-    const pausaMsgs = {
-      'baño':   '🚻 Doctor en pausa — Regresa pronto',
-      'comida': '🍽️ Doctor salió a comer',
-      'salida': '🏠 Doctor finalizó su jornada por hoy',
-      '':       '▶️ Listo para el siguiente paciente',
-    };
-    const pausaMsg = pausaMsgs[pausa]||'';
-
-    const iconos = {'Completado':'✅','En sala de espera':'🪑','No Asistió':'❌','Cancelado':'🚫'};
-    showToast((iconos[estado]||'📋')+' '+estado+(trMin>0?' · Duración real: '+fmtDur(trMin):''),'success');
-
-    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaActualId?{...c,estado,notas,tiempoRealMin:trMin}:c);
-
-    // Resetear estado de consulta
-    if(_consultaTimer){ clearInterval(_consultaTimer); _consultaTimer=null; }
-    _inicioRealDate = null;
-    _inicioRealMin  = null;
-    _citaEnCursoId  = null;
-
-    closeModal('modalFinCita');
-
-    // Mostrar banner de pausa si aplica
-    if(pausa){
-      const pausaBanner = document.getElementById('pausaBanner');
-      if(pausaBanner){
-        pausaBanner.textContent = pausaMsg;
-        pausaBanner.style.display = 'block';
-        // Auto-ocultar después de 5 min si es baño
-        if(pausa==='baño') setTimeout(()=>{ pausaBanner.style.display='none'; }, 300000);
-      }
-    }
-
-    // Activar siguiente paciente automáticamente
-    renderEnConsulta();
-    renderTurno();
-    renderCitasHoy();
-    _pausaSeleccionada = '';
-  } catch(e) { showToast('Error: '+e.message,'error'); }
-  btn.disabled = false; btn.textContent = '✅ Confirmar';
-};
-
 // ── CITAS HOY ─────────────────────────────────────────────
 function renderCitasHoy(){
   const list=document.getElementById('citasHoyList'); if(!list) return;
@@ -1539,38 +1419,36 @@ function initModalEvents(){
   const btnCerrar   = document.getElementById('btnCerrarFinCita');
   const btnCancelar = document.getElementById('btnCancelarFinCita');
   const btnConfirm  = document.getElementById('btnConfirmFinCita');
-  if(btnCerrar)   btnCerrar.addEventListener('click',   ()=>closeModal('modalFinCita'));
-  if(btnCancelar) btnCancelar.addEventListener('click', ()=>closeModal('modalFinCita'));
-  if(btnConfirm)  btnConfirm.addEventListener('click',  confirmarFinCita);
+  if(btnCerrar)   btnCerrar.onclick   = ()=>closeModal('modalFinCita');
+  if(btnCancelar) btnCancelar.onclick = ()=>closeModal('modalFinCita');
+  if(btnConfirm)  btnConfirm.onclick  = confirmarFinCita;
 
-  // Opciones de estado de la cita
+  // Opciones de estado — usar onclick para evitar listeners acumulados
   document.querySelectorAll('.opt-estado').forEach(el=>{
-    el.addEventListener('click', function(){
+    el.onclick = function(){
       const val = this.dataset.val;
       _estadoSeleccionado = val;
-      // Reset todos
       document.querySelectorAll('.opt-estado').forEach(e=>{
         e.style.border     = '2px solid var(--border)';
         e.style.background = 'transparent';
         const lbl = e.querySelector('div:nth-child(2)');
         if(lbl) lbl.style.color = 'var(--text)';
       });
-      // Activar el seleccionado
-      const colors = {'Completado':'var(--teal)','Extendido':'var(--gold)','No Asistió':'var(--red)','Cancelado':'var(--red)'};
-      const bgs    = {'Completado':'var(--teal-dim)','Extendido':'rgba(244,185,66,.12)','No Asistió':'rgba(255,92,92,.1)','Cancelado':'rgba(255,92,92,.1)'};
+      const colors = {'Completado':'var(--teal)','Extendido':'var(--gold)','No Asistió':'var(--red)','Cancelado':'var(--red)','En sala de espera':'var(--teal)','Reagendar':'var(--blue)','En camino':'var(--blue)','Agendado':'var(--text-muted)'};
+      const bgs    = {'Completado':'var(--teal-dim)','Extendido':'rgba(244,185,66,.12)','No Asistió':'rgba(255,92,92,.1)','Cancelado':'rgba(255,92,92,.1)','En sala de espera':'var(--teal-dim)','Reagendar':'rgba(74,158,255,.12)','En camino':'rgba(74,158,255,.12)','Agendado':'var(--surface2)'};
       this.style.border     = '2px solid '+(colors[val]||'var(--teal)');
       this.style.background = bgs[val]||'var(--teal-dim)';
       const lbl2 = this.querySelector('div:nth-child(2)');
       if(lbl2) lbl2.style.color = colors[val]||'var(--teal)';
-      // Mostrar campo de tiempo extra si es "Extendido"
+      // Mostrar campo tiempo extra solo para Extendido
       const extraWrap = document.getElementById('tiempoExtraWrap');
       if(extraWrap) extraWrap.style.display = val==='Extendido'?'block':'none';
-    });
+    };
   });
 
-  // Opciones de pausa del doctor
+  // Opciones de pausa doctor
   document.querySelectorAll('.opt-pausa').forEach(el=>{
-    el.addEventListener('click', function(){
+    el.onclick = function(){
       const val = this.dataset.val;
       _pausaSeleccionada = val;
       document.querySelectorAll('.opt-pausa').forEach(e=>{
@@ -1583,7 +1461,7 @@ function initModalEvents(){
       this.style.background = 'var(--teal-dim)';
       const lbl3 = this.querySelector('div:nth-child(2)');
       if(lbl3) lbl3.style.color = 'var(--teal)';
-    });
+    };
   });
 }
 
