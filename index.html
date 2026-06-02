@@ -242,23 +242,39 @@ initSession('any').then(async session=>{
 
   // Fecha en topbar
   const now=new Date();
-  document.getElementById('topbarFecha').textContent=now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  const fechaEl=document.getElementById('topbarFecha');
+  if(fechaEl) fechaEl.textContent=now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 
-  // Cargar datos en paralelo
-  const [citas,abonos,pacientes,trats,cotizaciones]=await Promise.all([
-    fsGetAll('citas'),
-    fsGetAll('abonos'),
-    fsGetAll('pacientes'),
-    fsGetAll('tratamientos'),
-    fsGetAll('cotizaciones'),
+  // Cargar datos con manejo individual de errores
+  const safeGet = async (col) => { try { return await fsGetAll(col); } catch(e) { console.warn('No se pudo cargar:', col, e.message); return []; } };
+
+  const [citas,abonos,pacientes,trats,cotizaciones] = await Promise.all([
+    safeGet('citas'),
+    safeGet('abonos'),
+    safeGet('pacientes'),
+    safeGet('tratamientos'),
+    safeGet('cotizaciones'),
   ]);
   ALL_CITAS=citas; ALL_ABONOS=abonos; ALL_PACIENTES=pacientes; ALL_TRATS=trats; ALL_COTIZACIONES=cotizaciones;
 
   // Meta mensual
-  const cSnap=await db.collection('clinicas').doc(clinica.id).get();
-  metaMensual=cSnap.data()?.metaMensual||0;
+  try {
+    const cSnap=await db.collection('clinicas').doc(clinica.id).get();
+    metaMensual=cSnap.data()?.metaMensual||0;
+  } catch(e) { metaMensual=0; }
 
-  renderDashboard(clinica,user);
+  try {
+    renderDashboard(clinica,user);
+  } catch(e) {
+    console.error('Error en renderDashboard:', e);
+    document.getElementById('mainContent').innerHTML=
+      '<div style="padding:40px;text-align:center;color:#E8F0F8">' +
+      '<div style="font-size:2rem;margin-bottom:12px">⚠️</div>' +
+      '<div style="font-size:1rem;font-weight:600;margin-bottom:8px">Error al cargar el dashboard</div>' +
+      '<div style="font-size:.82rem;color:rgba(232,240,248,.5);margin-bottom:16px">' + e.message + '</div>' +
+      '<button onclick="location.reload()" style="background:#00C2A8;color:#060D14;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700">🔄 Recargar</button>' +
+      '</div>';
+  }
   startClock();
 });
 
@@ -321,7 +337,7 @@ function renderDashboard(clinica,user){
     </div>
     <div class="kpi-card blue">
       <span class="kpi-icon">✅</span>
-      <div class="kpi-value" style="color:var(--blue)">${ALL_TRATS.filter(t=>t.estado==='Liquidado'&&(t.updatedAt||t.creadoEn||'').slice(0,7)===mesActual()).length}/${ALL_TRATS.filter(t=>(t.creadoEn||'').slice(0,7)===mesActual()).length||0}</div>
+      <div class="kpi-value" style="color:var(--blue)">${(()=>{try{const m=mesActual();const liq=ALL_TRATS.filter(t=>t.estado==='Liquidado'&&(t.creadoEn||'').substring(0,7)===m).length;const tot=ALL_TRATS.filter(t=>(t.creadoEn||'').substring(0,7)===m).length;return liq+'/'+tot;}catch(e){return '0/0';}})()}</div>
       <div class="kpi-label">Liquidados este mes</div>
       <div class="kpi-delta neutral">Tiq. medio: ${fmtMXN(tiqMedio)}</div>
     </div>
@@ -987,20 +1003,23 @@ function calcCobradoMes(offset=0){
   return ALL_ABONOS.filter(a=>a.fecha?.startsWith(ym)).reduce((s,a)=>s+Number(a.monto||0),0);
 }
 function calcKPIs(){
-  return{
-    cobradoMes:calcCobradoMes(0),
-    cobradoAnt:calcCobradoMes(-1),
-    adeudoTotal:ALL_TRATS.reduce((s,t)=>s+Number(t.saldo||0),0),
-    tiqMedio:ALL_ABONOS.filter(a=>a.fecha?.startsWith(mesActual())).length>0
-      ?Math.round(calcCobradoMes(0)/ALL_ABONOS.filter(a=>a.fecha?.startsWith(mesActual())).length):0,
-  };
+  try {
+    const cobradoMes=calcCobradoMes(0);
+    const cobradoAnt=calcCobradoMes(-1);
+    const adeudoTotal=ALL_TRATS.reduce((s,t)=>s+Number(t.saldo||0),0);
+    const abonosMes=ALL_ABONOS.filter(a=>a.fecha&&a.fecha.startsWith(mesActual()));
+    const tiqMedio=abonosMes.length>0?Math.round(cobradoMes/abonosMes.length):0;
+    return{cobradoMes,cobradoAnt,adeudoTotal,tiqMedio};
+  } catch(e){ return{cobradoMes:0,cobradoAnt:0,adeudoTotal:0,tiqMedio:0}; }
 }
 function calcExtra(){
-  return{
-    citasHoy:ALL_CITAS.filter(c=>c.fecha===hoy()).length,
-    nuevosMes:ALL_PACIENTES.filter(p=>(p.creadoEn||p.alta||'').slice?.(0,7)===mesActual()).length,
-    nuevosAnt:ALL_PACIENTES.filter(p=>(p.creadoEn||p.alta||'').slice?.(0,7)===mesAnterior()).length,
-  };
+  try {
+    return{
+      citasHoy:ALL_CITAS.filter(c=>c.fecha===hoy()).length,
+      nuevosMes:ALL_PACIENTES.filter(p=>{try{return (p.creadoEn||p.alta||'').substring(0,7)===mesActual();}catch(e){return false;}}).length,
+      nuevosAnt:ALL_PACIENTES.filter(p=>{try{return (p.creadoEn||p.alta||'').substring(0,7)===mesAnterior();}catch(e){return false;}}).length,
+    };
+  } catch(e){ return{citasHoy:0,nuevosMes:0,nuevosAnt:0}; }
 }
 function greetingText(){
   const h=new Date().getHours();
