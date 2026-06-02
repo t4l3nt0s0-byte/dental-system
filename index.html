@@ -768,11 +768,14 @@ function renderTurno(){
         </div>
 
         <!-- Botones -->
-        <div style="display:flex;flex-direction:column;gap:5px;min-width:120px;flex-shrink:0">
-          ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;padding:4px 8px" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬</button>`:''}
-          ${proxima.estado!=='Confirmado'&&!isEspera?`<button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="confirmarCita('${proxima.id}')">✓ Confirmar</button>`:''}
+        <div style="display:flex;flex-direction:column;gap:5px;min-width:130px;flex-shrink:0">
+          ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;padding:4px 8px" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬 WA</button>`:''}
           ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:var(--gold);padding:4px 8px" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
-          <button class="btn btn-primary btn-sm" style="padding:4px 8px" onclick="abrirFinCita('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${(proxima.tratamiento||'').replace(/'/g,"\\'")}')">📋 Estado</button>
+          <button class="btn btn-primary btn-sm" style="padding:5px 8px;font-size:.75rem;font-weight:700"
+            onclick="iniciarTratamiento('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}')">
+            ▶️ Iniciar tratamiento
+          </button>
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:.7rem" onclick="abrirFinCita('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${(proxima.tratamiento||'').replace(/'/g,"\\'")}')">📋 Estado</button>
         </div>
       </div>
     </div>`;
@@ -793,35 +796,12 @@ function renderTurno(){
 window.asignarDoctorTurno = async function(citaId, doctorNombre){
   if(!citaId) return;
   try{
-    const cita = ALL_CITAS.find(c=>c.id===citaId);
-    if(!cita) return;
-    const horaActual = getHoraMin();
-    const [h,m]      = (cita.hora||'00:00').split(':').map(Number);
-    const minCita    = h*60+m;
-
-    // Si ya llegó la hora → pasar a "En tratamiento" al asignar doctor
-    const update = { doctor: doctorNombre || null };
-    if(doctorNombre && minCita <= horaActual && !['Completado','No Asistió','Cancelado'].includes(cita.estado)){
-      update.estado         = 'En tratamiento';
-      update.inicioRealMin  = horaActual;
-      update.inicioRealHora = String(Math.floor(horaActual/60)).padStart(2,'0')+':'+String(horaActual%60).padStart(2,'0');
-    }
-
-    await fsUpdate('citas', citaId, update);
-    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId?{...c,...update}:c);
-
+    await fsUpdate('citas', citaId, {doctor: doctorNombre || null});
+    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId?{...c,doctor:doctorNombre}:c);
     if(doctorNombre){
-      const msg = update.estado==='En tratamiento'
-        ? 'Dr. '+doctorNombre+' asignado — pasando a consulta ▶️'
-        : 'Dr. '+doctorNombre+' asignado ✓';
-      showToast(msg,'success');
+      showToast('👨‍⚕️ Dr. '+doctorNombre+' asignado — presiona ▶️ para iniciar','success');
     }
-
-    // Re-renderizar inmediatamente
-    renderEnConsulta();
     renderTurno();
-    renderCitasHoy();
-    renderChartDiaHoy();
   }catch(e){ showToast('Error: '+e.message,'error'); }
 };
 window.abrirFinCita = function(id, paciente, trat) {
@@ -844,6 +824,42 @@ window.abrirFinCita = function(id, paciente, trat) {
   selEstado('Completado');
   document.getElementById('finCitaNotas').value = cita?.notas || '';
   openModal('modalFinCita');
+};
+
+// ── INICIAR TRATAMIENTO (manual, desde próximo turno) ────
+window.iniciarTratamiento = async function(citaId, paciente){
+  const cita = ALL_CITAS.find(c=>c.id===citaId);
+  if(!cita){ showToast('Cita no encontrada','error'); return; }
+
+  // Validar que tenga doctor asignado
+  if(!cita.doctor){
+    showToast('⚠️ Asigna un doctor antes de iniciar el tratamiento','error');
+    // Hacer parpadear el selector de doctor
+    const sel = document.getElementById('docSelect_'+citaId);
+    if(sel){ sel.style.border='2px solid var(--red)'; setTimeout(()=>sel.style.border='',2000); }
+    return;
+  }
+
+  const horaActual = getHoraMin();
+  const inicioHora = String(Math.floor(horaActual/60)).padStart(2,'0')+':'+String(horaActual%60).padStart(2,'0');
+
+  try{
+    await fsUpdate('citas', citaId, {
+      estado:        'En tratamiento',
+      inicioRealMin:  horaActual,
+      inicioRealHora: inicioHora,
+    });
+    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId
+      ?{...c, estado:'En tratamiento', inicioRealMin:horaActual, inicioRealHora:inicioHora}
+      :c
+    );
+    showToast('▶️ Tratamiento iniciado — '+paciente,'success');
+    // Re-renderizar: aparece en "En consulta", sale de "Próximo turno"
+    renderEnConsulta();
+    renderTurno();
+    renderCitasHoy();
+    renderChartDiaHoy();
+  }catch(e){ showToast('Error: '+e.message,'error'); }
 };
 
 window.confirmarCita = async function(id) {
