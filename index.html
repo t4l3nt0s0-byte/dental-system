@@ -202,7 +202,7 @@
         </div>
       </div>
 
-      <div class="form-group" style="margin-top:14px">
+      <div class="form-group" style="margin-top:14px;display:none" id="pausaSection">
         <label class="form-label">🔔 Estado del doctor después de esta cita</label>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="pausaGrid">
           <div class="opt-pausa" data-val="" style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .15s">
@@ -917,13 +917,11 @@ window.abrirEstadoPrevio = function(citaId, paciente, hora, fecha){
       <div style="font-size:.63rem;color:var(--text-dim)">Sin cambios</div>
     </div>`;
 
-  // Ocultar tiempo extra y pausa (no aplican aquí)
+  // Ocultar tiempo extra y sección de pausa (no aplican antes de consulta)
   const extraWrap = document.getElementById('tiempoExtraWrap');
   if(extraWrap) extraWrap.style.display='none';
-  const pausaGrid = document.getElementById('pausaGrid');
-  const pausaLabel = pausaGrid?.previousElementSibling;
-  if(pausaGrid){ pausaGrid.style.display='none'; }
-  if(pausaLabel){ pausaLabel.style.display='none'; }
+  const pausaSection = document.getElementById('pausaSection');
+  if(pausaSection) pausaSection.style.display='none';
 
   // Seleccionar primera opción
   _estadoSeleccionado = 'En sala de espera';
@@ -1469,6 +1467,11 @@ function initModalEvents(){
 function resetModal(){
   _estadoSeleccionado = 'Completado';
   _pausaSeleccionada  = '';
+  // Ocultar pausa por defecto — solo se muestra desde abrirFinalizarConsulta
+  const ps = document.getElementById('pausaSection');
+  if(ps) ps.style.display='none';
+  const ew = document.getElementById('tiempoExtraWrap');
+  if(ew) ew.style.display='none';
   // Estado: activar Completado
   document.querySelectorAll('.opt-estado').forEach(e=>{
     const isSel = e.dataset.val==='Completado';
@@ -1503,6 +1506,9 @@ window.abrirFinalizarConsulta = function(id, paciente, trat, tiempoRealMin, durE
     (tiempoRealMin>0?'<span style="color:var(--teal)">⏳ Tiempo real: <strong>'+fmtDur(tiempoRealMin)+'</strong></span>':'')+
     '</div>';
   resetModal();
+  // Mostrar sección de pausa del doctor (solo al finalizar consulta activa)
+  const pausaSection = document.getElementById('pausaSection');
+  if(pausaSection) pausaSection.style.display='block';
   openModal('modalFinCita');
 };
 
