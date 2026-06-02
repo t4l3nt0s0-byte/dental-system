@@ -368,90 +368,22 @@ function renderDashboard(clinica,user){
     <div class="greeting-sub">${clinica.nombre||'DentalOS'} · ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
   </div>
 
-  <!-- 1. EN CONSULTA AHORA (nuevo) -->
+  <!-- 1. EN CONSULTA AHORA -->
   <div id="enConsultaSection"></div>
 
   <!-- 2. PRÓXIMO TURNO -->
   <div id="turnoSection"></div>
 
-  <!-- 3. CITAS DE HOY + ADEUDOS -->
-  <div class="dash-grid" style="margin-bottom:20px">
-    <div class="dash-card">
-      <div class="card-title"><span>📅 CITAS DE HOY</span><a href="agenda.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver agenda →</a></div>
-      <div id="citasHoyList"></div>
+  <!-- 3. CITAS DE HOY -->
+  <div class="dash-card" style="margin-bottom:20px">
+    <div class="card-title">
+      <span>📅 CITAS DE HOY</span>
+      <a href="agenda.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver agenda completa →</a>
     </div>
-    <div class="dash-card">
-      <div class="card-title"><span>❗ MAYORES ADEUDOS</span><a href="abonos.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver todos →</a></div>
-      <div id="adeudosList"></div>
-    </div>
+    <div id="citasHoyList"></div>
   </div>
 
-  <!-- 4. META MENSUAL -->
-  ${isAdmin?`<div id="metaSection"></div>`:''}
-
-  <!-- 5. KPIs -->
-  <div class="kpi-grid" style="margin-bottom:20px">
-    <div class="kpi-card green">
-      <span class="kpi-icon">💵</span>
-      <div class="kpi-value" style="color:var(--teal)">${fmtMXN(cobradoMes)}</div>
-      <div class="kpi-label">Total cobrado este mes</div>
-      ${varIngresos!==null?`<div class="kpi-delta ${varIngresos>=0?'up':'down'}">${varIngresos>=0?'▲':'▼'} ${Math.abs(varIngresos)}% vs mes anterior</div>`:'<div class="kpi-delta neutral">Primer mes</div>'}
-    </div>
-    <div class="kpi-card gold">
-      <span class="kpi-icon">❗</span>
-      <div class="kpi-value" style="color:var(--gold)">${fmtMXN(adeudoTotal)}</div>
-      <div class="kpi-label">Saldo pendiente total</div>
-      <div class="kpi-delta neutral">${ALL_TRATS.filter(t=>Number(t.saldo||0)>0).length} tratamientos con adeudo</div>
-    </div>
-    <div class="kpi-card blue">
-      <span class="kpi-icon">✅</span>
-      <div class="kpi-value" style="color:var(--blue)">${(()=>{try{const m=mesActual();const liq=ALL_TRATS.filter(t=>t.estado==='Liquidado'&&(t.creadoEn||'').substring(0,7)===m).length;const tot=ALL_TRATS.filter(t=>(t.creadoEn||'').substring(0,7)===m).length;return liq+'/'+tot;}catch(e){return '0/0';}})()}</div>
-      <div class="kpi-label">Liquidados este mes</div>
-      <div class="kpi-delta neutral">Tiq. medio: ${fmtMXN(tiqMedio)}</div>
-    </div>
-    <div class="kpi-card purple">
-      <span class="kpi-icon">👤</span>
-      <div class="kpi-value" style="color:var(--purple,#A78BFA)">${ALL_PACIENTES.length}</div>
-      <div class="kpi-label">Pacientes registrados</div>
-      <div class="kpi-delta ${varPacientes!==null&&varPacientes>=0?'up':'down'}">${nuevosMes} nuevos este mes ${varPacientes!==null?`${varPacientes>=0?'▲':'▼'}${Math.abs(varPacientes)}%`:''}</div>
-    </div>
-  </div>
-
-  <!-- 6. GRÁFICAS ADMIN -->
-  ${isAdmin?`
-  <div class="dash-grid" style="margin-bottom:16px">
-    <div class="dash-card">
-      <div class="card-title"><span>📈 INGRESOS DIARIOS — MES ACTUAL VS ANTERIOR</span></div>
-      <div class="chart-wrap"><canvas id="chartIngresos"></canvas></div>
-    </div>
-    <div class="dash-card">
-      <div class="card-title"><span>👤 PACIENTES NUEVOS POR MES</span></div>
-      <div class="chart-wrap"><canvas id="chartPacNuevos"></canvas></div>
-    </div>
-  </div>
-  <div class="dash-grid" style="margin-bottom:16px">
-    <div class="dash-card">
-      <div class="card-title"><span>🦷 TOP 5 TRATAMIENTOS POR INGRESO</span></div>
-      <div class="chart-wrap"><canvas id="chartTratamientos"></canvas></div>
-    </div>
-    <div class="dash-card">
-      <div class="card-title"><span>🏆 PACIENTES MÁS FRECUENTES</span></div>
-      <div id="frecuentesList"></div>
-    </div>
-  </div>
-  <div class="dash-grid" style="margin-bottom:16px">
-    <div class="dash-card">
-      <div class="card-title"><span>🔽 EMBUDO COMERCIAL</span><span style="font-size:.65rem;color:var(--text-dim)">${mesActual()}</span></div>
-      <div id="embudoSection"></div>
-    </div>
-    <div class="dash-card">
-      <div class="card-title"><span>📅 CITAS POR DÍA DE LA SEMANA</span></div>
-      <div class="chart-wrap"><canvas id="chartDias"></canvas></div>
-    </div>
-  </div>
-  `:''}
-
-  <!-- 7. ACCESO RÁPIDO -->
+  <!-- ACCESO RÁPIDO -->
   <div class="dash-card" style="margin-bottom:16px">
     <div class="card-title"><span>⚡ ACCESO RÁPIDO</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -463,7 +395,7 @@ function renderDashboard(clinica,user){
         ['recibo.html','🧾','Recibo'],
         ['estado-cuenta.html','📄','Estado cuenta'],
         ['recordatorios.html','💬','Recordatorios'],
-        ['reportes.html','📊','Reportes'],
+        ['metricas.html','📊','Ver métricas'],
       ].map(([href,icon,label])=>`<a href="${href}" class="btn btn-ghost btn-sm" style="flex:1;min-width:100px;justify-content:center">${icon} ${label}</a>`).join('')}
     </div>
   </div>
@@ -472,18 +404,8 @@ function renderDashboard(clinica,user){
   renderEnConsulta();
   renderTurno();
   renderCitasHoy();
-  renderAdeudos();
-  if(isAdmin){
-    try{ renderMeta(); } catch(e){ console.warn('renderMeta:',e.message); }
-    try{ renderChartIngresos(); } catch(e){ console.warn('chartIngresos:',e.message); }
-    try{ renderChartPacNuevos(); } catch(e){ console.warn('chartPac:',e.message); }
-    try{ renderChartTratamientos(); } catch(e){ console.warn('chartTrat:',e.message); }
-    try{ renderFrecuentes(); } catch(e){ console.warn('frecuentes:',e.message); }
-    try{ renderEmbudo(); } catch(e){ console.warn('embudo:',e.message); }
-    try{ renderChartDias(); } catch(e){ console.warn('chartDias:',e.message); }
-  }
-  // Actualizar en consulta cada minuto
-  setInterval(()=>{ renderEnConsulta(); renderTurno(); }, 60000);
+  // Actualizar turno cada minuto
+  setInterval(()=>{ renderEnConsulta(); renderTurno(); renderCitasHoy(); }, 60000);
 }
 
 // Duraciones estimadas por tratamiento (minutos)

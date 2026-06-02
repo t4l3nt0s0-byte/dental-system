@@ -2,45 +2,52 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Métricas</title>
+<title>DentalOS · Métricas</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-.filters-bar{display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px}
-.chart-title{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-/* BAR */
-.bar-chart{display:flex;flex-direction:column;gap:9px}
-.bar-row{display:flex;align-items:center;gap:10px}
-.bar-label{font-size:.75rem;color:var(--text-muted);min-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bar-wrap{flex:1;height:18px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden}
-.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--teal),var(--blue));transition:width .8s cubic-bezier(.4,0,.2,1)}
-.bar-val{font-family:var(--font-mono);font-size:.72rem;color:var(--text-muted);min-width:80px;text-align:right}
-/* DONUT */
-.donut-wrap{display:flex;align-items:center;gap:20px;justify-content:center;margin-top:8px}
-.donut{width:120px;height:120px;flex-shrink:0}
-.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:.76rem}
-.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.legend-label{color:var(--text-muted);flex:1}
-.legend-val{font-family:var(--font-mono);color:var(--text)}
-/* LINE CHART */
-.line-chart{height:140px;position:relative;overflow:hidden}
-.line-chart svg{width:100%;height:100%}
-/* TIMELINE */
-.tl-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-.tl-item:last-child{border-bottom:none}
-.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
-.tl-content{flex:1}
-.tl-title{font-size:.83rem;font-weight:500;color:var(--text);margin-bottom:2px}
-.tl-sub{font-size:.7rem;color:var(--text-muted)}
-.tl-amount{font-family:var(--font-mono);font-size:.83rem;color:var(--teal);flex-shrink:0}
-/* Periodo selector */
-.periodo-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:8px;padding:4px}
-.periodo-tab{padding:5px 14px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text-muted);transition:all .15s}
-.periodo-tab.active{background:var(--teal);color:#060D14}
-@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden}
+.kpi-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.kpi-card.green::after{background:var(--teal)}
+.kpi-card.gold::after{background:var(--gold)}
+.kpi-card.blue::after{background:var(--blue)}
+.kpi-card.purple::after{background:#A78BFA}
+.kpi-icon{font-size:1.4rem;margin-bottom:8px;display:block}
+.kpi-value{font-family:var(--font-mono);font-size:1.55rem;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi-label{font-size:.68rem;color:var(--text-muted);font-weight:600;letter-spacing:.04em}
+.kpi-delta{font-size:.68rem;margin-top:6px}
+.kpi-delta.up{color:#34D399}.kpi-delta.down{color:#FF5C5C}.kpi-delta.neutral{color:var(--text-dim)}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;overflow:hidden}
+.card-title{font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.card-title span:first-child{color:var(--teal)}
+.chart-wrap{position:relative;height:200px}
+.meta-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:20px}
+.meta-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.meta-title{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+.meta-actual{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--text)}
+.meta-target{font-family:var(--font-mono);font-size:.88rem;color:var(--text-dim)}
+.meta-pct{font-size:1.05rem;font-weight:800;padding:3px 12px;border-radius:100px}
+.progress-track{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;margin-bottom:10px}
+.progress-fill-meta{height:100%;border-radius:5px;transition:width 1s ease}
+.meta-stats{display:flex;gap:16px;flex-wrap:wrap}
+.meta-stat{font-size:.72rem;color:var(--text-muted)}
+.meta-stat strong{color:var(--text)}
+.meta-edit-btn{font-size:.68rem;cursor:pointer;color:var(--teal);background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);border-radius:6px;padding:3px 8px}
+.freq-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.freq-row:last-child{border-bottom:none}
+.freq-rank{font-family:var(--font-mono);font-size:.7rem;font-weight:700;color:var(--text-dim);min-width:18px}
+.freq-avatar{width:28px;height:28px;border-radius:50%;background:var(--teal-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.freq-name{flex:1;font-size:.78rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.freq-count{font-family:var(--font-mono);font-size:.72rem;color:var(--teal);font-weight:700}
+.adeudo-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.adeudo-row:last-child{border-bottom:none}
+.adeudo-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.empty-mini{text-align:center;padding:20px;color:var(--text-dim);font-size:.78rem}
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.dash-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -48,65 +55,90 @@
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">📈 Métricas del Consultorio</div>
+    <div class="topbar-title">📊 Métricas & Reportes</div>
     <div class="topbar-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportReporte()">📥 Exportar reporte</button>
-      <a href="reportes.html" class="btn btn-ghost btn-sm">📊 Reportes</a>
+      <a href="reportes.html" class="btn btn-ghost btn-sm">📋 Reportes detallados</a>
     </div>
   </div>
   <div class="content">
-    <div class="filters-bar">
-      <div class="periodo-tabs" id="periodoTabs">
-        <button class="periodo-tab" data-periodo="7">7 días</button>
-        <button class="periodo-tab active" data-periodo="30">30 días</button>
-        <button class="periodo-tab" data-periodo="90">3 meses</button>
-        <button class="periodo-tab" data-periodo="365">1 año</button>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
-        <input type="date" class="form-input" id="fechaDesde" style="width:160px">
-        <span style="color:var(--text-dim);font-size:.8rem">a</span>
-        <input type="date" class="form-input" id="fechaHasta" style="width:160px">
-      </div>
-    </div>
     <!-- KPIs -->
-    <div class="kpi-grid" id="kpiGrid"><div class="loader" style="grid-column:1/-1"><div class="spinner"></div>Calculando métricas...</div></div>
-    <!-- Charts row 1 -->
-    <div class="grid-2">
-      <div class="chart-card">
-        <div class="chart-title">📈 Ingresos diarios</div>
-        <div class="line-chart" id="lineChart"></div>
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card green"><div class="spinner" style="margin:8px auto"></div></div>
+      <div class="kpi-card gold"></div>
+      <div class="kpi-card blue"></div>
+      <div class="kpi-card purple"></div>
+    </div>
+
+    <!-- META MENSUAL -->
+    <div id="metaSection"></div>
+
+    <!-- FILA 1: Ingresos + Pacientes nuevos -->
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="card-title"><span>📈 INGRESOS — MES ACTUAL VS ANTERIOR</span></div>
+        <div class="chart-wrap"><canvas id="chartIngresos"></canvas></div>
       </div>
-      <div class="chart-card">
-        <div class="chart-title">💳 Estado de tratamientos</div>
-        <div class="donut-wrap">
-          <svg class="donut" viewBox="0 0 42 42" style="overflow:visible" id="donutSVG">
-            <circle cx="21" cy="21" r="15.915" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/>
-            <circle id="d-liq" cx="21" cy="21" r="15.915" fill="none" stroke="#00C2A8" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
-            <circle id="d-abo" cx="21" cy="21" r="15.915" fill="none" stroke="#F4B942" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
-            <circle id="d-pen" cx="21" cy="21" r="15.915" fill="none" stroke="#FF5C5C" stroke-width="5" stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
-          </svg>
-          <div class="donut-legend" id="donutLegend"></div>
-        </div>
+      <div class="dash-card">
+        <div class="card-title"><span>👤 PACIENTES NUEVOS POR MES</span></div>
+        <div class="chart-wrap"><canvas id="chartPacNuevos"></canvas></div>
       </div>
     </div>
-    <!-- Charts row 2 -->
-    <div class="grid-2">
-      <div class="chart-card">
-        <div class="chart-title">🦷 Facturación por tratamiento</div>
-        <div class="bar-chart" id="barChart"></div>
+
+    <!-- FILA 2: Top tratamientos + Frecuentes -->
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="card-title"><span>🦷 TOP 5 TRATAMIENTOS POR INGRESO</span></div>
+        <div class="chart-wrap"><canvas id="chartTratamientos"></canvas></div>
       </div>
-      <div class="chart-card">
-        <div class="chart-title">💵 Ingresos por forma de pago</div>
-        <div class="bar-chart" id="formaChart"></div>
+      <div class="dash-card">
+        <div class="card-title"><span>🏆 PACIENTES MÁS FRECUENTES</span></div>
+        <div id="frecuentesList"></div>
       </div>
     </div>
-    <!-- Timeline -->
-    <div class="chart-card">
-      <div class="chart-title">📋 Últimos pagos recibidos</div>
-      <div id="timeline"></div>
+
+    <!-- FILA 3: Embudo + Días semana -->
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="card-title"><span>🔽 EMBUDO COMERCIAL</span><span style="font-size:.65rem;color:var(--text-dim)" id="embudoMes"></span></div>
+        <div id="embudoSection"></div>
+      </div>
+      <div class="dash-card">
+        <div class="card-title"><span>📅 CITAS POR DÍA DE LA SEMANA</span></div>
+        <div class="chart-wrap"><canvas id="chartDias"></canvas></div>
+      </div>
+    </div>
+
+    <!-- FILA 4: Mayores adeudos -->
+    <div class="dash-card" style="margin-bottom:16px">
+      <div class="card-title">
+        <span>❗ MAYORES ADEUDOS</span>
+        <a href="abonos.html" style="font-size:.68rem;color:var(--text-dim);text-decoration:none">Ver todos →</a>
+      </div>
+      <div id="adeudosList"></div>
     </div>
   </div>
 </main>
+
+<!-- MODAL META -->
+<div class="modal-overlay" id="modalMeta">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">🎯 Configurar meta mensual</div>
+      <button class="modal-close" onclick="closeModal('modalMeta')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:16px">Define cuánto quieres cobrar este mes. Se muestra el progreso en tiempo real.</div>
+      <div class="form-group">
+        <label class="form-label">Meta de ingresos mensual (MXN)</label>
+        <input type="number" class="form-input" id="metaInput" placeholder="15000" min="1000" step="500">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalMeta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMeta()">💾 Guardar meta</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -114,147 +146,268 @@
 <script src="shared.js"></script>
 <script>
 window.CURRENT_PAGE = 'metricas';
-let allTrat=[], allAbonos=[], periodo=30;
+let ALL_CITAS=[], ALL_ABONOS=[], ALL_PACIENTES=[], ALL_TRATS=[], ALL_COTIZACIONES=[];
+let metaMensual=0;
+
+const mesActual = () => {
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+};
+const mesAnterior = () => {
+  const d=new Date(); d.setMonth(d.getMonth()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+};
+
+const gridColor = 'rgba(255,255,255,.05)';
+const textColor = 'rgba(232,240,248,.4)';
+function chartColor(hex,a){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+
+function chartDefaults(extra={}){
+  return{
+    responsive:true,maintainAspectRatio:false,
+    animation:{duration:600},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(6,13,20,.9)',titleColor:'#E8F0F8',bodyColor:'rgba(232,240,248,.7)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:10,cornerRadius:8}},
+    scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},callback:v=>fmtMXN(v).replace('MXN','')}}},
+    ...extra
+  };
+}
+
+function renderChartIngresos(){
+  try{
+  const ctx=document.getElementById('chartIngresos')?.getContext('2d'); if(!ctx) return;
+  const diasMes=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+  const labels=Array.from({length:diasMes},(_,i)=>`${i+1}`);
+  const dataAct=Array(diasMes).fill(0);
+  const dataAnt=Array(diasMes).fill(0);
+  const mes=mesActual(); const ant=mesAnterior();
+  ALL_ABONOS.forEach(a=>{
+    if(!a.fecha) return;
+    const [y,m,d]=a.fecha.split('-');
+    const ym=`${y}-${m}`;
+    const day=parseInt(d)-1;
+    if(ym===mes&&day<diasMes) dataAct[day]+=Number(a.monto||0);
+    if(ym===ant&&day<diasMes) dataAnt[day]+=Number(a.monto||0);
+  });
+  // Acumulado
+  let s1=0,s2=0;
+  const acAct=dataAct.map(v=>(s1+=v,s1));
+  const acAnt=dataAnt.map(v=>(s2+=v,s2));
+  new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Este mes',data:acAct,borderColor:'#00C2A8',backgroundColor:chartColor('#00C2A8',.1),borderWidth:2,pointRadius:0,tension:.4,fill:true},
+    {label:'Mes anterior',data:acAnt,borderColor:'#4A9EFF',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.4,borderDash:[4,3]},
+  ]},options:{...chartDefaults(),plugins:{...chartDefaults().plugins,legend:{display:true,labels:{color:textColor,font:{size:10},boxWidth:10}}}}});
+} catch(e){ console.warn("renderChartIngresos:", e.message); }
+}
+function renderChartPacNuevos(){
+  try{
+  const ctx=document.getElementById('chartPacNuevos')?.getContext('2d'); if(!ctx) return;
+  // Últimos 6 meses
+  const meses=[]; const datos=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(); d.setMonth(d.getMonth()-i);
+    const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const lbl=d.toLocaleDateString('es-MX',{month:'short',year:'2-digit'});
+    meses.push(lbl);
+    datos.push(ALL_PACIENTES.filter(p=>(p.creadoEn||p.alta||'').slice?.(0,7)===ym).length);
+  }
+  new Chart(ctx,{type:'bar',data:{labels:meses,datasets:[{
+    data:datos,
+    backgroundColor:datos.map((_,i)=>i===5?'#00C2A8':'rgba(0,194,168,.3)'),
+    borderColor:datos.map((_,i)=>i===5?'#00C2A8':'rgba(0,194,168,.5)'),
+    borderWidth:1,borderRadius:4,
+  }]},options:{...chartDefaults(),scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},stepSize:1}}}}});
+} catch(e){ console.warn("renderChartPacNuevos:", e.message); }
+}
+function renderChartTratamientos(){
+  try{
+  const ctx=document.getElementById('chartTratamientos')?.getContext('2d'); if(!ctx) return;
+  // Agrupar ingresos por tipo de tratamiento
+  const map={};
+  ALL_ABONOS.forEach(a=>{
+    if(!a.tratamiento) return;
+    map[a.tratamiento]=(map[a.tratamiento]||0)+Number(a.monto||0);
+  });
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(!sorted.length){return;}
+  const labels=sorted.map(([k])=>k.length>18?k.slice(0,16)+'…':k);
+  const data=sorted.map(([,v])=>v);
+  const colors=['#00C2A8','#4A9EFF','#F4B942','#A78BFA','#34D399'];
+  new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors.map(c=>chartColor(c,.85)),borderColor:colors,borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},
+      plugins:{legend:{display:true,position:'right',labels:{color:textColor,font:{size:10},boxWidth:10,padding:8}},
+        tooltip:{backgroundColor:'rgba(6,13,20,.9)',titleColor:'#E8F0F8',bodyColor:'rgba(232,240,248,.7)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:10,cornerRadius:8,
+          callbacks:{label:ctx=>`${ctx.label}: ${fmtMXN(ctx.parsed)}`}
+        }
+      }
+    }
+  });
+} catch(e){ console.warn("renderChartTratamientos:", e.message); }
+}
+function renderFrecuentes(){
+  const el=document.getElementById('frecuentesList'); if(!el) return;
+  // Contar citas por paciente este mes
+  const map={};
+  ALL_CITAS.filter(c=>c.fecha?.slice(0,7)===mesActual()&&c.estado!=='Cancelado').forEach(c=>{
+    const k=c.paciente||'Sin nombre';
+    if(!map[k]) map[k]={nombre:k,citas:0,expId:c.expId};
+    map[k].citas++;
+  });
+  const sorted=Object.values(map).sort((a,b)=>b.citas-a.citas).slice(0,6);
+  if(!sorted.length){el.innerHTML='<div class="empty-mini">Sin citas este mes</div>';return;}
+  const max=sorted[0].citas;
+  el.innerHTML=sorted.map((p,i)=>{
+    const initials=p.nombre.split(' ').slice(0,2).map(w=>w[0]).join('');
+    const pct=Math.round((p.citas/max)*100);
+    const medals=['🥇','🥈','🥉'];
+    return`<div class="freq-row">
+      <div class="freq-rank">${medals[i]||i+1}</div>
+      <div class="freq-avatar">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div class="freq-name">${p.nombre}</div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-top:3px"><div style="height:100%;width:${pct}%;background:var(--teal);border-radius:2px;transition:width .8s"></div></div>
+      </div>
+      <div class="freq-count">${p.citas} cita${p.citas!==1?'s':''}</div>
+    </div>`;}).join('');
+}
+
+function renderEmbudo(){
+  const el=document.getElementById('embudoSection'); if(!el) return;
+  const mes=mesActual();
+  const presupuestos=ALL_COTIZACIONES.filter(c=>c.fecha?.slice(0,7)===mes).length||ALL_COTIZACIONES.length;
+  const aceptadas=ALL_TRATS.filter(t=>t.creadoEn?.slice?.(0,7)===mes).length;
+  const iniciadas=ALL_TRATS.filter(t=>t.creadoEn?.slice?.(0,7)===mes&&['En tratamiento','Abonando'].includes(t.estado)).length;
+  const liquidadas=ALL_TRATS.filter(t=>t.creadoEn?.slice?.(0,7)===mes&&t.estado==='Liquidado').length;
+  const total=Math.max(presupuestos,aceptadas,iniciadas,liquidadas,1);
+  const pasos=[
+    {label:'Presupuestos realizados',count:presupuestos,color:'#4A9EFF',icon:'📝'},
+    {label:'Presupuestos aceptados',count:aceptadas,color:'#00C2A8',icon:'✅'},
+    {label:'Tratamientos iniciados',count:iniciadas,color:'#F4B942',icon:'🦷'},
+    {label:'Tratamientos liquidados',count:liquidadas,color:'#34D399',icon:'💰'},
+  ];
+  el.innerHTML=`<div class="funnel-wrap">${pasos.map((p,i)=>{
+    const w=Math.round((p.count/total)*100);
+    const conv=i>0&&pasos[i-1].count>0?Math.round((p.count/pasos[i-1].count)*100):100;
+    return`<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-muted);margin-bottom:4px">
+        <span>${p.icon} ${p.label}</span>
+        <span style="font-family:var(--font-mono);color:${p.color}">${p.count} ${i>0?`<span style="color:var(--text-dim)">(${conv}% conv.)</span>`:''}</span>
+      </div>
+      <div style="height:28px;background:var(--surface2);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${w}%;background:${p.color};border-radius:6px;transition:width 1s ease;display:flex;align-items:center;padding-left:${w>15?'10px':'0'};min-width:4px">
+          ${w>20?`<span style="font-size:.7rem;font-weight:700;color:rgba(6,13,20,.9)">${p.count}</span>`:''}
+        </div>
+      </div>
+    </div>`;}).join('')}
+  </div>`;
+}
+
+function renderChartDias(){
+  try{
+  const ctx=document.getElementById('chartDias')?.getContext('2d'); if(!ctx) return;
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const counts=Array(7).fill(0);
+  ALL_CITAS.filter(c=>c.fecha).forEach(c=>{
+    const d=new Date(c.fecha+'T12:00');
+    counts[d.getDay()]++;
+  });
+  new Chart(ctx,{type:'bar',data:{labels:dias,datasets:[{
+    data:counts,
+    backgroundColor:counts.map((v,i)=>v===Math.max(...counts)?'#00C2A8':'rgba(0,194,168,.25)'),
+    borderColor:counts.map((v,i)=>v===Math.max(...counts)?'#00C2A8':'rgba(0,194,168,.4)'),
+    borderWidth:1,borderRadius:6,
+  }]},options:{...chartDefaults(),scales:{x:{grid:{display:false},ticks:{color:textColor,font:{size:11}}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},stepSize:1}}}}});
+} catch(e){ console.warn("renderChartDias:", e.message); }
+}
+function calcCobradoMes(offset=0){
+  const d=new Date(); d.setMonth(d.getMonth()+offset);
+  const ym=d.toISOString().slice(0,7);
+  return ALL_ABONOS.filter(a=>a.fecha?.startsWith(ym)).reduce((s,a)=>s+Number(a.monto||0),0);
+}
+function calcKPIs(){
+  try {
+    const cobradoMes=calcCobradoMes(0);
+    const cobradoAnt=calcCobradoMes(-1);
+    const adeudoTotal=ALL_TRATS.reduce((s,t)=>s+Number(t.saldo||0),0);
+    const abonosMes=ALL_ABONOS.filter(a=>a.fecha&&a.fecha.startsWith(mesActual()));
+    const tiqMedio=abonosMes.length>0?Math.round(cobradoMes/abonosMes.length):0;
+    return{cobradoMes,cobradoAnt,adeudoTotal,tiqMedio};
+  } catch(e){ return{cobradoMes:0,cobradoAnt:0,adeudoTotal:0,tiqMedio:0}; }
+}
+function calcExtra(){
+  try {
+    return{
+      citasHoy:ALL_CITAS.filter(c=>c.fecha===hoy()).length,
+      nuevosMes:ALL_PACIENTES.filter(p=>{try{return (p.creadoEn||p.alta||'').substring(0,7)===mesActual();}catch(e){return false;}}).length,
+      nuevosAnt:ALL_PACIENTES.filter(p=>{try{return (p.creadoEn||p.alta||'').substring(0,7)===mesAnterior();}catch(e){return false;}}).length,
+    };
+  } catch(e){ return{citasHoy:0,nuevosMes:0,nuevosAnt:0}; }
+}
 
 initSession('metricas').then(async session=>{
   if(!session) return;
-  setDateRange(30);
-  await loadData();
+  const {clinica} = session;
+  const safeGet = async (col) => { try{ return await fsGetAll(col); }catch(e){ return []; } };
+  const [citas,abonos,pacientes,trats,cotizaciones] = await Promise.all([
+    safeGet('citas'), safeGet('abonos'), safeGet('pacientes'),
+    safeGet('tratamientos'), safeGet('cotizaciones'),
+  ]);
+  ALL_CITAS=citas; ALL_ABONOS=abonos; ALL_PACIENTES=pacientes;
+  ALL_TRATS=trats; ALL_COTIZACIONES=cotizaciones;
+  try{ const cSnap=await db.collection('clinicas').doc(clinica.id).get(); metaMensual=cSnap.data()?.metaMensual||0; }catch(e){}
 
-  document.getElementById('periodoTabs').addEventListener('click',async e=>{
-    const tab=e.target.closest('.periodo-tab'); if(!tab) return;
-    document.querySelectorAll('.periodo-tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    periodo=parseInt(tab.dataset.periodo);
-    setDateRange(periodo);
-    renderAll();
-  });
-  document.getElementById('fechaDesde').addEventListener('change', renderAll);
-  document.getElementById('fechaHasta').addEventListener('change', renderAll);
+  // KPIs
+  renderKPIs();
+  // Métricas
+  try{ renderMeta(); }catch(e){}
+  try{ renderChartIngresos(); }catch(e){ console.warn(e); }
+  try{ renderChartPacNuevos(); }catch(e){ console.warn(e); }
+  try{ renderChartTratamientos(); }catch(e){ console.warn(e); }
+  try{ renderFrecuentes(); }catch(e){ console.warn(e); }
+  try{ renderEmbudo(); document.getElementById('embudoMes').textContent=mesActual(); }catch(e){ console.warn(e); }
+  try{ renderChartDias(); }catch(e){ console.warn(e); }
+  try{ renderAdeudos(); }catch(e){ console.warn(e); }
 });
 
-function setDateRange(dias) {
-  const hoy=new Date(), desde=new Date();
-  desde.setDate(hoy.getDate()-dias);
-  document.getElementById('fechaDesde').value=desde.toISOString().slice(0,10);
-  document.getElementById('fechaHasta').value=hoy.toISOString().slice(0,10);
+function renderKPIs(){
+  try{
+    const cobradoMes=calcCobradoMes(0), cobradoAnt=calcCobradoMes(-1);
+    const adeudoTotal=ALL_TRATS.reduce((s,t)=>s+Number(t.saldo||0),0);
+    const abonosMes=ALL_ABONOS.filter(a=>a.fecha&&a.fecha.startsWith(mesActual()));
+    const tiqMedio=abonosMes.length>0?Math.round(cobradoMes/abonosMes.length):0;
+    const varIngresos=cobradoAnt>0?Math.round(((cobradoMes-cobradoAnt)/cobradoAnt)*100):null;
+    const nuevosMes=ALL_PACIENTES.filter(p=>{ try{ return (p.creadoEn||p.alta||'').substring(0,7)===mesActual(); }catch(e){return false;} }).length;
+    const nuevosAnt=ALL_PACIENTES.filter(p=>{ try{ return (p.creadoEn||p.alta||'').substring(0,7)===mesAnterior(); }catch(e){return false;} }).length;
+    const varPac=nuevosAnt>0?Math.round(((nuevosMes-nuevosAnt)/nuevosAnt)*100):null;
+
+    document.getElementById('kpiGrid').innerHTML = [
+      {val:fmtMXN(cobradoMes),lbl:'Total cobrado este mes',cls:'green',icon:'💵',delta:varIngresos!==null?(varIngresos>=0?'▲':'▼')+Math.abs(varIngresos)+'% vs mes ant.':'Primer mes',dcls:varIngresos===null?'neutral':varIngresos>=0?'up':'down'},
+      {val:fmtMXN(adeudoTotal),lbl:'Saldo pendiente total',cls:'gold',icon:'❗',delta:ALL_TRATS.filter(t=>Number(t.saldo||0)>0).length+' con adeudo',dcls:'neutral'},
+      {val:fmtMXN(tiqMedio),lbl:'Ticket medio del mes',cls:'blue',icon:'💳',delta:abonosMes.length+' pagos registrados',dcls:'neutral'},
+      {val:String(ALL_PACIENTES.length),lbl:'Pacientes registrados',cls:'purple',icon:'👤',delta:nuevosMes+' nuevos este mes'+(varPac!==null?' '+(varPac>=0?'▲':'▼')+Math.abs(varPac)+'%':''),dcls:varPac===null?'neutral':varPac>=0?'up':'down'},
+    ].map(k=>`<div class="kpi-card ${k.cls}">
+      <span class="kpi-icon">${k.icon}</span>
+      <div class="kpi-value" style="color:var(--${k.cls==='green'?'teal':k.cls==='gold'?'gold':k.cls==='blue'?'blue':'purple'})">${k.val}</div>
+      <div class="kpi-label">${k.lbl}</div>
+      <div class="kpi-delta ${k.dcls}">${k.delta}</div>
+    </div>`).join('');
+  }catch(e){ console.warn('renderKPIs:',e); }
 }
 
-async function loadData() {
-  [allTrat,allAbonos]=await Promise.all([fsGetAll('tratamientos'),fsGetAll('abonos')]);
-  renderAll();
-}
-
-function getFiltered() {
-  const desde=document.getElementById('fechaDesde').value;
-  const hasta=document.getElementById('fechaHasta').value;
-  const abonos=allAbonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
-  return {abonos, trat:allTrat};
-}
-
-function renderAll() {
-  const {abonos,trat}=getFiltered();
-  renderKPIs(abonos,trat);
-  renderLineChart(abonos);
-  renderDonut(trat);
-  renderBarChart(trat);
-  renderFormaChart(abonos);
-  renderTimeline(abonos);
-}
-
-function renderKPIs(abonos,trat) {
-  const totalCob=abonos.reduce((s,a)=>s+Number(a.monto||0),0);
-  const totalPend=trat.reduce((s,t)=>s+Number(t.saldo||0),0);
-  const liq=trat.filter(t=>t.estado==='Liquidado').length;
-  const ivaTotal=abonos.filter(a=>a.aplicaIva).reduce((s,a)=>s+Number(a.monto||0)*0.16,0);
-  document.getElementById('kpiGrid').innerHTML=[
-    {icon:'💵',val:fmtMXN(totalCob),label:'Cobrado en período',color:'var(--teal)',accent:'var(--teal)'},
-    {icon:'❗',val:fmtMXN(totalPend),label:'Saldo pendiente total',color:'var(--gold)',accent:'var(--gold)'},
-    {icon:'🧾',val:fmtMXN(ivaTotal),label:'IVA generado',color:'var(--blue)',accent:'var(--blue)'},
-    {icon:'✅',val:`${liq}/${trat.length}`,label:'Tratamientos liquidados',color:'var(--green)',accent:'var(--green)'},
-  ].map(k=>`<div class="kpi-card" style="--accent:${k.accent}"><div class="kpi-icon">${k.icon}</div><div class="kpi-value" style="color:${k.color}">${k.val}</div><div class="kpi-label">${k.label}</div></div>`).join('');
-}
-
-function renderLineChart(abonos) {
-  const desde=document.getElementById('fechaDesde').value;
-  const hasta=document.getElementById('fechaHasta').value;
-  if(!desde||!hasta) return;
-  const dias=[];
-  const d=new Date(desde+'T12:00'),h=new Date(hasta+'T12:00');
-  const maxDias=Math.min(Math.round((h-d)/86400000)+1,60);
-  for(let i=0;i<maxDias;i++){const dd=new Date(d);dd.setDate(d.getDate()+i);dias.push(dd.toISOString().slice(0,10));}
-  const vals=dias.map(f=>abonos.filter(a=>a.fecha===f).reduce((s,a)=>s+Number(a.monto||0),0));
-  const maxVal=Math.max(...vals,1);
-  const w=600,h2=120,pad=4;
-  const pts=vals.map((v,i)=>`${pad+(i/(vals.length-1||1))*(w-pad*2)},${h2-pad-(v/maxVal)*(h2-pad*2)}`).join(' ');
-  document.getElementById('lineChart').innerHTML=`<svg viewBox="0 0 ${w} ${h2}" preserveAspectRatio="none">
-    <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00C2A8" stop-opacity=".3"/><stop offset="100%" stop-color="#00C2A8" stop-opacity="0"/></linearGradient></defs>
-    <polygon points="${pts} ${pad+(vals.length-1)/(vals.length-1||1)*(w-pad*2)},${h2} ${pad},${h2}" fill="url(#lg)"/>
-    <polyline points="${pts}" fill="none" stroke="#00C2A8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    ${vals.map((v,i)=>v>0?`<circle cx="${pad+(i/(vals.length-1||1))*(w-pad*2)}" cy="${h2-pad-(v/maxVal)*(h2-pad*2)}" r="3" fill="#00C2A8"/>`:'' ).join('')}
-  </svg>`;
-}
-
-function renderDonut(trat) {
-  const liq=trat.filter(t=>t.estado==='Liquidado').length;
-  const abo=trat.filter(t=>t.estado==='Abonando').length;
-  const pen=trat.filter(t=>!t.estado||t.estado==='Pendiente').length;
-  const total=trat.length||1;
-  const pL=Math.round(liq/total*100),pA=Math.round(abo/total*100),pP=100-pL-pA;
-  setTimeout(()=>{
-    const dl=document.getElementById('d-liq'),da=document.getElementById('d-abo'),dp=document.getElementById('d-pen');
-    if(dl){dl.setAttribute('stroke-dasharray',`${pL} ${100-pL}`);dl.style.transition='stroke-dasharray .8s';}
-    if(da){da.setAttribute('stroke-dasharray',`${pA} ${100-pA}`);da.setAttribute('stroke-dashoffset',25-pL);da.style.transition='stroke-dasharray .8s .2s';}
-    if(dp){dp.setAttribute('stroke-dasharray',`${pP} ${100-pP}`);dp.setAttribute('stroke-dashoffset',25-pL-pA);dp.style.transition='stroke-dasharray .8s .4s';}
-  },100);
-  document.getElementById('donutLegend').innerHTML=[
-    {color:'var(--teal)',label:'Liquidados',val:`${liq} (${pL}%)`},
-    {color:'var(--gold)',label:'Abonando',val:`${abo} (${pA}%)`},
-    {color:'var(--red)',label:'Pendiente',val:`${pen} (${pP}%)`},
-  ].map(l=>`<div class="legend-item"><div class="legend-dot" style="background:${l.color}"></div><span class="legend-label">${l.label}</span><span class="legend-val">${l.val}</span></div>`).join('');
-}
-
-function renderBarChart(trat) {
-  const map={};
-  trat.forEach(t=>{if(!map[t.tratamiento])map[t.tratamiento]={total:0,count:0};map[t.tratamiento].total+=Number(t.costo||0);map[t.tratamiento].count++;});
-  const sorted=Object.entries(map).sort((a,b)=>b[1].total-a[1].total).slice(0,8);
-  const maxV=sorted[0]?sorted[0][1].total:1;
-  document.getElementById('barChart').innerHTML=sorted.map(([n,d])=>`<div class="bar-row"><div class="bar-label">${n}</div><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(d.total/maxV*100)}%"></div></div><div class="bar-val">${fmtMXN(d.total)}</div></div>`).join('')||'<div style="color:var(--text-dim);font-size:.8rem;text-align:center;padding:20px">Sin datos</div>';
-}
-
-function renderFormaChart(abonos) {
-  const map={};
-  abonos.forEach(a=>{const f=a.forma||'Otro';map[f]=(map[f]||0)+Number(a.monto||0);});
-  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]);
-  const maxV=sorted[0]?sorted[0][1]:1;
-  const colors=['var(--teal)','var(--blue)','var(--gold)','var(--purple)','var(--green)'];
-  document.getElementById('formaChart').innerHTML=sorted.map(([n,v],i)=>`<div class="bar-row"><div class="bar-label">${n}</div><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(v/maxV*100)}%;background:${colors[i%colors.length]}"></div></div><div class="bar-val">${fmtMXN(v)}</div></div>`).join('')||'<div style="color:var(--text-dim);font-size:.8rem;text-align:center;padding:20px">Sin datos</div>';
-}
-
-function renderTimeline(abonos) {
-  const recent=[...abonos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,10);
-  document.getElementById('timeline').innerHTML=recent.length
-    ?recent.map(a=>`<div class="tl-item"><div class="tl-dot" style="background:var(--teal)"></div><div class="tl-content"><div class="tl-title">${a.paciente?.split(' ').slice(0,3).join(' ')||'—'}</div><div class="tl-sub">${a.tratamiento||'—'} · ${a.forma||'—'} · ${a.fecha||'—'}</div></div><div class="tl-amount">${fmtMXN(a.monto)}</div></div>`).join('')
-    :'<div class="empty-state" style="padding:30px"><div class="empty-icon">📋</div><div class="empty-title">Sin pagos en el período</div></div>';
-}
-
-function exportReporte() {
-  const {abonos,trat}=getFiltered();
-  const totalCob=abonos.reduce((s,a)=>s+Number(a.monto||0),0);
-  const lines=[
-    `Reporte de Métricas - Hersantych Dental`,
-    `Período: ${document.getElementById('fechaDesde').value} a ${document.getElementById('fechaHasta').value}`,
-    ``,`=== KPIs ===`,
-    `Total cobrado: ${fmtMXN(totalCob)}`,
-    `Tratamientos liquidados: ${trat.filter(t=>t.estado==='Liquidado').length}/${trat.length}`,
-    ``,`=== PAGOS ===`,
-    `Fecha,Paciente,Tratamiento,Forma,Monto`,
-    ...abonos.map(a=>[a.fecha,a.paciente,a.tratamiento,a.forma,a.monto].map(v=>`"${v||''}"`).join(','))
-  ];
-  const a=document.createElement('a');
-  a.href='data:text/plain;charset=utf-8,\uFEFF'+encodeURIComponent(lines.join('\n'));
-  a.download=`reporte_metricas_${todayISO()}.csv`; a.click();
-  showToast('Reporte exportado','success');
+function renderAdeudos(){
+  const list=document.getElementById('adeudosList'); if(!list) return;
+  const conSaldo=ALL_TRATS.filter(t=>Number(t.saldo||0)>0).sort((a,b)=>Number(b.saldo)-Number(a.saldo)).slice(0,8);
+  if(!conSaldo.length){list.innerHTML='<div class="empty-mini">✅ Sin adeudos pendientes</div>';return;}
+  list.innerHTML=conSaldo.map(t=>{
+    const initials=(t.paciente||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
+    return`<div class="adeudo-row">
+      <div class="adeudo-avatar">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.82rem;font-weight:600;color:var(--text)">${t.paciente||'—'}</div>
+        <div style="font-size:.68rem;color:var(--text-muted)">${t.tratamiento||'—'}</div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:#FF5C5C">${fmtMXN(t.saldo)}</div>
+    </div>`;
+  }).join('');
 }
 </script>
 </body>
