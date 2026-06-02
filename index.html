@@ -545,7 +545,8 @@ function renderEnConsulta(){
 
   const [hAg,mAg] = enCurso.hora.split(':').map(Number);
   const minAgendado = hAg*60+mAg;
-  const durMin      = durEst(enCurso.tratamiento)||30;
+  const durBase     = durEst(enCurso.tratamiento)||30;
+  const durMin      = durBase + (enCurso.tiempoExtra||0); // suma tiempo extendido
 
   // Tiempos
   const transAgend  = Math.max(0, horaActual - minAgendado);       // vs hora agendada
@@ -662,8 +663,7 @@ function renderEnConsulta(){
         ${enCurso.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${enCurso.tel}','Hola ${(enCurso.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
         <button class="btn btn-primary btn-sm" style="background:var(--teal)" onclick="abrirFinalizarConsulta('${enCurso.id}','${(enCurso.paciente||'').replace(/'/g,"\\'")}','${(enCurso.tratamiento||'').replace(/'/g,"\\'")}',${transReal},${durMin})">
           ✅ Finalizar consulta
-        </button>
-        ${enCurso.expId?`<a href="expediente.html?px=${enCurso.expId}" class="btn btn-ghost btn-sm" style="text-align:center">📋 Expediente</a>`:''}
+        </button>        ${enCurso.expId?`<a href="expediente.html?px=${enCurso.expId}" class="btn btn-ghost btn-sm" style="text-align:center">📋 Expediente</a>`:''}
       </div>
     </div>
   </div>`;
@@ -755,80 +755,154 @@ function renderTurno(){
   const horaActual = getHoraMin();
   const citasHoy   = getCitasHoy();
 
-  // Excluir citas ya terminadas y la que está en curso
+  // Excluir citas ya terminadas y la que está en curso ahora
   const pendientes = citasHoy.filter(c => {
     if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
     const [h,m] = c.hora.split(':').map(Number);
     const minC  = h*60+m;
-    const dur   = durEst(c.tratamiento)||30;
-    // excluir la que está en curso ahora
+    const dur   = (durEst(c.tratamiento)||30) + (c.tiempoExtra||0);
+    // Si está en curso actualmente, no la mostrar aquí
     if(minC <= horaActual && horaActual < minC+dur+15) return false;
     return true;
   });
 
-  // Próximo = primero en espera, o primero futuro
+  // Próximos = primero en sala de espera, luego por hora
   const enEspera = pendientes.filter(c => c.estado==='En sala de espera');
   const futuros  = pendientes.filter(c => {
     const [h,m] = c.hora.split(':').map(Number);
     return h*60+m > horaActual;
   });
-  const proxima  = enEspera[0] || futuros[0];
 
-  if(!proxima){
+  // Tomar hasta 3 próximas para mostrar cuando hay múltiples doctores
+  const listaProximas = [...enEspera, ...futuros].slice(0, 3);
+
+  if(!listaProximas.length){
     el.innerHTML = `<div class="turno-card" style="background:var(--surface2);border:1px solid var(--border);margin-bottom:14px">
       <div style="text-align:center;padding:16px;font-size:.82rem;color:var(--text-dim)">📋 Sin turnos pendientes para hoy</div>
     </div>`;
     return;
   }
 
-  const durP     = durEst(proxima.tratamiento);
-  const medP     = proxima.doctor || proxima.medico || SESSION?.user?.nombre || 'Dr. Administrador';
-  const isEspera = proxima.estado==='En sala de espera';
-  const accent   = isEspera?'var(--gold)':'var(--blue)';
-  const lbl      = isEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO';
-  const dot      = isEspera?'🪑':'⏰';
+  // Doctores disponibles (no en consulta activa)
+  const doctoresDisponibles = ALL_DOCTORES.filter(d => {
+    // Un doctor está ocupado si hay cita en curso con su nombre
+    const citaActiva = getCitasHoy().find(c =>
+      c.doctor === d.nombre &&
+      !['Completado','No Asistió','Cancelado'].includes(c.estado) &&
+      (() => {
+        const [h,mm] = c.hora.split(':').map(Number);
+        const minC = h*60+mm;
+        const dur  = (durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
+        return minC <= horaActual && horaActual < minC+dur+15;
+      })()
+    );
+    return !citaActiva;
+  });
 
-  // Siguiente después del próximo
-  const restList = pendientes.filter(c=>c.id!==proxima.id);
-  const siguiente = (enEspera.find(c=>c.id!==proxima.id)) || (futuros.find(c=>c.id!==proxima.id));
+  let html = '';
 
-  el.innerHTML = `
-  <div class="turno-card" style="background:linear-gradient(135deg,rgba(74,158,255,.07),transparent);border-color:rgba(74,158,255,.25);margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <span style="font-size:.9rem">${dot}</span>
-      <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${accent}">${lbl}</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center">
-      <div>
-        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:6px">${proxima.paciente||'—'}</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted)">
-          <span>🦷 <strong style="color:var(--text)">${proxima.tratamiento||'Sin tratamiento'}</strong></span>
-          <span>⏰ <strong style="color:${accent}">${proxima.hora}</strong></span>
-          ${durP?`<span>⏱ ~<strong style="color:var(--text)">${fmtDur(durP)}</strong></span>`:''}
-          <span>👨‍⚕️ <strong style="color:var(--text)">${medP}</strong></span>
-          <span class="badge ${proxima.estado==='Confirmado'?'badge-teal':isEspera?'badge-gold':'badge-gold'}" style="font-size:.6rem">${proxima.estado||'Agendado'}</span>
+  // Si hay múltiples doctores disponibles y múltiples citas, mostrar asignación
+  if(ALL_DOCTORES.length > 1 && listaProximas.length > 1){
+    html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:.68rem;color:var(--text-muted)">
+      <span style="font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)">📋 PRÓXIMOS TURNOS</span>
+      <span style="margin-left:8px">${listaProximas.length} pendiente${listaProximas.length!==1?'s':''} · ${doctoresDisponibles.length} doctor${doctoresDisponibles.length!==1?'es':''} disponible${doctoresDisponibles.length!==1?'s':''}</span>
+    </div>`;
+  }
+
+  listaProximas.forEach((proxima, index) => {
+    const durP     = (durEst(proxima.tratamiento)||30) + (proxima.tiempoExtra||0);
+    const isEspera = proxima.estado==='En sala de espera';
+    const accent   = isEspera?'var(--gold)':'var(--blue)';
+    const lbl      = index===0
+      ? (isEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO')
+      : `TURNO ${index+1}`;
+    const dot      = isEspera?'🪑':'⏰';
+
+    // Doctor asignado o selector
+    const doctorAsignado = proxima.doctor || '';
+    const docSelector = ALL_DOCTORES.length > 0
+      ? `<select id="docSelect_${proxima.id}"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:.75rem;outline:none;min-width:150px;flex:1"
+          onchange="asignarDoctorTurno('${proxima.id}',this.value)">
+          <option value="">— Asignar doctor —</option>
+          ${ALL_DOCTORES.map(d=>{
+            const ocupado = getCitasHoy().some(c =>
+              c.doctor===d.nombre && c.id!==proxima.id &&
+              !['Completado','No Asistió','Cancelado'].includes(c.estado) &&
+              (() => {
+                if(!c.hora) return false;
+                const [h,mm] = c.hora.split(':').map(Number);
+                const minC = h*60+mm;
+                const dur  = (durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
+                return minC <= horaActual && horaActual < minC+dur+15;
+              })()
+            );
+            return '<option value="'+d.nombre+'" '+(d.nombre===doctorAsignado?'selected':'')+' '+(ocupado?'disabled':'')+'>'+
+              (ocupado?'🔴 ':'🟢 ')+d.nombre+(d.especialidad?' · '+d.especialidad:'')+(ocupado?' (en consulta)':'')+
+            '</option>';
+          }).join('')}
+        </select>`
+      : doctorAsignado
+        ? `<span style="font-size:.78rem;color:var(--text)">👨‍⚕️ ${doctorAsignado}</span>`
+        : `<span style="font-size:.72rem;color:var(--text-dim)">Sin doctor asignado</span>`;
+
+    html += `
+    <div class="turno-card" style="background:linear-gradient(135deg,rgba(74,158,255,.07),transparent);border-color:rgba(74,158,255,.22);margin-bottom:10px;${index>0?'opacity:.85':''}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:.9rem">${dot}</span>
+        <span style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${accent}">${lbl}</span>
+        ${isEspera?'<span class="badge badge-gold" style="font-size:.58rem">En sala</span>':''}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
+        <div>
+          <!-- Paciente -->
+          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:5px">${proxima.paciente||'—'}</div>
+          <!-- Datos cita -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:.78rem;color:var(--text-muted);margin-bottom:10px">
+            <span>🦷 <strong style="color:var(--text)">${proxima.tratamiento||'Sin tratamiento'}</strong></span>
+            <span>⏰ <strong style="color:${accent}">${proxima.hora}</strong></span>
+            <span>⏱ ~<strong style="color:var(--text)">${fmtDur(durP)}</strong></span>
+            <span class="badge ${proxima.estado==='Confirmado'?'badge-teal':isEspera?'badge-gold':'badge-gold'}" style="font-size:.58rem">${proxima.estado||'Agendado'}</span>
+          </div>
+          <!-- Asignación de doctor -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:.72rem;color:var(--text-muted);white-space:nowrap">👨‍⚕️ Doctor:</span>
+            ${docSelector}
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div style="display:flex;flex-direction:column;gap:5px;min-width:120px;flex-shrink:0">
+          ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;padding:4px 8px" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬</button>`:''}
+          ${proxima.estado!=='Confirmado'&&!isEspera?`<button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="confirmarCita('${proxima.id}')">✓ Confirmar</button>`:''}
+          ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:var(--gold);padding:4px 8px" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
+          <button class="btn btn-primary btn-sm" style="padding:4px 8px" onclick="abrirFinCita('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${(proxima.tratamiento||'').replace(/'/g,"\\'")}')">📋 Estado</button>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;min-width:140px">
-        ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬</button>`:''}
-        ${proxima.estado!=='Confirmado'&&!isEspera?`<button class="btn btn-ghost btn-sm" onclick="confirmarCita('${proxima.id}')">✓ Confirmar</button>`:''}
-        ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:var(--gold)" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${(proxima.tratamiento||'').replace(/'/g,"\\'")}')">📋 Estado</button>
-      </div>
-    </div>
-    ${siguiente?`
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(74,158,255,.15);display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text-muted);flex-wrap:wrap">
-      <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">DESPUÉS</span>
-      <span>${siguiente.estado==='En sala de espera'?'🪑':'👤'}</span>
-      <span style="color:var(--text);font-weight:600">${siguiente.paciente||'—'}</span>
-      <span style="color:var(--text-dim)">·</span>
-      <span style="font-family:var(--font-mono);color:var(--teal)">${siguiente.hora}</span>
-      <span style="color:var(--text-dim)">·</span>
-      <span>${siguiente.tratamiento||'Sin tratamiento'}</span>
-      ${durEst(siguiente.tratamiento)?`<span style="color:var(--text-dim)">· ~${fmtDur(durEst(siguiente.tratamiento))}</span>`:''}
-    </div>`:''}
-  </div>`;
+    </div>`;
+  });
+
+  // Si hay más citas fuera de las 3 mostradas
+  const resto = [...enEspera,...futuros].length - listaProximas.length;
+  if(resto > 0){
+    html += `<div style="text-align:center;padding:8px;font-size:.72rem;color:var(--text-dim)">
+      +${resto} cita${resto!==1?'s':''} más hoy · <a href="agenda.html" style="color:var(--teal)">ver agenda completa</a>
+    </div>`;
+  }
+
+  el.innerHTML = html;
 }
+
+// ── ASIGNAR DOCTOR A TURNO ───────────────────────────────
+window.asignarDoctorTurno = async function(citaId, doctorNombre){
+  if(!citaId) return;
+  try{
+    await fsUpdate('citas', citaId, {doctor: doctorNombre || null});
+    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId?{...c,doctor:doctorNombre}:c);
+    if(doctorNombre) showToast('Dr. '+doctorNombre+' asignado ✓','success');
+  }catch(e){ showToast('Error: '+e.message,'error'); }
+};
 window.abrirFinCita = function(id, paciente, trat) {
   citaActualId = id;
   const cita = ALL_CITAS.find(c=>c.id===id);
@@ -1362,9 +1436,13 @@ async function confirmarFinCita(){
       pausaDoctor:   pausa,
     };
     if(estado==='Extendido' && extraMin>0){
-      // Agregar tiempo extra al campo duracion de la cita
-      update.tiempoExtra = extraMin;
-      update.estado = 'En tratamiento';
+      // Guardar tiempo extra acumulado en Firebase
+      const citaActual = ALL_CITAS.find(c=>c.id===citaActualId);
+      const extraAcum  = (citaActual?.tiempoExtra||0) + extraMin;
+      update.tiempoExtra = extraAcum;
+      update.estado      = 'En tratamiento';
+      // NO actualizar finalizadoEn ni resetear timer
+      delete update.finalizadoEn;
     }
 
     await fsUpdate('citas', citaActualId, update);
@@ -1376,16 +1454,16 @@ async function confirmarFinCita(){
 
     ALL_CITAS = ALL_CITAS.map(c=>c.id===citaActualId?{...c,...update}:c);
 
-    // Solo resetear timer si NO se extendió
-    if(estado!=='Extendido'){
+    // Solo resetear timer si la cita terminó de verdad
+    const estadoFinal = ['Completado','No Asistió','Cancelado'];
+    if(estadoFinal.includes(estado)){
       if(_consultaTimer){ clearInterval(_consultaTimer); _consultaTimer=null; }
       _inicioRealDate = null;
       _inicioRealMin  = null;
       _citaEnCursoId  = null;
-    } else {
-      // Extendida: ajustar el inicio real para que el nuevo tiempo cuente bien
-      if(_inicioRealMin!==null) _inicioRealMin -= extraMin;
     }
+    // Si se extendió: el timer sigue corriendo, renderEnConsulta
+    // leerá tiempoExtra de ALL_CITAS y sumará al durMin
 
     // Banner de pausa
     const pausaBanner = document.getElementById('pausaBanner');
