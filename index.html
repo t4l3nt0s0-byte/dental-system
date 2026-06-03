@@ -467,67 +467,67 @@ function renderMetricasDia(){
 function renderEstadoDoctores(){
   const el = document.getElementById('estadoDoctores');
   if(!el || !ALL_DOCTORES.length) return;
-
   const horaActual = getHoraMin();
   const citasHoy   = getCitasHoy();
 
-  const doctorEstado = ALL_DOCTORES.map(doc => {
-    // Buscar si tiene cita activa
-    const citaActiva = citasHoy.find(c =>
-      c.doctor === doc.nombre && c.estado === 'En tratamiento'
-    );
-    // Buscar si tiene pausa registrada (última cita completada con pausa)
-    const ultimaCita = [...citasHoy]
-      .filter(c => c.doctor === doc.nombre && ['Completado'].includes(c.estado||''))
-      .sort((a,b) => (b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))
-      [0];
-    const pausa = ultimaCita?.pausaDoctor || '';
+  const ESTADO_CFG = {
+    consulta: { bg:'rgba(0,194,168,.13)',  border:'rgba(0,194,168,.5)',   left:'#00C2A8', label:'EN CONSULTA',  dot:'#00C2A8'  },
+    disponible:{ bg:'rgba(52,211,153,.10)', border:'rgba(52,211,153,.4)', left:'#34D399', label:'DISPONIBLE',   dot:'#34D399'  },
+    pausa:    { bg:'rgba(244,185,66,.10)', border:'rgba(244,185,66,.4)',  left:'#F4B942', label:'EN PAUSA',     dot:'#F4B942'  },
+    salida:   { bg:'rgba(120,120,140,.10)',border:'rgba(120,120,140,.3)', left:'#6B7280', label:'FIN TURNO',    dot:'#6B7280'  },
+    ausente:  { bg:'rgba(255,92,92,.10)',  border:'rgba(255,92,92,.35)',  left:'#FF5C5C', label:'NO ASISTIÓ',   dot:'#FF5C5C'  },
+  };
 
-    let status, statusColor, statusBg, statusIcon;
+  const doctores = ALL_DOCTORES.map(doc => {
+    const citaActiva = citasHoy.find(c => c.doctor===doc.nombre && c.estado==='En tratamiento');
+    const ultima     = [...citasHoy]
+      .filter(c=>c.doctor===doc.nombre&&c.estado==='Completado')
+      .sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
+    const pausa = ultima?.pausaDoctor||'';
+
+    let tipo, statusTxt, icon, extra='';
     if(citaActiva){
-      const [h,m] = (citaActiva.hora||'00:00').split(':').map(Number);
-      const durMin = (durEst(citaActiva.tratamiento)||30)+(citaActiva.tiempoExtra||0);
-      const trans  = Math.max(0, horaActual-(h*60+m));
-      const rest   = Math.max(0, durMin-trans);
-      status      = 'En consulta' + (rest>0 ? ' · ~'+fmtDur(rest)+' rest.' : ' · tiempo cumplido');
-      statusColor = 'var(--teal)';
-      statusBg    = 'rgba(0,194,168,.08)';
-      statusIcon  = '🟢';
-    } else if(pausa === 'baño'){
-      status='Pausa / Baño'; statusColor='var(--gold)'; statusBg='rgba(244,185,66,.08)'; statusIcon='🚻';
-    } else if(pausa === 'comida'){
-      status='Salió a comer'; statusColor='var(--gold)'; statusBg='rgba(244,185,66,.08)'; statusIcon='🍽️';
-    } else if(pausa === 'salida'){
-      status='Fin de turno'; statusColor='var(--text-dim)'; statusBg='var(--surface2)'; statusIcon='🏠';
-    } else {
-      status='Disponible'; statusColor='#34D399'; statusBg='rgba(52,211,153,.08)'; statusIcon='🟢';
-    }
+      const [h,m]=(citaActiva.hora||'00:00').split(':').map(Number);
+      const dur=(durEst(citaActiva.tratamiento)||30)+(citaActiva.tiempoExtra||0);
+      const rest=Math.max(0,dur-(horaActual-(h*60+m)));
+      tipo='consulta'; icon='🩺';
+      statusTxt='En consulta';
+      extra='<div style="font-size:.62rem;color:rgba(0,194,168,.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+
+        '👤 '+(citaActiva.paciente||'').split(' ').slice(0,2).join(' ')+(rest>0?' · ⌛'+fmtDur(rest):'')+'</div>';
+    } else if(pausa==='baño'){ tipo='pausa'; icon='🚻'; statusTxt='Pausa / Baño'; }
+    else if(pausa==='comida'){ tipo='pausa'; icon='🍽️'; statusTxt='Sale a comer'; }
+    else if(pausa==='salida'){ tipo='salida'; icon='🏠'; statusTxt='Fin de turno'; }
+    else { tipo='disponible'; icon='✅'; statusTxt='Disponible'; }
 
-    const initials = doc.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
-    return { doc, status, statusColor, statusBg, statusIcon, initials, citaActiva };
+    const cfg = ESTADO_CFG[tipo];
+    const ini = doc.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
+    return {doc,cfg,icon,statusTxt,extra,ini};
   });
 
-  el.innerHTML = `
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px">
-    <div style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:12px">👨‍⚕️ ESTADO DE DOCTORES</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      ${doctorEstado.map(({doc, status, statusColor, statusBg, statusIcon, initials, citaActiva})=>`
-      <div style="background:${statusBg};border:1px solid ${statusColor}33;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;min-width:180px;flex:1">
-        <!-- Avatar con color del doctor -->
-        <div style="width:36px;height:36px;border-radius:50%;background:${doc.color||'var(--teal)'};display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0">${initials}</div>
-        <div style="min-width:0;flex:1">
-          <div style="font-size:.82rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${doc.nombre.split(' ').slice(0,3).join(' ')}</div>
-          <div style="font-size:.7rem;color:var(--text-dim);margin-bottom:3px">${doc.especialidad||'Dentista'}</div>
-          <div style="display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:${statusColor}">
-            <span>${statusIcon}</span>
-            <span>${status}</span>
-          </div>
-          ${citaActiva?`<div style="font-size:.63rem;color:var(--text-dim);margin-top:2px">Pac: ${(citaActiva.paciente||'').split(' ').slice(0,2).join(' ')}</div>`:''}
-        </div>
-      </div>`).join('')}
-    </div>
-  </div>`;
+  el.innerHTML =
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:14px">'+
+    '<div style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">👨‍⚕️ ESTADO DE DOCTORES</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px">'+
+    doctores.map(({doc,cfg,icon,statusTxt,extra,ini})=>
+      '<div style="position:relative;background:'+cfg.bg+';border:1px solid '+cfg.border+';border-radius:10px;padding:12px 14px;overflow:hidden">'+
+      // Left color bar
+      '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+cfg.left+';border-radius:10px 0 0 10px"></div>'+
+      // Status dot top right
+      '<div style="position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:'+cfg.dot+'"></div>'+
+      '<div style="display:flex;align-items:center;gap:9px;padding-left:6px">'+
+      // Avatar
+      '<div style="width:34px;height:34px;border-radius:50%;background:'+(doc.color||'var(--teal)')+';display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0;box-shadow:0 2px 6px '+(doc.color||'var(--teal)')+'55">'+ini+'</div>'+
+      '<div style="min-width:0;flex:1">'+
+      '<div style="font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+doc.nombre.split(' ').slice(0,3).join(' ')+'</div>'+
+      '<div style="font-size:.6rem;color:var(--text-dim);margin-bottom:3px">'+( doc.especialidad||'Dentista')+'</div>'+
+      '<div style="display:flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;color:'+cfg.left+'">'+
+      '<span>'+icon+'</span><span>'+statusTxt+'</span></div>'+
+      extra+
+      '</div></div></div>'
+    ).join('')+
+    '</div></div>';
 }
+
 
 // ── EN CONSULTA AHORA (múltiples consultas simultáneas) ────
 // Estado por cita activa: { citaId: { inicioRealMin, inicioRealDate } }
@@ -596,75 +596,79 @@ function buildConsultaCard(c){
 
   const horaActual  = getHoraMin();
   const inicioMin   = estado.inicioRealMin;
-  const durBase     = durEst(c.tratamiento) || 30;
-  const durMin      = durBase + (c.tiempoExtra||0);
-  const finMin      = inicioMin + durMin;
+  const durMin      = (durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
+  const finMin      = inicioMin+durMin;
   const finHora     = String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
   const inicioStr   = String(Math.floor(inicioMin/60)).padStart(2,'0')+':'+String(inicioMin%60).padStart(2,'0');
-  const trans       = Math.max(0, horaActual - inicioMin);
-  const rest        = Math.max(0, durMin - trans);
+  const trans       = Math.max(0, horaActual-inicioMin);
+  const rest        = Math.max(0, durMin-trans);
   const pct         = Math.min(100, Math.round((trans/durMin)*100));
-  const colBar      = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+  const colPct      = pct<60?'#00C2A8':pct<85?'#F4B942':'#FF5C5C';
 
   // Tiempo real HH:MM:SS
-  const trMs  = Math.max(0, new Date() - estado.inicioRealDate);
-  const trHH  = String(Math.floor(trMs/3600000)).padStart(2,'0');
-  const trMM  = String(Math.floor((trMs%3600000)/60000)).padStart(2,'0');
-  const trSS  = String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
+  const trMs = Math.max(0, new Date()-estado.inicioRealDate);
+  const trHH = String(Math.floor(trMs/3600000)).padStart(2,'0');
+  const trMM = String(Math.floor((trMs%3600000)/60000)).padStart(2,'0');
+  const trSS = String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
 
-  const medico   = c.doctor || SESSION?.user?.nombre || '—';
-  const doctorColor = ALL_DOCTORES.find(d=>d.nombre===medico)?.color || 'var(--teal)';
+  const medico = c.doctor||SESSION?.user?.nombre||'—';
+  const docObj = ALL_DOCTORES.find(d=>d.nombre===medico);
+  const docColor = docObj?.color||'#00C2A8';
 
-  const retraso = inicioMin - (() => { const [h,m]=(c.hora||'00:00').split(':').map(Number); return h*60+m; })();
-  const retrasoTxt = retraso>1
-    ? `<span style="font-size:.62rem;color:var(--gold)">⚠️ +${retraso}min retraso</span>`
-    : `<span style="font-size:.62rem;color:var(--teal)">✅ Puntual</span>`;
+  // WhatsApp buttons
+  const px = ALL_PACIENTES.find(p=>p.nombre===c.paciente||p.id===c.expId);
+  const telPx  = (c.tel||px?.telefono||px?.tel||'').replace(/\D/g,'');
+  const telFam = (px?.telFamiliar||px?.telefonoFamiliar||'').replace(/\D/g,'');
+  const nomFam = px?.nombreFamiliar||px?.familiar||'Familiar';
+  const nom0   = (c.paciente||'').split(' ')[0];
 
   return `
-  <div id="consulta_${c.id}" style="background:linear-gradient(135deg,rgba(0,194,168,.09),rgba(0,194,168,.02));border:1px solid rgba(0,194,168,.3);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:12px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${doctorColor}"></div>
-
-    <!-- Header: etiqueta + retraso -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <div class="turno-dot"></div>
-        <span style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)">EN CONSULTA</span>
-        ${retrasoTxt}
-        ${c.tiempoExtra>0?`<span style="font-size:.62rem;font-weight:700;background:rgba(244,185,66,.15);color:var(--gold);border:1px solid rgba(244,185,66,.3);border-radius:6px;padding:2px 8px">⏰ +${c.tiempoExtra}min extendido</span>`:''}
-      </div>
+  <div style="position:relative;background:linear-gradient(135deg,rgba(0,194,168,.11),rgba(0,194,168,.03));border:1.5px solid rgba(0,194,168,.4);border-radius:14px;padding:16px 18px;margin-bottom:12px;overflow:hidden">
+    <!-- Barra izquierda de acento -->
+    <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#00C2A8,${docColor});border-radius:14px 0 0 14px"></div>
+    <!-- Indicador pulsante top-right -->
+    <div style="position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:6px">
+      <div class="turno-dot" style="width:8px;height:8px"></div>
+      <span style="font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)">EN CONSULTA</span>
+      ${c.tiempoExtra>0?`<span style="font-size:.6rem;font-weight:700;background:rgba(244,185,66,.2);color:#F4B942;border:1px solid rgba(244,185,66,.4);border-radius:5px;padding:1px 6px">+${c.tiempoExtra}min</span>`:''}
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;padding-left:8px;margin-top:4px">
       <div>
-        <!-- Paciente + tratamiento -->
-        <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:3px">${c.paciente||'—'}</div>
-        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px">
-          🦷 <strong style="color:var(--text)">${c.tratamiento||'Sin tratamiento'}</strong>
-          &nbsp;·&nbsp;
-          <span style="display:inline-flex;align-items:center;gap:4px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${doctorColor};display:inline-block"></span>
+        <!-- Paciente -->
+        <div style="font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:4px;margin-right:80px">${c.paciente||'—'}</div>
+        <!-- Tratamiento + doctor -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:.78rem;color:var(--text-muted)">🦷 <strong style="color:var(--text)">${c.tratamiento||'Sin tratamiento'}</strong></span>
+          <span style="width:1px;height:12px;background:var(--border);display:inline-block"></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:.76rem">
+            <span style="width:8px;height:8px;border-radius:50%;background:${docColor};flex-shrink:0"></span>
             <strong style="color:var(--text)">${medico}</strong>
           </span>
         </div>
 
-                <!-- Progreso sin barra — solo % y tiempos -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-          <span style="font-size:.7rem;color:var(--text-dim)">🕐 Inicio: <strong style="color:var(--text);font-family:var(--font-mono)">${inicioStr}</strong> &nbsp;·&nbsp; 🏁 Fin est.: <strong style="color:var(--teal);font-family:var(--font-mono)">${finHora}</strong></span>
-          <span id="trTxt_${c.id}" style="font-family:var(--font-mono);font-size:1rem;font-weight:800;color:${colBar};background:${colBar}18;border:1px solid ${colBar}44;border-radius:8px;padding:3px 12px">${pct}%</span>
+        <!-- Fila de tiempos -->
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--text-muted);margin-bottom:10px">
+          <span>🕐 <strong style="color:var(--text);font-family:var(--font-mono)">${inicioStr}</strong></span>
+          <span>🏁 <strong style="color:var(--teal);font-family:var(--font-mono)">${finHora}</strong></span>
+          <span style="background:${colPct}20;border:1px solid ${colPct}55;border-radius:6px;padding:2px 10px;font-family:var(--font-mono);font-weight:800;color:${colPct}">${pct}%</span>
+          <span id="trTxt_${c.id}" style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim)">⏳ ${trHH}:${trMM}:${trSS}</span>
         </div>
       </div>
 
-      <!-- Acciones -->
-      <div style="display:flex;flex-direction:column;gap:6px;min-width:140px;flex-shrink:0">
-        ${c.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="abrirFinalizarConsulta('${c.id}','${(c.paciente||'').replace(/'/g,"\\'")}','${(c.tratamiento||'').replace(/'/g,"\\'")}',${trans},${durMin})">
+      <!-- Acciones verticales -->
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:140px">
+        ${telPx?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.35);color:#25D366;font-size:.7rem" onclick="whatsapp('${telPx}','Hola ${nom0}, tu consulta está en proceso')">💬 Paciente</button>`:''}
+        ${telFam?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.08);border-color:rgba(37,211,102,.25);color:#25D366;font-size:.7rem" onclick="whatsapp('${telFam}','Hola, informamos sobre la consulta de ${nom0}')">📞 ${nomFam.split(' ')[0]}</button>`:''}
+        <button class="btn btn-primary btn-sm" style="font-size:.75rem;font-weight:700" onclick="abrirFinalizarConsulta('${c.id}','${(c.paciente||'').replace(/'/g,"\\'")}','${(c.tratamiento||'').replace(/'/g,"\\'")}',${trans},${durMin})">
           ✅ Finalizar
         </button>
-        ${c.expId?`<a href="expediente.html?px=${c.expId}" class="btn btn-ghost btn-sm" style="text-align:center;font-size:.72rem">📋 Expediente</a>`:''}
+        ${c.expId?`<a href="expediente.html?px=${c.expId}" class="btn btn-ghost btn-sm" style="text-align:center;font-size:.7rem">📋 Expediente</a>`:''}
       </div>
     </div>
   </div>`;
 }
+
 
 // Actualiza cronómetros de TODAS las consultas activas
 function tickAllConsultas(){
@@ -703,183 +707,128 @@ function renderTurno(){
   const horaActual = getHoraMin();
   const citasHoy   = getCitasHoy();
 
-  // Excluir citas ya terminadas y la que está en curso ahora
-  const pendientes = citasHoy.filter(c => {
+  const pendientes = citasHoy.filter(c=>{
     if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
-    const [h,m] = c.hora.split(':').map(Number);
-    const minC  = h*60+m;
-    const dur   = (durEst(c.tratamiento)||30) + (c.tiempoExtra||0);
-    // Si está en curso actualmente, no la mostrar aquí
-    if(minC <= horaActual && horaActual < minC+dur+15) return false;
+    const [h,m]=(c.hora||'00:00').split(':').map(Number);
+    const minC=h*60+m;
+    const dur=(durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
+    if(c.estado==='En tratamiento') return false;
     return true;
   });
 
-  // Próximos = primero en sala de espera, luego por hora
-  const enEspera = pendientes.filter(c => c.estado==='En sala de espera');
-  const futuros  = pendientes.filter(c => {
-    const [h,m] = c.hora.split(':').map(Number);
-    return h*60+m > horaActual;
-  });
+  const enEspera = pendientes.filter(c=>c.estado==='En sala de espera');
+  const futuros  = pendientes.filter(c=>{const[h,m]=(c.hora||'00:00').split(':').map(Number);return h*60+m>=horaActual;});
+  const lista    = [...enEspera,...futuros].slice(0,3);
 
-  // Tomar hasta 3 próximas para mostrar cuando hay múltiples doctores
-  const listaProximas = [...enEspera, ...futuros].slice(0, 3);
+  const doctoresOcupados = new Set(
+    getCitasEnCurso().map(c=>c.doctor).filter(Boolean)
+  );
+  const libres = ALL_DOCTORES.filter(d=>!doctoresOcupados.has(d.nombre));
 
-  if(!listaProximas.length){
-    el.innerHTML = `<div class="turno-card" style="background:var(--surface2);border:1px solid var(--border);margin-bottom:14px">
-      <div style="text-align:center;padding:16px;font-size:.82rem;color:var(--text-dim)">📋 Sin turnos pendientes para hoy</div>
+  if(!lista.length){
+    el.innerHTML=`<div style="background:var(--surface2);border:1px dashed var(--border);border-radius:14px;padding:18px;text-align:center;margin-bottom:12px">
+      <div style="font-size:.8rem;color:var(--text-dim)">📋 Sin turnos pendientes para hoy</div>
     </div>`;
     return;
   }
 
-  // Doctores disponibles (no en consulta activa)
-  const doctoresDisponibles = ALL_DOCTORES.filter(d => {
-    // Un doctor está ocupado si hay cita en curso con su nombre
-    const citaActiva = getCitasHoy().find(c =>
-      c.doctor === d.nombre &&
-      !['Completado','No Asistió','Cancelado'].includes(c.estado) &&
-      (() => {
-        const [h,mm] = c.hora.split(':').map(Number);
-        const minC = h*60+mm;
-        const dur  = (durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
-        return minC <= horaActual && horaActual < minC+dur+15;
-      })()
-    );
-    return !citaActiva;
-  });
+  // Header del bloque
+  let html = `
+  <div style="background:var(--surface);border:1.5px solid rgba(74,158,255,.35);border-radius:14px;overflow:hidden;margin-bottom:12px">
+    <!-- Header del bloque -->
+    <div style="background:linear-gradient(90deg,rgba(74,158,255,.18),rgba(74,158,255,.05));border-bottom:1px solid rgba(74,158,255,.2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--blue)">⏰ PRÓXIMOS TURNOS</span>
+        <span style="background:rgba(74,158,255,.15);color:var(--blue);font-size:.6rem;font-weight:700;border-radius:20px;padding:1px 8px">${lista.length}</span>
+      </div>
+      <div style="font-size:.65rem;color:var(--text-dim)">
+        ${libres.length>0?`<span style="color:#34D399">🟢 ${libres.length} doctor${libres.length!==1?'es':''} disponible${libres.length!==1?'s':''}</span>`:ALL_DOCTORES.length>0?`<span style="color:#F4B942">⚠️ Todos en consulta</span>`:''}
+      </div>
+    </div>
 
-  let html = '';
+    <!-- Lista de turnos -->
+    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">`;
 
-  // Si hay múltiples doctores disponibles y múltiples citas, mostrar asignación
-  if(ALL_DOCTORES.length > 1 && listaProximas.length > 1){
-    html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:.68rem;color:var(--text-muted)">
-      <span style="font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)">📋 PRÓXIMOS TURNOS</span>
-      <span style="margin-left:8px">${listaProximas.length} pendiente${listaProximas.length!==1?'s':''} · ${doctoresDisponibles.length} doctor${doctoresDisponibles.length!==1?'es':''} disponible${doctoresDisponibles.length!==1?'s':''}</span>
-    </div>`;
-  }
+  lista.forEach((proxima, index)=>{
+    const durP     = (durEst(proxima.tratamiento)||30)+(proxima.tiempoExtra||0);
+    const isEspera = proxima.estado==='En sala de espera';
+    const accent   = isEspera?'#F4B942':'rgba(74,158,255,.9)';
+    const bgRow    = isEspera?'rgba(244,185,66,.07)':'rgba(74,158,255,.05)';
+    const lbl      = index===0?(isEspera?'EN SALA':'PRIMERO'):`#${index+1}`;
+    const doctorAsig = proxima.doctor||'';
+    const todosOcupados = ALL_DOCTORES.length>0&&libres.length===0&&!doctorAsig;
 
-  listaProximas.forEach((proxima, index) => {
-    const durP        = (durEst(proxima.tratamiento)||30) + (proxima.tiempoExtra||0);
-    const isEspera    = proxima.estado==='En sala de espera';
-    const accent      = isEspera?'var(--gold)':'var(--blue)';
-    const lbl         = index===0
-      ? (isEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO')
-      : ('TURNO '+(index+1));
-    const dot         = isEspera?'🪑':'⏰';
-    const doctorAsig  = proxima.doctor || '';
+    // Fecha formateada
+    let fechaStr='';
+    try{if(proxima.fecha){const[y,m,d]=proxima.fecha.split('-').map(Number);const fd=new Date(y,m-1,d);const hoy=new Date();const esHoy=fd.toDateString()===hoy.toDateString();fechaStr=esHoy?'Hoy':fd.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});}}catch(e){}
 
-    // Verificar disponibilidad de doctores
-    const hayDoctoresLibres = ALL_DOCTORES.length===0 ||
-      doctoresDisponibles.length > 0;
-
-    // Selector de doctor con indicador de disponibilidad
-    let docSelector = '';
-    if(ALL_DOCTORES.length === 0){
-      // Sin doctores registrados
-      docSelector = `<span style="font-size:.72rem;color:var(--text-dim)">
-        Sin doctores — <a href="configuracion.html" style="color:var(--teal)">Registrar en Configuración</a>
-      </span>`;
-    } else if(doctoresDisponibles.length === 0 && !doctorAsig){
-      // Todos ocupados
-      docSelector = `<span style="font-size:.75rem;font-weight:600;color:var(--red)">
-        🔴 Todos los doctores están en consulta
-      </span>`;
+    // Doctor selector
+    let docHTML='';
+    if(ALL_DOCTORES.length===0){
+      docHTML='<span style="font-size:.7rem;color:var(--text-dim)">Sin doctores — <a href="configuracion.html" style="color:var(--teal)">Registrar</a></span>';
+    } else if(todosOcupados){
+      docHTML='<span style="font-size:.72rem;color:#F4B942">⚠️ Todos en consulta</span>';
     } else {
-      docSelector = `<select id="docSelect_${proxima.id}"
-        style="background:var(--surface2);border:1px solid ${doctorAsig?'var(--teal)':'var(--border)'};border-radius:6px;padding:4px 8px;color:var(--text);font-size:.75rem;outline:none;min-width:160px;flex:1"
+      docHTML=`<select id="docSelect_${proxima.id}"
+        style="background:var(--surface2);border:1px solid ${doctorAsig?'var(--teal)':'var(--border)'};border-radius:6px;padding:4px 8px;color:var(--text);font-size:.73rem;outline:none;flex:1"
         onchange="asignarDoctorTurno('${proxima.id}',this.value)">
         <option value="">— Asignar doctor —</option>
         ${ALL_DOCTORES.map(d=>{
-          const enConsulta = getCitasHoy().some(c =>
-            c.doctor===d.nombre && c.id!==proxima.id &&
-            c.estado==='En tratamiento'
-          );
-          const sel = d.nombre===doctorAsig ? 'selected' : '';
-          const dis = enConsulta ? 'disabled' : '';
-          const ico = enConsulta ? '🔴' : '🟢';
-          const suf = enConsulta ? ' (en consulta)' : ' (disponible)';
-          return '<option value="'+d.nombre+'" '+sel+' '+dis+'>'+ico+' '+d.nombre+(d.especialidad?'  —  '+d.especialidad:'')+suf+'</option>';
+          const ocu=doctoresOcupados.has(d.nombre);
+          return`<option value="${d.nombre}" ${d.nombre===doctorAsig?'selected':''} ${ocu?'disabled':''}>
+            ${ocu?'🔴':'🟢'} ${d.nombre}${d.especialidad?' · '+d.especialidad:''}${ocu?' (en consulta)':''}
+          </option>`;
         }).join('')}
       </select>`;
     }
 
-    // Botón iniciar: deshabilitado si todos ocupados y sin doctor asignado
-    const todosOcupados = ALL_DOCTORES.length>0 && doctoresDisponibles.length===0 && !doctorAsig;
     const btnIniciar = todosOcupados
-      ? `<button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:.72rem;opacity:.4;cursor:not-allowed" disabled title="No hay doctores disponibles">
-           ⏳ Sin doctor disponible
-         </button>`
-      : `<button class="btn btn-primary btn-sm" style="padding:5px 8px;font-size:.75rem;font-weight:700"
+      ? `<button class="btn btn-ghost btn-sm" disabled style="opacity:.4;cursor:not-allowed;font-size:.7rem">⏳ Sin doctor</button>`
+      : `<button class="btn btn-primary btn-sm" style="font-size:.73rem;font-weight:700;white-space:nowrap"
            onclick="iniciarTratamiento('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}')">
-           ▶️ Iniciar tratamiento
+           ▶️ Iniciar
          </button>`;
 
-    // Formatear fecha de la cita
-    let fechaCitaStr = '';
-    if(proxima.fecha){
-      try{
-        const [y,m,d] = proxima.fecha.split('-').map(Number);
-        const fd = new Date(y,m-1,d);
-        fechaCitaStr = fd.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
-      }catch(e){ fechaCitaStr = proxima.fecha; }
-    }
-
-    html += `
-    <div class="turno-card" style="background:linear-gradient(135deg,rgba(74,158,255,.07),transparent);border-color:rgba(74,158,255,.22);margin-bottom:10px;${index>0?'opacity:.9':''}">
-
-      <!-- Header: etiqueta + fecha -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:.9rem">${dot}</span>
-          <span style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${accent}">${lbl}</span>
-          ${isEspera?'<span class="badge badge-gold" style="font-size:.58rem">En sala</span>':''}
-        </div>
-        <!-- Fecha y hora de la cita -->
-        <div style="display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--text-muted)">
-          ${fechaCitaStr?`<span>📅 <strong style="color:var(--text)">${fechaCitaStr}</strong></span>`:''}
-          <span>⏰ <strong style="color:${accent}">${proxima.hora||'—'}</strong></span>
-          <span>⏱ ~${fmtDur(durP)}</span>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
-        <div>
-          <!-- Paciente + tratamiento -->
-          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:4px">${proxima.paciente||'—'}</div>
-          <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px">
-            🦷 <strong style="color:var(--text)">${proxima.tratamiento||'Sin tratamiento'}</strong>
+    html+=`
+      <div style="background:${bgRow};border:1px solid ${accent}33;border-radius:10px;padding:11px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:${accent}22;color:${accent};border-radius:4px;padding:2px 7px">${lbl}</span>
+            ${isEspera?`<span style="font-size:.65rem;font-weight:700;color:#F4B942">🪑 En sala de espera</span>`:''}
           </div>
-
-          <!-- Selector de doctor -->
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span style="font-size:.72rem;color:var(--text-muted);white-space:nowrap">👨‍⚕️ Doctor:</span>
-            ${docSelector}
+          <div style="font-size:.68rem;color:var(--text-dim);display:flex;align-items:center;gap:8px">
+            ${fechaStr?`<span>📅 ${fechaStr}</span>`:''}
+            <span style="font-family:var(--font-mono);color:${accent};font-weight:700">⏰ ${proxima.hora||'—'}</span>
+            <span>⏱ ~${fmtDur(durP)}</span>
           </div>
-
-          ${todosOcupados?`<div style="font-size:.68rem;color:var(--gold);margin-top:6px">⚠️ Espera a que un doctor finalice su consulta para asignar.</div>`:''}
         </div>
-
-        <!-- Botones -->
-        <div style="display:flex;flex-direction:column;gap:5px;min-width:140px;flex-shrink:0">
-          ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;padding:4px 8px" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
-          ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:var(--gold);padding:4px 8px" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
-          ${btnIniciar}
-          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:.7rem"
-            onclick="abrirEstadoPrevio('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${proxima.hora||''}','${proxima.fecha||''}')">
-            📋 Estado
-          </button>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center">
+          <div>
+            <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px">${proxima.paciente||'—'}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:8px">🦷 ${proxima.tratamiento||'Sin tratamiento'}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:.7rem;color:var(--text-muted);white-space:nowrap">👨‍⚕️</span>
+              ${docHTML}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:110px">
+            ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;font-size:.7rem" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬 WA</button>`:''}
+            ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:#F4B942;font-size:.7rem" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
+            ${btnIniciar}
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem"
+              onclick="abrirEstadoPrevio('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${proxima.hora||''}','${proxima.fecha||''}')">📋 Estado</button>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
   });
 
-  const resto = [...enEspera,...futuros].length - listaProximas.length;
-  if(resto > 0){
-    html += `<div style="text-align:center;padding:8px;font-size:.72rem;color:var(--text-dim)">
-      +${resto} cita${resto!==1?'s':''} más hoy · <a href="agenda.html" style="color:var(--teal)">ver agenda completa</a>
-    </div>`;
+  const resto=[...enEspera,...futuros].length-lista.length;
+  if(resto>0){
+    html+=`<div style="text-align:center;font-size:.7rem;color:var(--text-dim);padding:4px 0">+${resto} cita${resto!==1?'s':''} más · <a href="agenda.html" style="color:var(--teal)">ver agenda</a></div>`;
   }
 
-  el.innerHTML = html;
+  html+=`</div></div>`;
+  el.innerHTML=html;
 }
 
 
