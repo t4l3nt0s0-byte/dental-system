@@ -671,6 +671,7 @@ function buildConsultaCard(c){
   const px=ALL_PACIENTES.find(p=>p.nombre===c.paciente||p.id===c.expId);
   const telPx=(c.tel||px?.telefono||px?.tel||'').replace(/\D/g,'');
   const telFam=(px?.telFamiliar||px?.telefonoFamiliar||'').replace(/\D/g,'');
+  const nomFam=(px?.nombreFamiliar||px?.familiar||'Familiar').split(' ')[0];
   const nom0=(c.paciente||'').split(' ')[0];
   return`<tr>
     <td>
@@ -1552,6 +1553,21 @@ async function confirmarFinCita(){
   if(btn){btn.disabled=false;btn.textContent='✅ Confirmar';}
 }
 window.confirmarFinCita = confirmarFinCita;
+
+// Recargar pacientes cuando el usuario regresa a esta pestaña
+// (ej: editó un expediente en otra pestaña y vuelve)
+document.addEventListener('visibilitychange', async ()=>{
+  if(document.visibilityState==='visible'){
+    try{
+      const px = await fsGetAll('pacientes');
+      if(px&&px.length) ALL_PACIENTES=px;
+      // Re-renderizar solo En Consulta (que usa datos de paciente)
+      if(typeof renderEnConsulta==='function') renderEnConsulta();
+      if(typeof renderEstadoDoctores==='function') renderEstadoDoctores();
+      if(typeof renderMetricasDia==='function') renderMetricasDia();
+    }catch(e){ console.warn('visibilitychange refresh:',e.message); }
+  }
+});
 
 </script>
 </body>
