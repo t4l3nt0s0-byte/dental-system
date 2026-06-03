@@ -469,265 +469,269 @@ let _citaEnCursoId = null;
 function renderEnConsulta(){
   const el = document.getElementById('enConsultaSection');
   if(!el) return;
-  const horaActual = getHoraMin();
-  const citasHoy   = getCitasHoy();
+  const horaActual  = getHoraMin();
+  const FINALES     = ['Completado','No Asistió','Cancelado'];
 
-  const enCurso = citasHoy.find(c => {
-    if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
-    const [h,m] = c.hora.split(':').map(Number);
-    const minC  = h*60+m;
-    const dur   = durEst(c.tratamiento)||30;
-    return minC <= horaActual && horaActual < minC+dur+15;
+  const citasEnCurso = getCitasHoy().filter(c=>{
+    if(FINALES.includes(c.estado)) return false;
+    if(c.estado==='En tratamiento') return true;
+    const [h,m]=(c.hora||'00:00').split(':').map(Number);
+    const minC=h*60+m;
+    const dur=(durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
+    return minC<=horaActual && c.doctor;
   });
 
-  if(!enCurso){ el.innerHTML=''; _citaEnCursoId=null; return; }
-
-  // Si es cita nueva → registrar hora real de inicio
-  if(_citaEnCursoId !== enCurso.id){
-    _citaEnCursoId  = enCurso.id;
-    _citaInicioReal = new Date();
-  }
-
-  const [hh,mm]   = enCurso.hora.split(':').map(Number);
-  const inicioMin = hh*60+mm;
-  const durMin    = durEst(enCurso.tratamiento)||30;
-  const finMin    = inicioMin+durMin;
-  const finHora   = String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
-  const trans     = Math.max(0, horaActual-inicioMin);
-  const rest      = Math.max(0, durMin-trans);
-  const pct       = Math.min(100, Math.round((trans/durMin)*100));
-  const colBar    = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
-
-  // Calcular tiempo real transcurrido desde inicio real
-  const transRealMs  = _citaInicioReal ? (new Date()-_citaInicioReal) : 0;
-  const transRealMin = Math.floor(transRealMs/60000);
-  const horaInicioReal = _citaInicioReal
-    ? String(_citaInicioReal.getHours()).padStart(2,'0')+':'+String(_citaInicioReal.getMinutes()).padStart(2,'0')
-    : enCurso.hora;
-
-  // Doctor asignado (del campo doctor o seleccionado)
-  const doctorAsignado = enCurso.doctor || enCurso.medico || '';
-
-  // Opciones de doctores para el selector
-  const docOpts = ALL_DOCTORES.map(d=>
-    `<option value="${d.nombre}" ${d.nombre===doctorAsignado?'selected':''}>${d.nombre}${d.especialidad?' — '+d.especialidad:''}</option>`
-  ).join('');
-
-  el.innerHTML = `
-  <div style="background:linear-gradient(135deg,rgba(0,194,168,.1),rgba(0,194,168,.03));border:1px solid rgba(0,194,168,.35);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:14px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue))"></div>
-
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-      <div class="turno-dot"></div>
-      <span style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)">ESTATUS AL MOMENTO — EN CONSULTA</span>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start">
-      <div>
-        <!-- Paciente y tratamiento -->
-        <div style="font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:8px">${enCurso.paciente||'—'}</div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted);margin-bottom:14px">
-          <span>🦷 <strong style="color:var(--text)">${enCurso.tratamiento||'Sin tratamiento'}</strong></span>
-        </div>
-
-        <!-- Datos de tiempo -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">🕐 Hora agendada</div>
-            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:var(--text)">${enCurso.hora}</div>
-          </div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⏱ Duración estimada</div>
-            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:var(--teal)">${fmtDur(durMin)}</div>
-          </div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⏳ Tiempo real</div>
-            <div style="font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:${colBar}" id="tiempoReal">${transRealMin>0?fmtDur(transRealMin):'00:00'}</div>
-          </div>
-        </div>
-
-        <!-- Barra de progreso -->
-        <div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-dim);margin-bottom:4px">
-            <span>Inicio: ${horaInicioReal}</span>
-            <span id="timerTxt" style="font-family:var(--font-mono);color:${colBar};font-weight:700">${trans}min / ${durMin}min</span>
-            <span>Fin est.: ${finHora}</span>
-          </div>
-          <div style="height:10px;background:var(--surface2);border-radius:5px;overflow:hidden">
-            <div id="timerBar" style="height:100%;width:${pct}%;background:${colBar};border-radius:5px;transition:width .5s;position:relative">
-              <div style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:.5rem;font-weight:700;color:rgba(0,0,0,.5)">${pct>20?pct+'%':''}</div>
-            </div>
-          </div>
-          <div style="text-align:right;font-size:.65rem;margin-top:3px;color:${rest<=5?'var(--red)':'var(--text-dim)'}">
-            ${rest<=0?'⏰ Tiempo cumplido':rest<=5?'⚠️ '+rest+' min restantes':rest+' min restantes'}
-          </div>
-        </div>
-
-        <!-- Doctor que atiende -->
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="font-size:.75rem;color:var(--text-muted);white-space:nowrap">👨‍⚕️ Atiende:</span>
-          <select id="doctorEnCursoSelect" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-size:.78rem;outline:none;flex:1;min-width:160px" onchange="cambiarDoctorCita('${enCurso.id}',this.value)">
-            <option value="">— Seleccionar doctor —</option>
-            ${docOpts}
-            ${ALL_DOCTORES.length===0?'<option disabled>Sin doctores registrados — ve a Configuración</option>':''}
-          </select>
-          ${ALL_DOCTORES.length===0?`<a href="configuracion.html?sec=doctores" style="font-size:.72rem;color:var(--teal);white-space:nowrap">+ Registrar doctores</a>`:''}
-        </div>
-      </div>
-
-      <!-- Acciones -->
-      <div style="display:flex;flex-direction:column;gap:8px;min-width:150px;flex-shrink:0">
-        ${enCurso.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${enCurso.tel}','Hola ${(enCurso.paciente||'').split(' ')[0]}')">💬 WhatsApp</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${enCurso.id}','${(enCurso.paciente||'').replace(/'/g,"\\'")}','${(enCurso.tratamiento||'').replace(/'/g,"\\'")}')">✅ Finalizar consulta</button>
-        ${enCurso.expId?`<a href="expediente.html?px=${enCurso.expId}" class="btn btn-ghost btn-sm" style="text-align:center">📋 Expediente</a>`:''}
-      </div>
-    </div>
-  </div>`;
-
-  // Cronómetro en tiempo real (segundos)
-  if(_consultaTimer) clearInterval(_consultaTimer);
-  _consultaTimer = setInterval(()=>{
-    // Barra de progreso
-    const nowMin = getHoraMin();
-    const t   = Math.max(0, nowMin-inicioMin);
-    const r   = Math.max(0, durMin-t);
-    const p   = Math.min(100, Math.round((t/durMin)*100));
-    const col = p<60?'var(--teal)':p<85?'var(--gold)':'var(--red)';
-    const bar = document.getElementById('timerBar');
-    const txt = document.getElementById('timerTxt');
-    if(bar){ bar.style.width=p+'%'; bar.style.background=col; }
-    if(txt){ txt.textContent=t+'min / '+durMin+'min'; txt.style.color=col; }
-    // Tiempo real transcurrido
-    const trMs  = _citaInicioReal ? (new Date()-_citaInicioReal) : 0;
-    const trMin = Math.floor(trMs/60000);
-    const trSec = Math.floor((trMs%60000)/1000);
-    const trEl  = document.getElementById('tiempoReal');
-    if(trEl) trEl.textContent = String(Math.floor(trMs/3600000)).padStart(2,'0')+':'+String(trMin%60).padStart(2,'0')+':'+String(trSec).padStart(2,'0');
-  }, 1000); // cada segundo para el tiempo real
-}
-
-// Cambiar doctor asignado a la cita en curso
-window.cambiarDoctorCita = async function(citaId, doctorNombre){
-  if(!citaId||!doctorNombre) return;
-  try{
-    await fsUpdate('citas', citaId, {doctor: doctorNombre});
-    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId?{...c,doctor:doctorNombre}:c);
-    showToast('Doctor asignado: '+doctorNombre,'success');
-  }catch(e){ showToast('Error: '+e.message,'error'); }
-};
-// ── PRÓXIMO TURNO ─────────────────────────────────────────
-function renderTurno(){
-  const el = document.getElementById('turnoSection');
-  if(!el) return;
-  const horaActual = getHoraMin();
-  const citasHoy   = getCitasHoy();
-
-  // ── Detectar pausa del doctor ──────────────────────────
-  const doctorEnPausa = (nombre) => {
-    const ultima = [...citasHoy]
-      .filter(c => c.doctor===nombre && c.estado==='Completado' && c.pausaDoctor)
-      .sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
-    return ultima ? ultima.pausaDoctor : null;
-  };
-
-  // Excluir citas ya terminadas y la que está en curso
-  const pendientes = citasHoy.filter(c => {
-    if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
-    const [h,m] = c.hora.split(':').map(Number);
-    const minC  = h*60+m;
-    const dur   = durEst(c.tratamiento)||30;
-    // excluir la que está en curso ahora
-    if(minC <= horaActual && horaActual < minC+dur+15) return false;
-    return true;
+  // Limpiar consultas que terminaron
+  Object.keys(_consultasActivas).forEach(id=>{
+    if(!citasEnCurso.find(c=>c.id===id)) delete _consultasActivas[id];
   });
 
-  // Próximo = primero en espera, o primero futuro
-  const enEspera = pendientes.filter(c => c.estado==='En sala de espera');
-  const futuros  = pendientes.filter(c => {
-    const [h,m] = c.hora.split(':').map(Number);
-    return h*60+m > horaActual;
+  // Registrar inicio para citas nuevas
+  citasEnCurso.forEach(c=>{
+    if(!_consultasActivas[c.id]){
+      const [h,m]=(c.hora||'00:00').split(':').map(Number);
+      const iniMin = c.inicioRealMin||(h*60+m);
+      const hoy=new Date();
+      _consultasActivas[c.id]={
+        inicioRealMin:iniMin,
+        inicioRealDate:new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),Math.floor(iniMin/60),iniMin%60,0)
+      };
+    }
   });
-  const proxima  = enEspera[0] || futuros[0];
 
-  if(!proxima){
-    el.innerHTML = `<div class="turno-card" style="background:var(--surface2);border:1px solid var(--border);margin-bottom:14px">
-      <div style="text-align:center;padding:16px;font-size:.82rem;color:var(--text-dim)">📋 Sin turnos pendientes para hoy</div>
-    </div>`;
+  if(!citasEnCurso.length){
+    el.innerHTML='';
+    if(_masterTimer){clearInterval(_masterTimer);_masterTimer=null;}
     return;
   }
 
-  const durP     = durEst(proxima.tratamiento);
-  const medP     = proxima.doctor || proxima.medico || SESSION?.user?.nombre || 'Dr. Administrador';
-  const isEspera = proxima.estado==='En sala de espera';
-  const accent   = isEspera?'var(--gold)':'var(--blue)';
-  const lbl      = isEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO';
-  const dot      = isEspera?'🪑':'⏰';
+  el.innerHTML = citasEnCurso.map(c=>buildConsultaCard(c)).join('');
 
-  // Siguiente después del próximo
-  const restList = pendientes.filter(c=>c.id!==proxima.id);
-  const siguiente = (enEspera.find(c=>c.id!==proxima.id)) || (futuros.find(c=>c.id!==proxima.id));
-
-  el.innerHTML = `
-  <div style="
-    background:linear-gradient(135deg,rgba(74,158,255,.1) 0%,rgba(74,158,255,.03) 60%,transparent 100%);
-    border:1.5px solid rgba(74,158,255,.4);
-    border-left:4px solid var(--blue);
-    border-radius:var(--r-lg);
-    overflow:hidden;
-    margin-bottom:14px;
-    box-shadow:0 4px 16px rgba(74,158,255,.08);
-  ">
-    <!-- Cabecera azul -->
-    <div style="background:rgba(74,158,255,.15);padding:9px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(74,158,255,.2)">
-      <span style="font-size:.9rem">${dot}</span>
-      <span style="font-size:.65rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)">${lbl}</span>
-    </div>
-    <div style="padding:14px 16px">
-    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center">
-      <div>
-        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:6px">${proxima.paciente||'—'}</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted)">
-          <span>🦷 <strong style="color:var(--text)">${proxima.tratamiento||'Sin tratamiento'}</strong></span>
-          <span>⏰ <strong style="color:${accent}">${proxima.hora}</strong></span>
-          ${durP?`<span>⏱ ~<strong style="color:var(--text)">${fmtDur(durP)}</strong></span>`:''}
-          <span>👨‍⚕️ <strong style="color:var(--text)">${medP}</strong></span>
-          ${ALL_DOCTORES.length>0?`<span style="font-size:.7rem;color:var(--text-dim)">|</span>
-          <select id="docSel_${proxima.id}"
-            style="font-size:.72rem;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text);outline:none"
-            onchange="asignarDoctorTurno('${proxima.id}',this.value)">
-            <option value="${proxima.doctor||''}">${proxima.doctor||'— Asignar doctor —'}</option>
-            ${ALL_DOCTORES.map(d=>{
-              const enC=getCitasHoy().some(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');
-              const psa=doctorEnPausa(d.nombre);
-              const ocup=enC||psa==='comida'||psa==='salida'||psa==='baño';
-              const ico=enC?'🔴':psa==='comida'?'🍽️':psa==='salida'?'🏠':psa==='baño'?'🚻':'🟢';
-              return '<option value="'+d.nombre+'" '+(d.nombre===proxima.doctor?'selected':'')+(ocup?' disabled':'')+'>'+ico+' '+d.nombre+'</option>';
-            }).join('')}
-          </select>`:''}
-          <span class="badge ${proxima.estado==='Confirmado'?'badge-teal':isEspera?'badge-gold':'badge-gold'}" style="font-size:.6rem">${proxima.estado||'Agendado'}</span>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;min-width:140px">
-        ${proxima.tel?`<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366" onclick="whatsapp('${proxima.tel}','Hola ${(proxima.paciente||'').split(' ')[0]}')">💬</button>`:''}
-        ${proxima.estado!=='Confirmado'&&!isEspera?`<button class="btn btn-ghost btn-sm" onclick="confirmarCita('${proxima.id}')">✓ Confirmar</button>`:''}
-        ${!isEspera?`<button class="btn btn-ghost btn-sm" style="color:var(--gold)" onclick="marcarEspera('${proxima.id}')">🪑 En sala</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="abrirFinCita('${proxima.id}','${(proxima.paciente||'').replace(/'/g,"\\'")}','${(proxima.tratamiento||'').replace(/'/g,"\\'")}')">📋 Estado</button>
-      </div>
-    </div>
-    ${siguiente?`
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(74,158,255,.15);display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text-muted);flex-wrap:wrap">
-      <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">DESPUÉS</span>
-      <span>${siguiente.estado==='En sala de espera'?'🪑':'👤'}</span>
-      <span style="color:var(--text);font-weight:600">${siguiente.paciente||'—'}</span>
-      <span style="color:var(--text-dim)">·</span>
-      <span style="font-family:var(--font-mono);color:var(--teal)">${siguiente.hora}</span>
-      <span style="color:var(--text-dim)">·</span>
-      <span>${siguiente.tratamiento||'Sin tratamiento'}</span>
-      ${durEst(siguiente.tratamiento)?`<span style="color:var(--text-dim)">· ~${fmtDur(durEst(siguiente.tratamiento))}</span>`:''}
-    </div>`:''}
-  </div>`;
+  if(_masterTimer) clearInterval(_masterTimer);
+  _masterTimer = setInterval(()=>tickAllConsultas(), 1000);
 }
+
+function buildConsultaCard(c){
+  const estado = _consultasActivas[c.id];
+  if(!estado) return '';
+  const horaActual  = getHoraMin();
+  const inicioMin   = estado.inicioRealMin;
+  const durBase     = durEst(c.tratamiento)||30;
+  const durMin      = durBase+(c.tiempoExtra||0);
+  const finMin      = inicioMin+durMin;
+  const finHora     = String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
+  const inicioStr   = String(Math.floor(inicioMin/60)).padStart(2,'0')+':'+String(inicioMin%60).padStart(2,'0');
+  const trans       = Math.max(0,horaActual-inicioMin);
+  const pct         = Math.min(100,Math.round((trans/durMin)*100));
+  const colBar      = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+  const trMs        = Math.max(0,new Date()-estado.inicioRealDate);
+  const trHH        = String(Math.floor(trMs/3600000)).padStart(2,'0');
+  const trMM        = String(Math.floor((trMs%3600000)/60000)).padStart(2,'0');
+  const trSS        = String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
+  const medico      = c.doctor||SESSION?.user?.nombre||'—';
+  const doctorColor = ALL_DOCTORES.find(d=>d.nombre===medico)?.color||'var(--teal)';
+  const retraso     = inicioMin-(()=>{const [h,m]=(c.hora||'00:00').split(':').map(Number);return h*60+m;})();
+  const retrasoTxt  = retraso>1
+    ? '<span style="font-size:.62rem;color:var(--gold)">⚠️ +'+retraso+'min retraso</span>'
+    : '<span style="font-size:.62rem;color:var(--teal)">✅ Puntual</span>';
+  // WhatsApp buttons
+  const px     = ALL_PACIENTES.find(p=>p.nombre===c.paciente||p.id===c.expId);
+  const telPx  = (c.tel||px?.telefono||px?.tel||'').replace(/\D/g,'');
+  const telFam = (px?.telFamiliar||px?.telefonoFamiliar||'').replace(/\D/g,'');
+  const nom0   = (c.paciente||'').split(' ')[0];
+  const nomFam = px?.nombreFamiliar||px?.familiar||'Familiar';
+  let waBtns='';
+  if(telPx)  waBtns+='<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;font-size:.7rem" onclick="whatsapp(\''+telPx+'\',\'Hola '+nom0+', tu consulta está en proceso\')">💬 Paciente</button>';
+  if(telFam) waBtns+='<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.08);border-color:rgba(37,211,102,.25);color:#25D366;font-size:.7rem" onclick="whatsapp(\''+telFam+'\',\'Hola '+nomFam.split(' ')[0]+', informamos sobre la consulta de '+nom0+'\')">📞 Familiar</button>';
+
+  return '<div style="'
+    +'background:linear-gradient(135deg,rgba(0,194,168,.12) 0%,rgba(0,194,168,.04) 60%,transparent 100%);'
+    +'border:1.5px solid rgba(0,194,168,.45);border-left:4px solid var(--teal);'
+    +'border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;'
+    +'box-shadow:0 4px 20px rgba(0,194,168,.1);">'
+    // Header
+    +'<div style="background:rgba(0,194,168,.18);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;border-bottom:1px solid rgba(0,194,168,.2)">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+        +'<div class="turno-dot"></div>'
+        +'<span style="font-size:.65rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal)">EN CONSULTA</span>'
+        +retrasoTxt
+        +(c.tiempoExtra>0?'<span style="font-size:.62rem;font-weight:700;background:rgba(244,185,66,.2);color:var(--gold);border:1px solid rgba(244,185,66,.4);border-radius:6px;padding:2px 8px">⏰ +'+c.tiempoExtra+'min extendido</span>':'')
+      +'</div>'
+      +'<span id="trTxt_'+c.id+'" style="font-family:var(--font-mono);font-size:1rem;font-weight:800;color:'+colBar+';background:'+colBar+'22;border:1.5px solid '+colBar+'55;border-radius:8px;padding:3px 14px;min-width:54px;text-align:center">'+pct+'%</span>'
+    +'</div>'
+    // Body
+    +'<div style="padding:14px 18px">'
+      +'<div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">'
+        +'<div>'
+          +'<div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px">'+c.paciente+'</div>'
+          +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
+            +'<span style="font-size:.82rem;color:var(--text-muted)">🦷 <strong style="color:var(--text)">'+c.tratamiento+'</strong></span>'
+            +'<span style="font-size:.78rem;display:inline-flex;align-items:center;gap:5px">'
+              +'<span style="width:9px;height:9px;border-radius:50%;background:'+doctorColor+';display:inline-block;flex-shrink:0"></span>'
+              +'<strong style="color:var(--text)">'+medico+'</strong>'
+            +'</span>'
+          +'</div>'
+          +'<div style="display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.75rem;color:var(--text-muted)">'
+            +'<span>🕐 Inicio: <strong style="color:var(--text);font-family:var(--font-mono)">'+inicioStr+'</strong></span>'
+            +'<span style="color:var(--border2)">|</span>'
+            +'<span>🏁 Fin est.: <strong style="color:var(--teal);font-family:var(--font-mono)">'+finHora+'</strong></span>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:6px;min-width:142px;flex-shrink:0">'
+          +waBtns
+          +'<button class="btn btn-primary btn-sm" style="background:var(--teal);font-weight:700" onclick="abrirFinalizarConsulta(\''+c.id+'\',\''+c.paciente.replace(/'/g,"\\'")+'\''+',\''+c.tratamiento.replace(/'/g,"\\'")+'\''+','+trans+','+durMin+')">✅ Finalizar</button>'
+          +(c.expId?'<a href="expediente.html?px='+c.expId+'" class="btn btn-ghost btn-sm" style="text-align:center;font-size:.7rem">📋 Expediente</a>':'')
+        +'</div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function tickAllConsultas(){
+  const nowMin=getHoraMin();
+  Object.entries(_consultasActivas).forEach(([citaId,estado])=>{
+    const c=ALL_CITAS.find(x=>x.id===citaId);
+    if(!c) return;
+    const durMin=(durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
+    const trans=Math.max(0,nowMin-estado.inicioRealMin);
+    const pct=Math.min(100,Math.round((trans/durMin)*100));
+    const col=pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+    const txt=document.getElementById('trTxt_'+citaId);
+    if(txt){txt.textContent=pct+'%';txt.style.color=col;txt.style.background=col+'22';txt.style.borderColor=col+'55';}
+  });
+}
+
+function renderTurno(){
+  const el=document.getElementById('turnoSection');
+  if(!el) return;
+  const horaActual=getHoraMin();
+  const citasHoy=getCitasHoy();
+
+  const doctorEnPausa=(nombre)=>{
+    const ultima=[...citasHoy]
+      .filter(c=>c.doctor===nombre&&c.estado==='Completado'&&c.pausaDoctor)
+      .sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
+    return ultima?ultima.pausaDoctor:null;
+  };
+
+  const pendientes=citasHoy.filter(c=>{
+    if(['Completado','No Asistió','Cancelado'].includes(c.estado)) return false;
+    if(c.estado==='En tratamiento') return false;
+    return true;
+  });
+
+  const enEspera=pendientes.filter(c=>c.estado==='En sala de espera');
+  const futuros=pendientes.filter(c=>{
+    const [h,m]=c.hora.split(':').map(Number);
+    return h*60+m>horaActual;
+  });
+  const listaProximas=[...enEspera,...futuros].slice(0,3);
+
+  if(!listaProximas.length){
+    el.innerHTML='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;text-align:center;font-size:.82rem;color:var(--text-dim);margin-bottom:14px">📋 Sin turnos pendientes para hoy</div>';
+    return;
+  }
+
+  const doctoresDisponibles=ALL_DOCTORES.filter(d=>{
+    if(citasHoy.some(c=>c.doctor===d.nombre&&c.estado==='En tratamiento')) return false;
+    const p=doctorEnPausa(d.nombre);
+    if(p==='comida'||p==='salida'||p==='baño') return false;
+    return true;
+  });
+
+  let html='';
+  if(ALL_DOCTORES.length>1&&listaProximas.length>1){
+    html+='<div style="background:rgba(74,158,255,.08);border:1px solid rgba(74,158,255,.2);border-radius:8px;padding:8px 14px;margin-bottom:8px;font-size:.68rem;color:var(--text-muted)">'
+      +'<span style="font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue)">📋 PRÓXIMOS TURNOS</span>'
+      +' · '+listaProximas.length+' pendiente'+(listaProximas.length!==1?'s':'')+' · '+doctoresDisponibles.length+' doctor'+(doctoresDisponibles.length!==1?'es':'')+' disponible'+(doctoresDisponibles.length!==1?'s':'')
+    +'</div>';
+  }
+
+  listaProximas.forEach((proxima,index)=>{
+    const durP=(durEst(proxima.tratamiento)||30)+(proxima.tiempoExtra||0);
+    const isEspera=proxima.estado==='En sala de espera';
+    const lbl=index===0?(isEspera?'EN SALA DE ESPERA':'PRÓXIMO TURNO'):'TURNO '+(index+1);
+    const dot=isEspera?'🪑':'⏰';
+    const doctorAsig=proxima.doctor||'';
+    const todosOcupados=ALL_DOCTORES.length>0&&doctoresDisponibles.length===0&&!doctorAsig;
+
+    let fechaStr='';
+    if(proxima.fecha){try{const[y,m,d]=proxima.fecha.split('-').map(Number);fechaStr=new Date(y,m-1,d).toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});}catch(e){}}
+
+    // Doctor selector
+    let docSel='';
+    if(ALL_DOCTORES.length===0){
+      docSel='<span style="font-size:.7rem;color:var(--text-dim)">Sin doctores — <a href="configuracion.html" style="color:var(--teal)">Registrar</a></span>';
+    } else if(todosOcupados){
+      docSel='<span style="font-size:.75rem;font-weight:600;color:var(--red)">🔴 Todos en consulta — espera que un doctor finalice</span>';
+    } else {
+      docSel='<select id="docSelect_'+proxima.id+'" '
+        +'style="background:var(--surface2);border:1px solid '+(doctorAsig?'var(--teal)':'var(--border)')
+        +';border-radius:6px;padding:4px 8px;color:var(--text);font-size:.75rem;outline:none;min-width:160px;flex:1" '
+        +'onchange="asignarDoctorTurno(\''+proxima.id+'\',this.value)">'
+        +'<option value="">— Asignar doctor —</option>'
+        +ALL_DOCTORES.map(d=>{
+          const enC=citasHoy.some(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');
+          const psa=doctorEnPausa(d.nombre);
+          const ocup=enC||psa==='comida'||psa==='salida'||psa==='baño';
+          const ico=enC?'🔴':psa==='comida'?'🍽️':psa==='salida'?'🏠':psa==='baño'?'🚻':'🟢';
+          const suf=enC?' (en consulta)':psa==='comida'?' (comiendo)':psa==='salida'?' (fin turno)':psa==='baño'?' (en pausa)':' (disponible)';
+          return '<option value="'+d.nombre+'" '+(d.nombre===doctorAsig?'selected':'')+(ocup?' disabled':'')+'>'+ico+' '+d.nombre+(d.especialidad?'  —  '+d.especialidad:'')+suf+'</option>';
+        }).join('')
+        +'</select>';
+    }
+
+    const btnIniciar=todosOcupados
+      ?'<button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:.72rem;opacity:.4;cursor:not-allowed" disabled>⏳ Sin doctor</button>'
+      :'<button class="btn btn-primary btn-sm" style="padding:5px 8px;font-size:.75rem;font-weight:700" onclick="iniciarTratamiento(\''+proxima.id+'\',\''+proxima.paciente.replace(/'/g,"\\'")+'\')" >▶️ Iniciar</button>';
+
+    html+='<div style="'
+      +'background:linear-gradient(135deg,rgba(74,158,255,.1) 0%,rgba(74,158,255,.03) 60%,transparent 100%);'
+      +'border:1.5px solid rgba(74,158,255,.4);border-left:4px solid var(--blue);'
+      +'border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;'
+      +'box-shadow:0 4px 16px rgba(74,158,255,.08);'+(index>0?'opacity:.9;':'')
+    +'">'
+    // Header azul
+    +'<div style="background:rgba(74,158,255,.15);padding:9px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;border-bottom:1px solid rgba(74,158,255,.2)">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="font-size:.9rem">'+dot+'</span>'
+        +'<span style="font-size:.65rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)">'+lbl+'</span>'
+        +(isEspera?'<span class="badge badge-gold" style="font-size:.58rem">En sala</span>':'')
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--text-muted)">'
+        +(fechaStr?'<span>📅 <strong style="color:var(--text)">'+fechaStr+'</strong></span>':'')
+        +'<span>⏰ <strong style="color:var(--blue)">'+proxima.hora+'</strong></span>'
+        +'<span>⏱ ~'+fmtDur(durP)+'</span>'
+      +'</div>'
+    +'</div>'
+    // Cuerpo
+    +'<div style="padding:12px 16px">'
+      +'<div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">'
+        +'<div>'
+          +'<div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:4px">'+proxima.paciente+'</div>'
+          +'<div style="font-size:.8rem;color:var(--text-muted);margin-bottom:10px">🦷 <strong style="color:var(--text)">'+proxima.tratamiento+'</strong></div>'
+          +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+            +'<span style="font-size:.72rem;color:var(--text-muted);white-space:nowrap">👨‍⚕️ Doctor:</span>'
+            +docSel
+          +'</div>'
+          +(todosOcupados?'<div style="font-size:.68rem;color:var(--gold);margin-top:6px">⚠️ Espera que un doctor finalice su consulta.</div>':'')
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:5px;min-width:130px;flex-shrink:0">'
+          +(proxima.tel?'<button class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25D366;padding:4px 8px" onclick="whatsapp(\''+proxima.tel+'\',\'Hola '+proxima.paciente.split(' ')[0]+'\')">💬 WA</button>':'')
+          +(!isEspera?'<button class="btn btn-ghost btn-sm" style="color:var(--gold);padding:4px 8px" onclick="marcarEspera(\''+proxima.id+'\')">🪑 En sala</button>':'')
+          +btnIniciar
+          +'<button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:.7rem" onclick="abrirEstadoPrevio(\''+proxima.id+'\',\''+proxima.paciente.replace(/'/g,"\\'")+'\',\''+proxima.hora+'\',\''+proxima.fecha+'\')">📋 Estado</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+  });
+
+  const resto=[...enEspera,...futuros].length-listaProximas.length;
+  if(resto>0) html+='<div style="text-align:center;padding:8px;font-size:.72rem;color:var(--text-dim)">+'+resto+' cita'+(resto!==1?'s':'')+' más · <a href="agenda.html" style="color:var(--teal)">ver agenda</a></div>';
+  el.innerHTML=html;
+}
+
 window.abrirFinCita = function(id, paciente, trat) {
   citaActualId = id;
   const cita = ALL_CITAS.find(c=>c.id===id);
