@@ -548,10 +548,7 @@ function buildConsultaCard(c){
         <span style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)">EN CONSULTA</span>
         ${retrasoTxt}
       </div>
-      <div style="font-size:.72rem;color:var(--text-muted);font-family:var(--font-mono)">
-        Inicio: <strong style="color:var(--text)">${inicioStr}</strong>
-        &nbsp;·&nbsp; Fin est.: <strong style="color:var(--teal)">${finHora}</strong>
-      </div>
+      
     </div>
 
     <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">
@@ -567,23 +564,7 @@ function buildConsultaCard(c){
           </span>
         </div>
 
-        <!-- 3 tarjetas de tiempo -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px;text-align:center">
-            <div style="font-size:.52rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">⏱ Estimado</div>
-            <div style="font-family:var(--font-mono);font-size:.9rem;font-weight:700;color:var(--teal)">${fmtDur(durMin)}</div>
-          </div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px;text-align:center">
-            <div style="font-size:.52rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">⏳ Tiempo real</div>
-            <div id="trReal_${c.id}" style="font-family:var(--font-mono);font-size:.9rem;font-weight:700;color:${colBar}">${trHH}:${trMM}:${trSS}</div>
-          </div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px;text-align:center">
-            <div style="font-size:.52rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">⌛ Restante</div>
-            <div id="trRest_${c.id}" style="font-family:var(--font-mono);font-size:.9rem;font-weight:700;color:${rest<=5?'var(--red)':rest<=10?'var(--gold)':'var(--text)'}">${rest<=0?'⏰':fmtDur(rest)}</div>
-          </div>
-        </div>
-
-        <!-- Progreso sin barra — solo % y tiempos -->
+                <!-- Progreso sin barra — solo % y tiempos -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
           <span style="font-size:.7rem;color:var(--text-dim)">🕐 Inicio: <strong style="color:var(--text);font-family:var(--font-mono)">${inicioStr}</strong> &nbsp;·&nbsp; 🏁 Fin est.: <strong style="color:var(--teal);font-family:var(--font-mono)">${finHora}</strong></span>
           <span id="trTxt_${c.id}" style="font-family:var(--font-mono);font-size:1rem;font-weight:800;color:${colBar};background:${colBar}18;border:1px solid ${colBar}44;border-radius:8px;padding:3px 12px">${pct}%</span>
