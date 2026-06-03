@@ -1616,39 +1616,105 @@ async function confirmarFinCita(){
   const extraMin = estado==='Extendido'?parseInt((document.getElementById('tiempoExtraMin')||{}).value||30):0;
   const btn      = document.getElementById('btnConfirmFinCita');
   if(btn){btn.disabled=true;btn.textContent='Guardando...';}
+
   try{
     const est   = _consultasActivas[citaActualId];
     const trMs  = est?Math.max(0,new Date()-est.inicioRealDate):0;
     const trMin = Math.floor(trMs/60000);
-    const update={estado,notas,tiempoRealMin:trMin,pausaDoctor:pausa};
+
+    // Construir update base — siempre guardar notas si hay texto
+    const update = {
+      tiempoRealMin: trMin,
+      pausaDoctor:   pausa,
+    };
+    if(notas.trim()) update.notas = notas.trim();
+
+    // Lógica por estado
     if(estado==='Extendido'){
       const ca=ALL_CITAS.find(c=>c.id===citaActualId);
       update.tiempoExtra=(ca?.tiempoExtra||0)+extraMin;
       update.estado='En tratamiento';
-    } else if(['Completado','No Asistió','Cancelado','Reagendar','Agendado'].includes(estado)){
+
+    } else if(estado==='Completado'){
+      update.estado='Completado';
       update.finalizadoEn=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+    } else if(estado==='No Asistió'){
+      update.estado='No Asistió';
+      update.finalizadoEn=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+    } else if(estado==='Cancelado'){
+      update.estado='Cancelado';
+      update.finalizadoEn=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+    } else if(estado==='Reagendar'){
+      // Marcar como pendiente de reagendar y redirigir a agenda
+      update.estado='Reagendar';
+      update.doctor=null;
+      update.finalizadoEn=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+    } else if(estado==='En camino'){
+      // Paciente va en camino — mantener agendado y mostrar en turnos
+      update.estado='Confirmado';
+      update.enCamino=true;
+
+    } else if(estado==='En sala de espera'){
+      update.estado='En sala de espera';
+
+    } else if(estado==='Agendado'){
+      update.estado='Agendado';
+
+    } else {
+      update.estado=estado;
     }
-    if(estado==='Reagendar'){update.estado='Agendado';update.doctor=null;}
-    await fsUpdate('citas',citaActualId,update);
+
+    await fsUpdate('citas', citaActualId, update);
     ALL_CITAS=ALL_CITAS.map(c=>c.id===citaActualId?{...c,...update}:c);
-    const iconos={'Completado':'✅','Extendido':'⏰','No Asistió':'❌','Cancelado':'🚫','En sala de espera':'🪑','Reagendar':'📅','En camino':'🚗','Agendado':'📋','En tratamiento':'⏰'};
-    showToast((iconos[estado]||'📋')+' '+(estado==='Extendido'?'Cita extendida +'+extraMin+'min':estado)+(trMin>0?' · Real: '+fmtDur(trMin):''),'success');
-    const FINALES=['Completado','No Asistió','Cancelado','Reagendar','Agendado'];
+
+    // Limpiar de consultas activas si terminó
+    const FINALES=['Completado','No Asistió','Cancelado','Reagendar'];
     if(FINALES.includes(estado)){
       delete _consultasActivas[citaActualId];
-      if(Object.keys(_consultasActivas).length===0&&_masterTimer){clearInterval(_masterTimer);_masterTimer=null;}
+      if(Object.keys(_consultasActivas).length===0&&_masterTimer){
+        clearInterval(_masterTimer);_masterTimer=null;
+      }
     }
-    if(pausa&&!['Extendido'].includes(estado)){
+
+    // Banner pausa doctor
+    if(pausa&&estado!=='Extendido'){
       const bn=document.getElementById('pausaBanner');
       const bt=document.getElementById('pausaBannerTxt');
-      const msgs={'baño':'🚻 Doctor en pausa · Regresa pronto','comida':'🍽️ Doctor salió a comer','salida':'🏠 Doctor finalizó su jornada',''  :''};
+      const msgs={baño:'🚻 Doctor en pausa · Regresa pronto',comida:'🍽️ Doctor salió a comer',salida:'🏠 Doctor finalizó su jornada'};
       if(bn&&msgs[pausa]){if(bt)bt.textContent=msgs[pausa];bn.style.display='flex';}
     }
+
+    // Toast
+    const iconos={Completado:'✅',Extendido:'⏰','No Asistió':'❌',Cancelado:'🚫','En sala de espera':'🪑',Reagendar:'📅','En camino':'🚗',Agendado:'📋','En tratamiento':'⏰',Confirmado:'✓'};
+    const msgs={
+      Completado:    '✅ Consulta completada',
+      'No Asistió':  '❌ Marcado como no asistió',
+      Cancelado:     '🚫 Cita cancelada',
+      'En sala de espera': '🪑 Paciente en sala de espera',
+      Reagendar:     '📅 Cita marcada para reagendar',
+      'En camino':   '🚗 Paciente va en camino — cita confirmada',
+      Agendado:      '📋 Cita mantenida sin cambios',
+      Extendido:     '⏰ Cita extendida +'+extraMin+'min',
+    };
+    showToast((msgs[estado]||estado)+(notas.trim()?' · Nota guardada':''),'success');
+
     closeModal('modalFinCita');
     renderMetricasDia&&renderMetricasDia();
     renderEstadoDoctores&&renderEstadoDoctores();
     renderEnConsulta();renderTurno();renderCitasHoy();renderChartDiaHoy();
-  }catch(e){showToast('Error: '+e.message,'error');}
+
+    // Reagendar: redirigir a agenda después de un momento para que vean el toast
+    if(estado==='Reagendar'){
+      const cita=ALL_CITAS.find(c=>c.id===citaActualId);
+      const px=encodeURIComponent(cita?.paciente||'');
+      setTimeout(()=>{ window.location.href='agenda.html?reagendar=1&paciente='+px; },1200);
+    }
+
+  }catch(e){showToast('Error al guardar: '+e.message,'error');}
   if(btn){btn.disabled=false;btn.textContent='✅ Confirmar';}
 }
 window.confirmarFinCita = confirmarFinCita;

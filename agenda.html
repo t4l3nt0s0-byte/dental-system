@@ -172,6 +172,27 @@ initSession('any').then(async session => {
     updateWAPreview();
   });
   ['f-fecha','f-hora','f-tratamiento'].forEach(id => document.getElementById(id)?.addEventListener('change', updateWAPreview));
+
+  // ── Detectar llegada desde "Reagendar" del dashboard ──
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('reagendar')==='1'){
+    const nomPaciente = decodeURIComponent(params.get('paciente')||'');
+    // Abrir modal de nueva cita
+    openNewModal(selectedDate);
+    // Si hay nombre de paciente, intentar preseleccionarlo
+    if(nomPaciente){
+      setTimeout(()=>{
+        const sel = document.getElementById('f-paciente');
+        if(sel){
+          // Buscar opción que contenga el nombre
+          const opt = Array.from(sel.options).find(o=>o.text.toLowerCase().includes(nomPaciente.toLowerCase().split(' ')[0]));
+          if(opt){ sel.value=opt.value; sel.dispatchEvent(new Event('change')); }
+        }
+        // Mostrar toast informativo
+        if(typeof showToast==='function') showToast('📅 Agendando nueva cita para '+nomPaciente,'success');
+      }, 300);
+    }
+  }
 });
 
 async function loadCitas() {
