@@ -337,7 +337,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="btnCancelarFinCita">Cancelar</button>
-      <button class="btn btn-primary" id="btnConfirmFinCita">✅ Confirmar</button>
+      <button class="btn btn-primary" id="btnConfirmFinCita" onclick="confirmarFinCita()">✅ Confirmar</button>
     </div>
   </div>
 </div>
@@ -1418,7 +1418,8 @@ function initModalEvents(){
   const btnConfirm  = document.getElementById('btnConfirmFinCita');
   if(btnCerrar)   btnCerrar.onclick   = ()=>closeModal('modalFinCita');
   if(btnCancelar) btnCancelar.onclick = ()=>closeModal('modalFinCita');
-  if(btnConfirm)  btnConfirm.onclick  = confirmarFinCita;
+  // Usar wrapper para que confirmarFinCita se resuelva en tiempo de ejecución
+  if(btnConfirm)  btnConfirm.onclick  = ()=>confirmarFinCita();
 
   // Opciones de estado — usar onclick para evitar listeners acumulados
   document.querySelectorAll('.opt-estado').forEach(el=>{
@@ -1608,18 +1609,7 @@ function resetPausa(){
   });
 }
 
-// Botones del modal
-document.addEventListener('DOMContentLoaded',function(){
-  const btnC=document.getElementById('btnCerrarFinCita');
-  const btnX=document.getElementById('btnCancelarFinCita');
-  const btnOk=document.getElementById('btnConfirmFinCita');
-  if(btnC) btnC.onclick=()=>closeModal('modalFinCita');
-  if(btnX) btnX.onclick=()=>closeModal('modalFinCita');
-  if(btnOk) btnOk.onclick=confirmarFinCita;
-  resetPausa();
-});
-
-// Abrir receta médica desde el modal de finalizar consulta
+// Botones del modal — asignados en // Abrir receta médica desde el modal de finalizar consulta
 window.abrirRecetaDesdeModal = function(){
   const cita = ALL_CITAS.find(c=>c.id===citaActualId);
   if(!cita) return;
@@ -1635,6 +1625,7 @@ window.abrirRecetaDesdeModal = function(){
 };
 
 async function confirmarFinCita(){
+  const estado   = _estadoSeleccionado;
   const pausa    = _pausaSeleccionada||'';
   const notas    = (document.getElementById('finCitaNotas')||{}).value||'';
   const extraMin = estado==='Extendido'?parseInt((document.getElementById('tiempoExtraMin')||{}).value||30):0;
