@@ -114,11 +114,15 @@
   <div class="topbar">
     <div class="topbar-title">📊 Panel Clínico</div>
     <div class="topbar-actions" style="gap:12px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div id="topbarReloj" style="font-size:.78rem;color:var(--teal);font-family:var(--font-mono);font-weight:700;display:flex;align-items:center;gap:4px">
-          <span style="font-size:.75rem">🕐</span><span id="relojTxt">00:00:00</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center;gap:5px;font-size:.78rem;font-family:var(--font-mono)">
+          <span id="relojIcon" style="font-size:.82rem">🕐</span>
+          <span style="color:var(--text-muted)">Hora:</span>
+          <span id="relojTxt" style="color:var(--teal);font-weight:700">00:00:00</span>
         </div>
-        <div id="topbarFecha" style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono)"></div>
+        <div style="font-size:.78rem;font-family:var(--font-mono);color:var(--text-muted)">
+          Fecha: <span id="topbarFecha" style="color:var(--text)"></span>
+        </div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="window.location.href='agenda.html'">+ Nueva cita</button>
     </div>
@@ -271,22 +275,22 @@ function startClock(){
     const h = String(now.getHours()).padStart(2,'0');
     const m = String(now.getMinutes()).padStart(2,'0');
     const s = String(now.getSeconds()).padStart(2,'0');
-    const el = document.getElementById('relojTxt');
-    if(el) el.textContent = `${h}:${m}:${s}`;
+    const relojEl = document.getElementById('relojTxt');
+    if(relojEl) relojEl.textContent = h+':'+m+':'+s;
+    // Ícono según hora
     const hr = now.getHours() % 12;
     const icons = ['🕛','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚'];
-    const iconEl = document.querySelector('#topbarReloj span:first-child');
+    const iconEl = document.getElementById('relojIcon');
     if(iconEl) iconEl.textContent = icons[hr];
-    // Actualizar también la fecha
+    // Fecha completa en topbar
     const fechaEl = document.getElementById('topbarFecha');
-    if(fechaEl && fechaEl.textContent === '') {
-      fechaEl.textContent = now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    if(fechaEl && fechaEl.textContent === ''){
+      fechaEl.textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     }
   }
   tick();
   setInterval(tick, 1000);
 }
-// Arrancar el reloj inmediatamente sin esperar a Firebase
 startClock();
 
 // ── HELPERS ───────────────────────────────────────────────
@@ -365,7 +369,7 @@ function renderDashboard(clinica,user){
   <!-- GREETING -->
   <div class="greeting">
     <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
-    <div class="greeting-sub">${clinica.nombre||'DentalOS'} · ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+    <div class="greeting-sub">${clinica.nombre||'DentalOS'}</div>
   </div>
 
   <!-- 1. EN CONSULTA AHORA -->
@@ -579,19 +583,10 @@ function buildConsultaCard(c){
           </div>
         </div>
 
-        <!-- Barra de progreso -->
-        <div style="margin-bottom:4px">
-          <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--text-dim);margin-bottom:3px">
-            <span>${inicioStr}</span>
-            <span id="trTxt_${c.id}" style="font-family:var(--font-mono);color:${colBar};font-weight:700">${trans}min / ${durMin}min (${pct}%)</span>
-            <span>${finHora}</span>
-          </div>
-          <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
-            <div id="trBar_${c.id}" style="height:100%;width:${pct}%;background:${colBar};border-radius:4px;transition:width .5s"></div>
-          </div>
-          <div style="text-align:right;font-size:.6rem;margin-top:2px;color:${rest<=5?'var(--red)':rest<=10?'var(--gold)':'var(--text-dim)'}">
-            ${rest<=0?'⏰ Tiempo cumplido — finalizar':rest<=5?'⚠️ '+rest+'min restantes':rest+'min restantes'}
-          </div>
+        <!-- Progreso sin barra — solo % y tiempos -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <span style="font-size:.7rem;color:var(--text-dim)">🕐 Inicio: <strong style="color:var(--text);font-family:var(--font-mono)">${inicioStr}</strong> &nbsp;·&nbsp; 🏁 Fin est.: <strong style="color:var(--teal);font-family:var(--font-mono)">${finHora}</strong></span>
+          <span id="trTxt_${c.id}" style="font-family:var(--font-mono);font-size:1rem;font-weight:800;color:${colBar};background:${colBar}18;border:1px solid ${colBar}44;border-radius:8px;padding:3px 12px">${pct}%</span>
         </div>
       </div>
 
@@ -613,18 +608,17 @@ function tickAllConsultas(){
   Object.entries(_consultasActivas).forEach(([citaId, estado]) => {
     const c = ALL_CITAS.find(x=>x.id===citaId);
     if(!c) return;
-    const durMin  = (durEst(c.tratamiento)||30) + (c.tiempoExtra||0);
+    const durMin    = (durEst(c.tratamiento)||30) + (c.tiempoExtra||0);
     const inicioMin = estado.inicioRealMin;
-    const trans   = Math.max(0, nowMin - inicioMin);
-    const rest    = Math.max(0, durMin - trans);
-    const pct     = Math.min(100, Math.round((trans/durMin)*100));
-    const col     = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
-    // Barra y texto
-    const bar = document.getElementById('trBar_'+citaId);
+    const trans     = Math.max(0, nowMin - inicioMin);
+    const rest      = Math.max(0, durMin - trans);
+    const pct       = Math.min(100, Math.round((trans/durMin)*100));
+    const col       = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
+    // % badge
     const txt = document.getElementById('trTxt_'+citaId);
+    if(txt){ txt.textContent=pct+'%'; txt.style.color=col; txt.style.background=col.replace('var(','').replace(')','')+'18'; }
+    // Restante
     const restEl = document.getElementById('trRest_'+citaId);
-    if(bar){ bar.style.width=pct+'%'; bar.style.background=col; }
-    if(txt){ txt.textContent=trans+'min / '+durMin+'min ('+pct+'%)'; txt.style.color=col; }
     if(restEl){ restEl.textContent=rest<=0?'⏰':fmtDur(rest); restEl.style.color=rest<=5?'var(--red)':rest<=10?'var(--gold)':'var(--text)'; }
     // Tiempo real HH:MM:SS
     const trMs = Math.max(0, new Date()-estado.inicioRealDate);
