@@ -645,8 +645,7 @@ function renderEnConsulta(){
         <th>Doctor</th>
         <th>Inicio → Fin est.</th>
         <th>Progreso</th>
-        <th>Tel. Paciente</th>
-        <th>Tel. Familiar</th>
+        <th>📞 Contacto emergencia</th>
         <th style="text-align:right">Acciones</th>
       </tr></thead>
       <tbody>${enCurso.map(c=>buildConsultaCard(c)).join('')}</tbody>
@@ -682,8 +681,10 @@ function buildConsultaCard(c){
     <td><div class="ct-doc"><span class="ct-doc-dot" style="background:${docCol};box-shadow:0 0 5px ${docCol}66"></span><span class="ct-doc-name">${medico}</span></div></td>
     <td class="ct-time"><div>🕐 <strong>${iniH}</strong></div><div>🏁 <strong>${finH}</strong></div></td>
     <td><span class="ct-pct" style="background:${colP}18;border:1px solid ${colP}44;color:${colP}">${pct}%</span><div id="trTxt_${c.id}" class="ct-timer">⏳ ${trH}:${trM}:${trS}</div></td>
-    <td style="text-align:left">${telPx?`<button class="btn btn-sm btn-wa" style="font-size:.67rem;white-space:nowrap" onclick="whatsapp('${telPx}','Hola ${nom0}, tu consulta está en proceso')">📱 ${telPx}</button>`:'<span style="font-size:.68rem;color:var(--text-dim)">—</span>'}</td>
-    <td style="text-align:left">${telFam?`<button class="btn btn-sm btn-wa" style="font-size:.67rem;white-space:nowrap" onclick="whatsapp('${telFam}','Hola, informamos sobre la consulta de ${nom0}')">📞 Familiar</button>`:'<span style="font-size:.68rem;color:var(--text-dim)">—</span>'}</td>
+    <td style="text-align:left">${telFam
+      ?`<div style="font-size:.65rem;color:var(--text-dim);margin-bottom:3px">👤 ${nomFam}</div><button class="btn btn-sm btn-wa" style="font-size:.67rem;white-space:nowrap" onclick="whatsapp('${telFam}','Hola ${nomFam}, informamos sobre la consulta de ${nom0}')">📞 ${telFam}</button>`
+      :'<span style="font-size:.68rem;color:var(--text-dim)">Sin contacto registrado</span>'
+    }</td>
     <td style="text-align:right">
       <div class="ct-actions">
         ${c.expId?`<a href="expediente.html?px=${c.expId}" class="btn btn-ghost btn-sm" style="font-size:.67rem">📋 Expediente</a>`:''}
@@ -705,22 +706,21 @@ function tickAllConsultas(){
     const trans     = Math.max(0, nowMin - inicioMin);
     const rest      = Math.max(0, durMin - trans);
     const pct       = Math.min(100, Math.round((trans/durMin)*100));
-    const col       = pct<60?'var(--teal)':pct<85?'var(--gold)':'var(--red)';
-    // % badge
-    const txt = document.getElementById('trTxt_'+citaId);
-    if(txt){ txt.textContent=pct+'%'; txt.style.color=col; txt.style.background=col.replace('var(','').replace(')','')+'18'; }
-    // Restante
-    const restEl = document.getElementById('trRest_'+citaId);
-    if(restEl){ restEl.textContent=rest<=0?'⏰':fmtDur(rest); restEl.style.color=rest<=5?'var(--red)':rest<=10?'var(--gold)':'var(--text)'; }
-    // Tiempo real HH:MM:SS
-    const trMs = Math.max(0, new Date()-estado.inicioRealDate);
-    const el   = document.getElementById('trReal_'+citaId);
-    if(el){
-      const h2=String(Math.floor(trMs/3600000)).padStart(2,'0');
-      const m2=String(Math.floor((trMs%3600000)/60000)).padStart(2,'0');
-      const s2=String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
-      el.textContent=h2+':'+m2+':'+s2;
-      el.style.color=col;
+    const col = pct<60?'#00C2A8':pct<85?'#F4B942':'#FF5C5C';
+    // Actualizar reloj ⏳ HH:MM:SS
+    const trMs2=Math.max(0,new Date()-estado.inicioRealDate);
+    const h2=String(Math.floor(trMs2/3600000)).padStart(2,'0');
+    const m2=String(Math.floor((trMs2%3600000)/60000)).padStart(2,'0');
+    const s2=String(Math.floor((trMs2%60000)/1000)).padStart(2,'0');
+    const timerEl=document.getElementById('trTxt_'+citaId);
+    if(timerEl) timerEl.textContent='⏳ '+h2+':'+m2+':'+s2;
+    // Actualizar badge % (hermano anterior del timer)
+    const prev=timerEl?.previousElementSibling;
+    if(prev&&(prev.className||'').indexOf('ct-pct')>=0){
+      prev.textContent=pct+'%';
+      prev.style.color=col;
+      prev.style.background=col+'18';
+      prev.style.borderColor=col+'44';
     }
   });
 }
