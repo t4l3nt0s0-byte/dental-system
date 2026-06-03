@@ -323,10 +323,16 @@ function renderDashboard(clinica,user){
   <!-- GREETING -->
   <div class="greeting">
     <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
-    <div class="greeting-sub">${clinica.nombre||'DentalOS'} · ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+    <div class="greeting-sub">${clinica.nombre||'DentalOS'}</div>
   </div>
 
-  <!-- 1. EN CONSULTA AHORA (nuevo) -->
+  <!-- MÉTRICAS DEL DÍA -->
+  <div id="metricasDia" style="margin-bottom:16px"></div>
+
+  <!-- ESTADO DE DOCTORES -->
+  <div id="estadoDoctores" style="margin-bottom:16px"></div>
+
+  <!-- 1. EN CONSULTA AHORA -->
   <div id="enConsultaSection"></div>
 
   <!-- 2. PRÓXIMO TURNO -->
@@ -427,21 +433,20 @@ function renderDashboard(clinica,user){
   </div>
 `;
 
+  try{ renderMetricasDia(); }catch(e){ console.warn(e); }
+  try{ renderEstadoDoctores(); }catch(e){ console.warn(e); }
   renderEnConsulta();
   renderTurno();
   renderCitasHoy();
-  renderAdeudos();
-  if(isAdmin){
-    try{ renderMeta(); } catch(e){ console.warn('renderMeta:',e.message); }
-    try{ renderChartIngresos(); } catch(e){ console.warn('chartIngresos:',e.message); }
-    try{ renderChartPacNuevos(); } catch(e){ console.warn('chartPac:',e.message); }
-    try{ renderChartTratamientos(); } catch(e){ console.warn('chartTrat:',e.message); }
-    try{ renderFrecuentes(); } catch(e){ console.warn('frecuentes:',e.message); }
-    try{ renderEmbudo(); } catch(e){ console.warn('embudo:',e.message); }
-    try{ renderChartDias(); } catch(e){ console.warn('chartDias:',e.message); }
-  }
-  // Actualizar en consulta cada minuto
-  setInterval(()=>{ renderEnConsulta(); renderTurno(); }, 60000);
+  try{ renderChartDiaHoy(); }catch(e){ console.warn(e); }
+  setInterval(()=>{
+    renderMetricasDia();
+    renderEstadoDoctores();
+    renderEnConsulta();
+    renderTurno();
+    renderCitasHoy();
+    try{ renderChartDiaHoy(); }catch(e){}
+  }, 60000);
 }
 
 // Duraciones estimadas por tratamiento (minutos)
@@ -465,6 +470,100 @@ function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'
 // ── EN CONSULTA AHORA ────────────────────────────────────
 let _consultaTimer = null;
 let _citaEnCursoId = null;
+
+// ── MÉTRICAS DEL DÍA ─────────────────────────────────────
+function renderMetricasDia(){
+  const el=document.getElementById('metricasDia'); if(!el) return;
+  const hoy=todayISO();
+  const ch=ALL_CITAS.filter(c=>c.fecha===hoy);
+  const total=ch.length;
+  const enProceso=ch.filter(c=>c.estado==='En tratamiento').length;
+  const enSala=ch.filter(c=>c.estado==='En sala de espera').length;
+  const completadas=ch.filter(c=>c.estado==='Completado').length;
+  const pendientes=ch.filter(c=>!['Completado','No Asistió','Cancelado','En tratamiento','En sala de espera'].includes(c.estado||'')).length;
+  const cards=[
+    {icon:'📅',val:total,       label:'Citas del día',       color:'var(--blue)',  bg:'rgba(74,158,255,.1)',  border:'rgba(74,158,255,.25)'},
+    {icon:'🔵',val:enProceso+enSala,label:'En atención/sala',color:'var(--teal)',  bg:'rgba(0,194,168,.1)',   border:'rgba(0,194,168,.3)'  },
+    {icon:'✅',val:completadas, label:'Completadas',          color:'#34D399',      bg:'rgba(52,211,153,.1)',  border:'rgba(52,211,153,.3)' },
+    {icon:'⏳',val:pendientes,  label:'Pendientes',           color:'var(--gold)',  bg:'rgba(244,185,66,.1)', border:'rgba(244,185,66,.3)' },
+  ];
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'+
+    cards.map(c=>'<div style="background:'+c.bg+';border:1px solid '+c.border+';border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:12px;min-height:72px">'+
+      '<span style="font-size:1.6rem;flex-shrink:0">'+c.icon+'</span>'+
+      '<div><div style="font-family:var(--font-mono);font-size:1.5rem;font-weight:800;color:'+c.color+';line-height:1">'+c.val+'</div>'+
+      '<div style="font-size:.65rem;color:var(--text-muted);margin-top:3px;font-weight:600">'+c.label+'</div></div>'+
+    '</div>').join('')+
+  '</div>';
+}
+
+// ── ESTADO DE DOCTORES ────────────────────────────────────
+function renderEstadoDoctores(){
+  const el=document.getElementById('estadoDoctores'); if(!el||!ALL_DOCTORES.length){if(el)el.innerHTML='';return;}
+  const horaActual=getHoraMin();
+  const citasHoy=getCitasHoy();
+  const estados=ALL_DOCTORES.map(doc=>{
+    const citaActiva=citasHoy.find(c=>c.doctor===doc.nombre&&c.estado==='En tratamiento');
+    const ultima=[...citasHoy].filter(c=>c.doctor===doc.nombre&&c.estado==='Completado'&&c.pausaDoctor)
+      .sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
+    const pausa=ultima?.pausaDoctor||'';
+    let status,sColor,sBg,sIcon;
+    if(citaActiva){
+      const[h,m]=(citaActiva.hora||'00:00').split(':').map(Number);
+      const dur=(durEst(citaActiva.tratamiento)||30)+(citaActiva.tiempoExtra||0);
+      const rest=Math.max(0,dur-Math.max(0,horaActual-(h*60+m)));
+      status='En consulta'+(rest>0?' · ~'+fmtDur(rest)+' rest.':' · tiempo cumplido');
+      sColor='var(--teal)';sBg='rgba(0,194,168,.08)';sIcon='🟢';
+    }else if(pausa==='baño'){status='Pausa / Baño';sColor='var(--gold)';sBg='rgba(244,185,66,.08)';sIcon='🚻';}
+    else if(pausa==='comida'){status='Salió a comer';sColor='var(--gold)';sBg='rgba(244,185,66,.08)';sIcon='🍽️';}
+    else if(pausa==='salida'){status='Fin de turno';sColor='var(--text-dim)';sBg='var(--surface2)';sIcon='🏠';}
+    else{status='Disponible';sColor='#34D399';sBg='rgba(52,211,153,.08)';sIcon='🟢';}
+    const ini=doc.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
+    return{doc,status,sColor,sBg,sIcon,ini,citaActiva};
+  });
+  el.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px">'
+    +'<div style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:12px">👨‍⚕️ ESTADO DE DOCTORES</div>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+    +estados.map(({doc,status,sColor,sBg,sIcon,ini,citaActiva})=>
+      '<div style="background:'+sBg+';border:1px solid '+sColor+'33;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;min-width:180px;flex:1">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:'+(doc.color||'var(--teal)')+';display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0">'+ini+'</div>'
+        +'<div style="min-width:0;flex:1">'
+          +'<div style="font-size:.82rem;font-weight:700;color:var(--text)">'+doc.nombre.split(' ').slice(0,3).join(' ')+'</div>'
+          +'<div style="font-size:.7rem;color:var(--text-dim);">'+(doc.especialidad||'Dentista')+'</div>'
+          +'<div style="display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:'+sColor+'">'+sIcon+' '+status+'</div>'
+          +(citaActiva?'<div style="font-size:.63rem;color:var(--text-dim)">Pac: '+(citaActiva.paciente||'').split(' ').slice(0,2).join(' ')+'</div>':'')
+        +'</div>'
+      +'</div>'
+    ).join('')
+    +'</div></div>';
+}
+
+// ── GRÁFICO DEL DÍA ──────────────────────────────────────
+function renderChartDiaHoy(){
+  const canvas=document.getElementById('chartDiaHoy'); if(!canvas) return;
+  try{
+    const hoy=todayISO();
+    const ch=ALL_CITAS.filter(c=>c.fecha===hoy);
+    const total=ch.length;
+    if(total===0){canvas.parentElement.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:160px;font-size:.8rem;color:var(--text-dim)">Sin citas agendadas hoy</div>';return;}
+    const completadas=ch.filter(c=>c.estado==='Completado').length;
+    const canceladas=ch.filter(c=>['Cancelado','No Asistió'].includes(c.estado||'')).length;
+    const enProceso=ch.filter(c=>c.estado==='En tratamiento').length;
+    const pendientes=total-completadas-canceladas-enProceso;
+    const restantes=enProceso+pendientes;
+    const resEl=document.getElementById('citasDiaResumen');
+    if(resEl) resEl.textContent=total+' cita'+(total!==1?'s':'')+' hoy · '+(completadas+canceladas)+' resueltas';
+    const leyEl=document.getElementById('citasDiaLeyenda');
+    const items=[{label:'Completadas',val:completadas,color:'#34D399'},{label:'En proceso',val:enProceso,color:'#00C2A8'},{label:'Pendientes',val:pendientes,color:'#4A9EFF'},{label:'Canceladas',val:canceladas,color:'#FF5C5C'}].filter(i=>i.val>0);
+    if(leyEl) leyEl.innerHTML=items.map(i=>'<div style="display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:50%;background:'+i.color+';flex-shrink:0"></div>'+i.label+': <strong style="color:var(--text)">'+i.val+'</strong></div>').join('');
+    if(window._chartDiaHoy) window._chartDiaHoy.destroy();
+    const ctx=canvas.getContext('2d');
+    window._chartDiaHoy=new Chart(ctx,{type:'doughnut',
+      data:{labels:items.map(i=>i.label),datasets:[{data:items.map(i=>i.val),backgroundColor:items.map(i=>i.color+'D4'),borderColor:items.map(i=>i.color),borderWidth:2,hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'70%',animation:{duration:600},
+        plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(6,13,20,.9)',titleColor:'#E8F0F8',bodyColor:'rgba(232,240,248,.7)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>ctx.label+': '+ctx.parsed+' ('+Math.round(ctx.parsed/total*100)+'%)'}}},},
+      plugins:[{id:'center',afterDraw(chart){const{ctx:c,chartArea:{left,right,top,bottom}}=chart;const cx=(left+right)/2,cy=(top+bottom)/2;c.save();c.font='bold 28px var(--font-mono,"JetBrains Mono",monospace)';c.fillStyle='#E8F0F8';c.textAlign='center';c.textBaseline='middle';c.fillText(String(restantes),cx,cy-8);c.font='11px "DM Sans",sans-serif';c.fillStyle='rgba(232,240,248,.45)';c.fillText(restantes===1?'pendiente':'pendientes',cx,cy+14);c.restore();}}]});
+  }catch(e){console.warn('chartDiaHoy:',e.message);}
+}
 
 function renderEnConsulta(){
   const el = document.getElementById('enConsultaSection');
