@@ -7,258 +7,220 @@
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-/* ══════════════════════════════════════════════════════
-   GREETING
-══════════════════════════════════════════════════════ */
-.greeting { margin-bottom: 20px; }
-.greeting-title {
-  font-family: var(--font-display);
-  font-size: 1.95rem; font-style: italic; color: var(--text);
-  background: linear-gradient(135deg, #E8F0F8 50%, var(--teal));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.greeting-sub { font-size: .8rem; color: var(--text-muted); margin-top: 2px; }
+/* ═══════════════════════════════════════════════════════════════
+   DENTAL OS — DESIGN SYSTEM v3
+   Performance: CSS custom properties, no repaints, GPU layers
+   Scalability: BEM-lite naming, mobile-first, table layout
+═══════════════════════════════════════════════════════════════ */
 
-/* ══════════════════════════════════════════════════════
-   MÉTRICAS DEL DÍA
-══════════════════════════════════════════════════════ */
-.day-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px; margin-bottom: 16px;
-}
-.dmc {
-  border-radius: 14px; padding: 15px 18px;
-  display: flex; align-items: center; gap: 13px;
-  transition: transform .18s, box-shadow .18s;
-}
-.dmc:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
-.dmc-icon { font-size: 1.6rem; flex-shrink: 0; }
-.dmc-val  { font-family: var(--font-mono); font-size: 1.65rem; font-weight: 800; line-height: 1; }
-.dmc-lbl  { font-size: .62rem; font-weight: 600; opacity: .72; margin-top: 3px; letter-spacing: .02em; }
+/* ── GREETING ─────────────────────────────────────────────── */
+.greeting{margin-bottom:20px}
+.greeting-title{font-family:var(--font-display);font-size:1.9rem;font-style:italic;
+  background:linear-gradient(135deg,var(--text) 55%,var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.greeting-sub{font-size:.78rem;color:var(--text-muted);margin-top:2px}
 
-/* ══════════════════════════════════════════════════════
-   SECCIÓN EN CONSULTA
-══════════════════════════════════════════════════════ */
-.section-header {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 10px; padding: 0 2px;
+/* ── SECTION LABEL ────────────────────────────────────────── */
+.sec-label{
+  display:flex;align-items:center;gap:9px;
+  margin-bottom:10px;padding:0 1px
 }
-.section-header-title {
-  font-size: .62rem; font-weight: 800;
-  letter-spacing: .16em; text-transform: uppercase;
+.sec-label-text{
+  font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase
 }
-.section-header-count {
-  font-size: .6rem; font-weight: 700; border-radius: 20px;
-  padding: 1px 9px;
+.sec-label-badge{
+  font-size:.58rem;font-weight:700;border-radius:20px;padding:1px 9px
 }
 
-/* Tabla en consulta */
-.consulta-table {
-  width: 100%; border-collapse: collapse;
-  background: var(--surface);
-  border: 1.5px solid rgba(0,194,168,.3);
-  border-radius: 14px; overflow: hidden;
-  margin-bottom: 14px;
+/* ── MÉTRICAS ─────────────────────────────────────────────── */
+.day-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.dmc{
+  border-radius:12px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  will-change:transform;
+  transition:transform .15s,box-shadow .15s
 }
-.consulta-table thead tr {
-  background: linear-gradient(90deg, rgba(0,194,168,.18), rgba(0,194,168,.06));
-  border-bottom: 1px solid rgba(0,194,168,.2);
-}
-.consulta-table thead th {
-  padding: 10px 14px;
-  font-size: .58rem; font-weight: 800;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--teal); text-align: left; white-space: nowrap;
-}
-.consulta-table thead th:last-child { text-align: right; }
-.consulta-table tbody tr {
-  border-bottom: 1px solid rgba(0,194,168,.08);
-  transition: background .14s;
-}
-.consulta-table tbody tr:last-child { border-bottom: none; }
-.consulta-table tbody tr:hover { background: rgba(0,194,168,.04); }
-.consulta-table td {
-  padding: 13px 14px; vertical-align: middle;
-}
+.dmc:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.dmc-icon{font-size:1.5rem;flex-shrink:0}
+.dmc-val{font-family:var(--font-mono);font-size:1.6rem;font-weight:800;line-height:1}
+.dmc-lbl{font-size:.6rem;font-weight:600;opacity:.75;margin-top:3px;letter-spacing:.02em}
 
-.ct-live { display: flex; align-items: center; gap: 7px; }
-.ct-pulse {
-  width: 9px; height: 9px; border-radius: 50%; background: var(--teal);
-  flex-shrink: 0;
-  animation: ctPulse 1.8s infinite;
+/* ── TABLA BASE ────────────────────────────────────────────── */
+.ds-table-wrap{
+  border-radius:12px;overflow:hidden;
+  border:1px solid var(--border);
+  margin-bottom:14px;background:var(--surface)
 }
-@keyframes ctPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(0,194,168,.6); }
-  70%  { box-shadow: 0 0 0 7px rgba(0,194,168,0); }
-  100% { box-shadow: 0 0 0 0 rgba(0,194,168,0); }
+.ds-table-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-bottom:1px solid var(--border)
 }
-.ct-nombre { font-size: .9rem; font-weight: 700; color: var(--text); }
-.ct-trat   { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
-.ct-extra  {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: .6rem; font-weight: 700;
-  background: rgba(244,185,66,.15); color: #F4B942;
-  border: 1px solid rgba(244,185,66,.35);
-  border-radius: 5px; padding: 1px 6px; margin-top: 4px;
+.ds-table{width:100%;border-collapse:collapse}
+.ds-table thead th{
+  padding:9px 14px;
+  font-size:.56rem;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;text-align:left;
+  border-bottom:1px solid var(--border);white-space:nowrap
 }
-.ct-doc { display: flex; align-items: center; gap: 7px; }
-.ct-doc-dot {
-  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-  box-shadow: 0 0 6px currentColor;
-}
-.ct-doc-name { font-size: .78rem; font-weight: 600; color: var(--text); }
-.ct-time { font-family: var(--font-mono); font-size: .78rem; color: var(--text-muted); white-space: nowrap; }
-.ct-time strong { color: var(--teal); }
-.ct-pct {
-  font-family: var(--font-mono); font-size: .82rem; font-weight: 800;
-  border-radius: 7px; padding: 3px 10px; white-space: nowrap;
-}
-.ct-timer { font-family: var(--font-mono); font-size: .7rem; color: var(--text-dim); white-space: nowrap; }
-.ct-actions { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; min-width: 130px; }
+.ds-table thead th:last-child{text-align:right}
+.ds-table tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+.ds-table tbody tr:last-child{border-bottom:none}
+.ds-table tbody tr:hover{background:var(--surface2)}
+.ds-table td{padding:11px 14px;vertical-align:middle;font-size:.8rem}
+.ds-table td:last-child{text-align:right}
 
-/* ══════════════════════════════════════════════════════
-   SECCIÓN PRÓXIMOS TURNOS
-══════════════════════════════════════════════════════ */
-.turnos-wrap {
-  background: var(--surface);
-  border: 1.5px solid rgba(74,158,255,.3);
-  border-radius: 14px; overflow: hidden;
-  margin-bottom: 14px;
+/* ── EN CONSULTA ──────────────────────────────────────────── */
+.ct-wrap{
+  border-color:rgba(0,194,168,.3)!important;
 }
-.turnos-head {
-  background: linear-gradient(90deg, rgba(74,158,255,.18), rgba(74,158,255,.05));
-  border-bottom: 1px solid rgba(74,158,255,.2);
-  padding: 10px 18px;
-  display: flex; align-items: center; justify-content: space-between;
+.ct-wrap .ds-table-head{
+  background:linear-gradient(90deg,rgba(0,194,168,.15),rgba(0,194,168,.04))
 }
-.turnos-head-lbl {
-  font-size: .6rem; font-weight: 800;
-  letter-spacing: .16em; text-transform: uppercase; color: var(--blue);
+.ct-wrap .ds-table thead th{color:rgba(0,194,168,.75)}
+.ct-pulse{
+  width:9px;height:9px;border-radius:50%;background:var(--teal);flex-shrink:0;
+  animation:pulse 1.8s infinite
 }
-.turnos-head-count {
-  background: rgba(74,158,255,.15); color: var(--blue);
-  font-size: .6rem; font-weight: 700; border-radius: 20px; padding: 1px 8px;
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(0,194,168,.55)}
+  70%{box-shadow:0 0 0 7px rgba(0,194,168,0)}
+  100%{box-shadow:0 0 0 0 rgba(0,194,168,0)}
 }
-.turnos-head-disp { font-size: .65rem; font-weight: 600; }
+.ct-nombre{font-size:.88rem;font-weight:700;color:var(--text)}
+.ct-trat{font-size:.7rem;color:var(--text-muted);margin-top:1px}
+.ct-extra{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:.6rem;font-weight:700;
+  background:rgba(244,185,66,.14);color:#F4B942;
+  border:1px solid rgba(244,185,66,.32);
+  border-radius:4px;padding:1px 6px;margin-top:4px
+}
+.ct-doc{display:flex;align-items:center;gap:6px}
+.ct-doc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ct-doc-name{font-size:.78rem;font-weight:600;color:var(--text)}
+.ct-time{font-family:var(--font-mono);font-size:.75rem;color:var(--text-muted);white-space:nowrap;line-height:1.7}
+.ct-time strong{color:var(--teal)}
+.ct-pct{
+  font-family:var(--font-mono);font-size:.8rem;font-weight:800;
+  border-radius:6px;padding:3px 9px;white-space:nowrap;display:inline-block
+}
+.ct-timer{font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim);margin-top:3px}
+.ct-actions{display:flex;flex-direction:column;gap:4px;align-items:flex-end;min-width:120px}
 
-/* Tabla próximos turnos */
-.turnos-table { width: 100%; border-collapse: collapse; }
-.turnos-table thead tr {
-  border-bottom: 1px solid rgba(74,158,255,.12);
+/* ── PRÓXIMOS TURNOS ──────────────────────────────────────── */
+.tt-wrap{border-color:rgba(74,158,255,.28)!important}
+.tt-wrap .ds-table-head{
+  background:linear-gradient(90deg,rgba(74,158,255,.15),rgba(74,158,255,.03))
 }
-.turnos-table thead th {
-  padding: 8px 14px;
-  font-size: .56rem; font-weight: 800;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: rgba(74,158,255,.7); text-align: left;
+.tt-wrap .ds-table thead th{color:rgba(74,158,255,.75)}
+.tt-count{
+  background:rgba(74,158,255,.14);color:var(--blue);
+  font-size:.58rem;font-weight:700;border-radius:20px;padding:1px 8px
 }
-.turnos-table thead th:last-child { text-align: right; }
-.turnos-table tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: background .14s;
+.tt-disp{font-size:.64rem;font-weight:600}
+.tt-rank{
+  font-size:.56rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  border-radius:4px;padding:2px 7px;white-space:nowrap;display:inline-block;margin-bottom:4px
 }
-.turnos-table tbody tr:last-child { border-bottom: none; }
-.turnos-table tbody tr:hover { background: rgba(74,158,255,.04); }
-.turnos-table td { padding: 12px 14px; vertical-align: middle; }
+.tt-nombre{font-size:.85rem;font-weight:700;color:var(--text)}
+.tt-trat{font-size:.68rem;color:var(--text-muted);margin-top:1px}
+.tt-time{font-family:var(--font-mono);font-size:.73rem;white-space:nowrap;line-height:1.8}
+.tt-actions{display:flex;flex-direction:column;gap:4px;align-items:flex-end;min-width:110px}
+.tt-select{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:7px;padding:5px 10px;
+  color:var(--text);font-size:.72rem;
+  outline:none;width:100%;max-width:220px;cursor:pointer;
+  transition:border-color .15s
+}
+.tt-select:focus{border-color:var(--teal)}
+.tt-select.assigned{border-color:var(--teal)!important}
 
-.tt-rank {
-  font-size: .58rem; font-weight: 800;
-  letter-spacing: .08em; text-transform: uppercase;
-  border-radius: 5px; padding: 2px 8px;
-  white-space: nowrap;
+/* ── DOCTORES ─────────────────────────────────────────────── */
+.doc-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:14px 16px;margin-bottom:14px
 }
-.tt-nombre { font-size: .88rem; font-weight: 700; color: var(--text); }
-.tt-trat   { font-size: .7rem; color: var(--text-muted); margin-top: 1px; }
-.tt-time   { font-family: var(--font-mono); font-size: .75rem; white-space: nowrap; }
-.tt-actions { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.doc-wrap-head{
+  font-size:.58rem;font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:11px
+}
+.doc-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(165px,1fr));
+  gap:8px
+}
+.doc-card{
+  position:relative;border-radius:10px;
+  padding:11px 12px 11px 15px;overflow:hidden;
+  transition:transform .13s,box-shadow .13s
+}
+.doc-card:hover{transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,.14)}
+.doc-bar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px}
+.doc-dot{position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%}
+.doc-av{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:800;color:#fff;flex-shrink:0
+}
+.doc-name{font-size:.75rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-esp{font-size:.58rem;color:var(--text-dim);margin-bottom:3px}
+.doc-st{font-size:.68rem;font-weight:700;display:flex;align-items:center;gap:4px}
+.doc-px{font-size:.6rem;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* ══════════════════════════════════════════════════════
-   DOCTORES
-══════════════════════════════════════════════════════ */
-.doctores-wrap {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px; padding: 14px 18px;
-  margin-bottom: 14px;
-}
-.doctores-head {
-  font-size: .6rem; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
-  color: var(--text-dim); margin-bottom: 12px;
-}
-.doctores-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 8px;
-}
-.doc-card {
-  position: relative;
-  border-radius: 12px; padding: 12px 13px 12px 16px;
-  overflow: hidden;
-  transition: transform .15s, box-shadow .15s;
-}
-.doc-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.15); }
-.doc-bar  { position: absolute; left:0; top:0; bottom:0; width:4px; border-radius:12px 0 0 12px; }
-.doc-dot  { position: absolute; top:10px; right:10px; width:8px; height:8px; border-radius:50%; }
-.doc-av   {
-  width:34px; height:34px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-size:.72rem; font-weight:800; color:#fff; flex-shrink:0;
-}
-.doc-name { font-size:.78rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.doc-esp  { font-size:.6rem; color:var(--text-dim); margin-bottom:3px; }
-.doc-st   { font-size:.7rem; font-weight:700; display:flex; align-items:center; gap:4px; }
-.doc-px   { font-size:.62rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* ── CITAS HOY + CHART ────────────────────────────────────── */
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow:hidden}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.card-title{font-size:.58rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--teal);margin-bottom:13px;display:flex;align-items:center;justify-content:space-between}
+.chart-wrap{position:relative;height:165px}
+.cita-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.cita-row:last-child{border-bottom:none}
+.cita-hora{font-family:var(--font-mono);font-size:.76rem;font-weight:700;color:var(--teal);min-width:40px}
+.cita-info{flex:1;min-width:0}
+.cita-px{font-size:.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cita-trat{font-size:.65rem;color:var(--text-muted)}
+.empty-mini{text-align:center;padding:18px;color:var(--text-dim);font-size:.75rem}
 
-/* ══════════════════════════════════════════════════════
-   CITAS HOY + CHART
-══════════════════════════════════════════════════════ */
-.dash-card  { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 20px; overflow:hidden; }
-.dash-grid  { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
-.card-title { font-size:.6rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--teal); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
-.chart-wrap { position:relative; height:170px; }
-.cita-row   { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
-.cita-row:last-child { border-bottom:none; }
-.cita-hora  { font-family:var(--font-mono); font-size:.78rem; font-weight:700; color:var(--teal); min-width:42px; }
-.cita-info  { flex:1; min-width:0; }
-.cita-px    { font-size:.82rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cita-trat  { font-size:.68rem; color:var(--text-muted); }
-.empty-mini { text-align:center; padding:20px; color:var(--text-dim); font-size:.78rem; }
-.turno-dot  { width:10px; height:10px; border-radius:50%; background:var(--teal); animation:ctPulse 1.8s infinite; }
+/* ── BUTTONS ──────────────────────────────────────────────── */
+.btn-wa{
+  background:rgba(37,211,102,.1);
+  border:1px solid rgba(37,211,102,.3);
+  color:#25D366
+}
+.btn-wa:hover{background:rgba(37,211,102,.2)}
+.btn-fin{
+  background:linear-gradient(135deg,#00C2A8,#00a08a);
+  color:#050c12;border:none;font-weight:800;
+  box-shadow:0 2px 8px rgba(0,194,168,.25);
+  transition:all .15s
+}
+.btn-fin:hover{box-shadow:0 4px 14px rgba(0,194,168,.38);transform:translateY(-1px)}
+.btn-iniciar{
+  background:linear-gradient(135deg,#4A9EFF,#2d7fde);
+  color:#fff;border:none;font-weight:800;
+  box-shadow:0 2px 8px rgba(74,158,255,.22);
+  transition:all .15s
+}
+.btn-iniciar:hover{box-shadow:0 4px 14px rgba(74,158,255,.35);transform:translateY(-1px)}
+.btn-iniciar:disabled{background:var(--surface2);color:var(--text-dim);box-shadow:none;transform:none;cursor:not-allowed}
 
-/* Buttons */
-.btn-wa { background:rgba(37,211,102,.12); border:1px solid rgba(37,211,102,.35); color:#25D366; }
-.btn-wa:hover { background:rgba(37,211,102,.22); }
-.btn-fin {
-  background: linear-gradient(135deg,#00C2A8,#00a896);
-  color:#060D14; border:none; font-weight:800;
-  box-shadow:0 2px 10px rgba(0,194,168,.25);
-  transition:all .18s;
-}
-.btn-fin:hover { box-shadow:0 4px 16px rgba(0,194,168,.4); transform:translateY(-1px); }
-.btn-iniciar {
-  background:linear-gradient(135deg,var(--teal),#00a896);
-  color:#060D14; border:none; font-weight:800;
-  box-shadow:0 2px 10px rgba(0,194,168,.2);
-  transition:all .18s;
-}
-.btn-iniciar:hover { box-shadow:0 4px 14px rgba(0,194,168,.35); transform:translateY(-1px); }
-.btn-iniciar:disabled { background:var(--surface2); color:var(--text-dim); box-shadow:none; transform:none; }
+/* ── TURNO-DOT (para secciones) ───────────────────────────── */
+.turno-dot{width:9px;height:9px;border-radius:50%;background:var(--teal);animation:pulse 1.8s infinite;flex-shrink:0}
 
-@media(max-width:900px){
-  .day-metrics{grid-template-columns:1fr 1fr;}
-  .dash-grid{grid-template-columns:1fr;}
-  .doctores-grid{grid-template-columns:1fr 1fr;}
-  .consulta-table,.turnos-table{font-size:.75rem;}
-  .ct-actions,.tt-actions{min-width:90px;}
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media(max-width:960px){
+  .day-metrics{grid-template-columns:repeat(2,1fr)}
+  .dash-grid{grid-template-columns:1fr}
+  .doc-grid{grid-template-columns:repeat(2,1fr)}
 }
-@media(max-width:600px){
-  .day-metrics{grid-template-columns:1fr 1fr;}
-  .doctores-grid{grid-template-columns:1fr;}
+@media(max-width:640px){
+  .day-metrics{grid-template-columns:repeat(2,1fr)}
+  .doc-grid{grid-template-columns:1fr}
+  .ds-table td:nth-child(3),.ds-table th:nth-child(3){display:none}
 }
 </style>
+
 </head>
 <body>
 <aside class="sidebar" id="sidebar"></aside>
@@ -585,79 +547,43 @@ function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'
 
 // ── MÉTRICAS DEL DÍA ─────────────────────────────────────
 function renderMetricasDia(){
-  const el=document.getElementById('metricasDia'); if(!el) return;
+  const el=document.getElementById('metricasDia');if(!el)return;
   const h=ALL_CITAS.filter(c=>c.fecha===todayISO());
-  const tot=h.length;
-  const proc=h.filter(c=>c.estado==='En tratamiento').length;
-  const sala=h.filter(c=>c.estado==='En sala de espera').length;
-  const comp=h.filter(c=>c.estado==='Completado').length;
-  const pend=h.filter(c=>!['Completado','No Asistió','Cancelado','En tratamiento','En sala de espera'].includes(c.estado||'')).length;
-  const cards=[
-    {icon:'📋',val:tot, lbl:'Citas del día',     bg:'linear-gradient(135deg,rgba(74,158,255,.18),rgba(74,158,255,.07))', border:'rgba(74,158,255,.3)', col:'#4A9EFF'},
-    {icon:'🩺',val:proc+sala,lbl:'En atención / sala',bg:'linear-gradient(135deg,rgba(0,194,168,.18),rgba(0,194,168,.07))', border:'rgba(0,194,168,.3)',  col:'#00C2A8'},
-    {icon:'✅',val:comp,lbl:'Completadas',         bg:'linear-gradient(135deg,rgba(52,211,153,.18),rgba(52,211,153,.07))',border:'rgba(52,211,153,.3)',col:'#34D399'},
-    {icon:'⏳',val:pend,lbl:'Pendientes',           bg:'linear-gradient(135deg,rgba(244,185,66,.18),rgba(244,185,66,.07))',border:'rgba(244,185,66,.3)', col:'#F4B942'},
+  const tot=h.length,proc=h.filter(c=>c.estado==='En tratamiento').length,
+    sala=h.filter(c=>c.estado==='En sala de espera').length,
+    comp=h.filter(c=>c.estado==='Completado').length,
+    pend=h.filter(c=>!['Completado','No Asistió','Cancelado','En tratamiento','En sala de espera'].includes(c.estado||'')).length;
+  const C=[
+    {i:'📋',v:tot, l:'Citas del día',    c:'#4A9EFF',bg:'rgba(74,158,255,.14)',b:'rgba(74,158,255,.28)'},
+    {i:'🩺',v:proc+sala,l:'En atención',  c:'#00C2A8',bg:'rgba(0,194,168,.14)', b:'rgba(0,194,168,.28)'},
+    {i:'✅',v:comp,l:'Completadas',       c:'#34D399',bg:'rgba(52,211,153,.14)',b:'rgba(52,211,153,.28)'},
+    {i:'⏳',v:pend,l:'Pendientes',        c:'#F4B942',bg:'rgba(244,185,66,.14)',b:'rgba(244,185,66,.28)'},
   ];
-  el.innerHTML='<div class="day-metrics">'+cards.map(c=>
-    `<div class="dmc" style="background:${c.bg};border:1.5px solid ${c.border}">
-      <div class="dmc-icon">${c.icon}</div>
-      <div>
-        <div class="dmc-val" style="color:${c.col}">${c.val}</div>
-        <div class="dmc-lbl" style="color:${c.col}">${c.lbl}</div>
-      </div>
-    </div>`).join('')+'</div>';
+  el.innerHTML='<div class="day-metrics">'+C.map(k=>`<div class="dmc" style="background:${k.bg};border:1.5px solid ${k.b}"><div class="dmc-icon">${k.i}</div><div><div class="dmc-val" style="color:${k.c}">${k.v}</div><div class="dmc-lbl" style="color:${k.c}">${k.l}</div></div></div>`).join('')+'</div>';
 }
 
 
 function renderEstadoDoctores(){
-  const el=document.getElementById('estadoDoctores');
-  if(!el||!ALL_DOCTORES.length) return;
-  const hA=getHoraMin(), ch=getCitasHoy();
-  // COLORES: en consulta=NARANJA/ROJO para que no se confunda con disponible
+  const el=document.getElementById('estadoDoctores');if(!el||!ALL_DOCTORES.length)return;
+  const hA=getHoraMin(),ch=getCitasHoy();
+  // COLORES: naranja=en consulta, verde=disponible (no se confunden)
   const CFG={
-    consulta:  {bg:'rgba(255,140,0,.1)', border:'rgba(255,140,0,.35)', bar:'#FF8C00', dot:'#FF8C00', lbl:'En consulta'},
-    disponible:{bg:'rgba(52,211,153,.09)',border:'rgba(52,211,153,.3)', bar:'#34D399', dot:'#34D399', lbl:'Disponible'},
-    pausa:     {bg:'rgba(244,185,66,.09)',border:'rgba(244,185,66,.3)', bar:'#F4B942', dot:'#F4B942', lbl:'En pausa'},
-    salida:    {bg:'rgba(107,114,128,.08)',border:'rgba(107,114,128,.22)',bar:'#6B7280',dot:'#6B7280',lbl:'Fin turno'},
+    consulta:{bg:'rgba(255,140,0,.1)',b:'rgba(255,140,0,.3)',bar:'#FF8C00',dot:'#FF8C00',lbl:'En consulta'},
+    disponible:{bg:'rgba(52,211,153,.09)',b:'rgba(52,211,153,.28)',bar:'#34D399',dot:'#34D399',lbl:'Disponible'},
+    pausa:{bg:'rgba(244,185,66,.09)',b:'rgba(244,185,66,.28)',bar:'#F4B942',dot:'#F4B942',lbl:'En pausa'},
+    salida:{bg:'rgba(107,114,128,.08)',b:'rgba(107,114,128,.22)',bar:'#6B7280',dot:'#6B7280',lbl:'Fin turno'},
   };
   const items=ALL_DOCTORES.map(d=>{
     const act=ch.find(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');
-    const ult=[...ch].filter(c=>c.doctor===d.nombre&&c.estado==='Completado')
-              .sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
+    const ult=[...ch].filter(c=>c.doctor===d.nombre&&c.estado==='Completado').sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
     const pausa=ult?.pausaDoctor||'';
     let tipo='disponible',icon='✅',extra='';
-    if(act){
-      const[h,m]=(act.hora||'00:00').split(':').map(Number);
-      const dur=(durEst(act.tratamiento)||30)+(act.tiempoExtra||0);
-      const rest=Math.max(0,dur-(hA-(h*60+m)));
-      tipo='consulta'; icon='🩺';
-      extra='<div class="doc-px" style="color:rgba(255,140,0,.8)">👤 '+(act.paciente||'').split(' ').slice(0,2).join(' ')+(rest>0?' · ⌛'+fmtDur(rest):'')+'</div>';
-    } else if(pausa==='baño') {tipo='pausa'; icon='🚻';}
-    else if(pausa==='comida'){tipo='pausa'; icon='🍽️';}
-    else if(pausa==='salida'){tipo='salida';icon='🏠';}
-    const cfg=CFG[tipo];
-    const ini=d.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
-    return {d,cfg,icon,ini,extra};
+    if(act){tipo='consulta';icon='🩺';const[h,m]=(act.hora||'00:00').split(':').map(Number),dur=(durEst(act.tratamiento)||30)+(act.tiempoExtra||0),rest=Math.max(0,dur-(hA-(h*60+m)));extra=`<div class="doc-px" style="color:#FF8C00">👤 ${(act.paciente||'').split(' ').slice(0,2).join(' ')}${rest>0?' · ⌛'+fmtDur(rest):''}</div>`;}
+    else if(pausa==='baño'){tipo='pausa';icon='🚻';}else if(pausa==='comida'){tipo='pausa';icon='🍽️';}else if(pausa==='salida'){tipo='salida';icon='🏠';}
+    const cfg=CFG[tipo],ini=d.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
+    return`<div class="doc-card" style="background:${cfg.bg};border:1px solid ${cfg.b}"><div class="doc-bar" style="background:${cfg.bar}"></div><div class="doc-dot" style="background:${cfg.dot}"></div><div style="display:flex;align-items:center;gap:8px"><div class="doc-av" style="background:${d.color||'var(--teal)'};box-shadow:0 2px 6px ${d.color||'#00C2A8'}44">${ini}</div><div style="min-width:0;flex:1"><div class="doc-name">${d.nombre.split(' ').slice(0,3).join(' ')}</div><div class="doc-esp">${d.especialidad||'Dentista'}</div><div class="doc-st" style="color:${cfg.bar}">${icon} ${cfg.lbl}</div>${extra}</div></div></div>`;
   });
-  el.innerHTML='<div class="doctores-wrap">'+
-    '<div class="doctores-head">👨‍⚕️ &nbsp;ESTADO DE DOCTORES</div>'+
-    '<div class="doctores-grid">'+
-    items.map(({d,cfg,icon,ini,extra})=>
-      `<div class="doc-card" style="background:${cfg.bg};border:1px solid ${cfg.border}">
-        <div class="doc-bar" style="background:${cfg.bar}"></div>
-        <div class="doc-dot" style="background:${cfg.dot}"></div>
-        <div style="display:flex;align-items:center;gap:9px">
-          <div class="doc-av" style="background:${d.color||'var(--teal)'}">${ini}</div>
-          <div style="min-width:0;flex:1">
-            <div class="doc-name">${d.nombre.split(' ').slice(0,3).join(' ')}</div>
-            <div class="doc-esp">${d.especialidad||'Dentista'}</div>
-            <div class="doc-st" style="color:${cfg.bar}">${icon} ${cfg.lbl}</div>
-            ${extra}
-          </div>
-        </div>
-      </div>`
-    ).join('')+
-    '</div></div>';
+  el.innerHTML=`<div class="doc-wrap"><div class="doc-wrap-head">👨‍⚕️ &nbsp;ESTADO DE DOCTORES</div><div class="doc-grid">${items.join('')}</div></div>`;
 }
 
 
@@ -684,74 +610,62 @@ function getCitasEnCurso(){
 }
 
 function renderEnConsulta(){
-  const el=document.getElementById('enConsultaSection'); if(!el) return;
+  const el=document.getElementById('enConsultaSection');if(!el)return;
   const enCurso=getCitasEnCurso();
-
-  // Limpiar entradas finalizadas
-  Object.keys(_consultasActivas).forEach(id=>{
-    if(!enCurso.find(c=>c.id===id)) delete _consultasActivas[id];
-  });
-
-  // Registrar inicio de nuevas citas
-  const hA=getHoraMin();
+  // Limpiar entradas que ya terminaron
+  Object.keys(_consultasActivas).forEach(id=>{if(!enCurso.find(c=>c.id===id))delete _consultasActivas[id];});
+  // Registrar inicio de nuevas
   enCurso.forEach(c=>{
     if(!_consultasActivas[c.id]){
       const[h,m]=(c.hora||'00:00').split(':').map(Number);
       const iMin=c.inicioRealMin||(h*60+m);
       const hoy=new Date();
-      _consultasActivas[c.id]={
-        inicioRealMin:iMin,
-        inicioRealDate:new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),Math.floor(iMin/60),iMin%60,0)
-      };
+      _consultasActivas[c.id]={inicioRealMin:iMin,inicioRealDate:new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),Math.floor(iMin/60),iMin%60,0)};
     }
   });
-
   if(!enCurso.length){
     el.innerHTML='';
     if(_masterTimer){clearInterval(_masterTimer);_masterTimer=null;}
     return;
   }
-
-  const rows=enCurso.map(c=>buildConsultaCard(c)).join('');
-
   el.innerHTML=`
-  <div class="section-header">
+  <div class="sec-label">
     <div class="ct-pulse"></div>
-    <span class="section-header-title" style="color:var(--teal)">En consulta ahora</span>
-    <span class="section-header-count" style="background:rgba(0,194,168,.15);color:var(--teal)">${enCurso.length}</span>
+    <span class="sec-label-text" style="color:var(--teal)">En consulta ahora</span>
+    <span class="sec-label-badge" style="background:rgba(0,194,168,.14);color:var(--teal)">${enCurso.length}</span>
   </div>
-  <table class="consulta-table">
-    <thead>
-      <tr>
-        <th>Paciente</th>
+  <div class="ds-table-wrap ct-wrap">
+    <div class="ds-table-head">
+      <span style="font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)">🩺 Pacientes en tratamiento activo</span>
+      <span style="font-size:.65rem;color:var(--text-dim)">${new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</span>
+    </div>
+    <table class="ds-table">
+      <thead><tr>
+        <th>Paciente / Tratamiento</th>
         <th>Doctor</th>
-        <th>Horario</th>
+        <th>Inicio → Fin est.</th>
         <th>Progreso</th>
+        <th>Tel. Paciente</th>
+        <th>Tel. Familiar</th>
         <th style="text-align:right">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-
-  if(_masterTimer) clearInterval(_masterTimer);
+      </tr></thead>
+      <tbody>${enCurso.map(c=>buildConsultaCard(c)).join('')}</tbody>
+    </table>
+  </div>`;
+  if(_masterTimer)clearInterval(_masterTimer);
   _masterTimer=setInterval(()=>tickAllConsultas(),1000);
 }
 
-
 function buildConsultaCard(c){
-  const est=_consultasActivas[c.id]; if(!est) return '';
+  const est=_consultasActivas[c.id];if(!est)return'';
   const hA=getHoraMin(),iMin=est.inicioRealMin;
   const dur=(durEst(c.tratamiento)||30)+(c.tiempoExtra||0);
-  const finMin=iMin+dur;
-  const finH=String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
+  const finMin=iMin+dur,finH=String(Math.floor(finMin/60)).padStart(2,'0')+':'+String(finMin%60).padStart(2,'0');
   const iniH=String(Math.floor(iMin/60)).padStart(2,'0')+':'+String(iMin%60).padStart(2,'0');
-  const trans=Math.max(0,hA-iMin);
-  const pct=Math.min(100,Math.round((trans/dur)*100));
+  const trans=Math.max(0,hA-iMin),pct=Math.min(100,Math.round((trans/dur)*100));
   const colP=pct<60?'#00C2A8':pct<85?'#F4B942':'#FF5C5C';
   const trMs=Math.max(0,new Date()-est.inicioRealDate);
-  const trH=String(Math.floor(trMs/3600000)).padStart(2,'0');
-  const trM=String(Math.floor((trMs%3600000)/60000)).padStart(2,'0');
-  const trS=String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
+  const trH=String(Math.floor(trMs/3600000)).padStart(2,'0'),trM=String(Math.floor((trMs%3600000)/60000)).padStart(2,'0'),trS=String(Math.floor((trMs%60000)/1000)).padStart(2,'0');
   const medico=c.doctor||SESSION?.user?.nombre||'—';
   const docObj=ALL_DOCTORES.find(d=>d.nombre===medico);
   const docCol=docObj?.color||'#00C2A8';
@@ -759,44 +673,21 @@ function buildConsultaCard(c){
   const telPx=(c.tel||px?.telefono||px?.tel||'').replace(/\D/g,'');
   const telFam=(px?.telFamiliar||px?.telefonoFamiliar||'').replace(/\D/g,'');
   const nom0=(c.paciente||'').split(' ')[0];
-
-  return `
-  <tr>
-    <!-- PACIENTE + TRATAMIENTO -->
+  return`<tr>
     <td>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-        <div class="ct-pulse"></div>
-        <span class="ct-nombre">${c.paciente||'—'}</span>
-      </div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><div class="ct-pulse"></div><span class="ct-nombre">${c.paciente||'—'}</span></div>
       <div class="ct-trat">🦷 ${c.tratamiento||'Sin tratamiento'}</div>
       ${c.tiempoExtra>0?`<div class="ct-extra">⏰ +${c.tiempoExtra}min extendido</div>`:''}
     </td>
-    <!-- DOCTOR -->
-    <td>
-      <div class="ct-doc">
-        <span class="ct-doc-dot" style="background:${docCol};box-shadow:0 0 6px ${docCol}88"></span>
-        <span class="ct-doc-name">${medico}</span>
-      </div>
-    </td>
-    <!-- HORARIO -->
-    <td class="ct-time">
-      <div>🕐 <strong>${iniH}</strong></div>
-      <div style="margin-top:2px">🏁 <strong>${finH}</strong></div>
-    </td>
-    <!-- PROGRESO -->
-    <td>
-      <span class="ct-pct" style="background:${colP}18;border:1px solid ${colP}44;color:${colP}">${pct}%</span>
-      <div id="trTxt_${c.id}" class="ct-timer" style="margin-top:4px">⏳ ${trH}:${trM}:${trS}</div>
-    </td>
-    <!-- ACCIONES -->
+    <td><div class="ct-doc"><span class="ct-doc-dot" style="background:${docCol};box-shadow:0 0 5px ${docCol}66"></span><span class="ct-doc-name">${medico}</span></div></td>
+    <td class="ct-time"><div>🕐 <strong>${iniH}</strong></div><div>🏁 <strong>${finH}</strong></div></td>
+    <td><span class="ct-pct" style="background:${colP}18;border:1px solid ${colP}44;color:${colP}">${pct}%</span><div id="trTxt_${c.id}" class="ct-timer">⏳ ${trH}:${trM}:${trS}</div></td>
+    <td style="text-align:left">${telPx?`<button class="btn btn-sm btn-wa" style="font-size:.67rem;white-space:nowrap" onclick="whatsapp('${telPx}','Hola ${nom0}, tu consulta está en proceso')">📱 ${telPx}</button>`:'<span style="font-size:.68rem;color:var(--text-dim)">—</span>'}</td>
+    <td style="text-align:left">${telFam?`<button class="btn btn-sm btn-wa" style="font-size:.67rem;white-space:nowrap" onclick="whatsapp('${telFam}','Hola, informamos sobre la consulta de ${nom0}')">📞 Familiar</button>`:'<span style="font-size:.68rem;color:var(--text-dim)">—</span>'}</td>
     <td style="text-align:right">
       <div class="ct-actions">
-        ${telPx?`<button class="btn btn-sm btn-wa" style="font-size:.68rem" onclick="whatsapp('${telPx}','Hola ${nom0}, tu consulta está en proceso')">💬 Paciente</button>`:''}
-        ${telFam?`<button class="btn btn-sm btn-wa" style="font-size:.68rem" onclick="whatsapp('${telFam}','Hola, informamos sobre la consulta de ${nom0}')">📞 Familiar</button>`:''}
-        ${c.expId?`<a href="expediente.html?px=${c.expId}" class="btn btn-ghost btn-sm" style="font-size:.68rem;text-align:center">📋 Expediente</a>`:''}
-        <button class="btn btn-sm btn-fin" onclick="abrirFinalizarConsulta('${c.id}','${(c.paciente||'').replace(/'/g,"\\'")}','${(c.tratamiento||'').replace(/'/g,"\\'")}',${trans},${dur})">
-          ✅ Finalizar consulta
-        </button>
+        ${c.expId?`<a href="expediente.html?px=${c.expId}" class="btn btn-ghost btn-sm" style="font-size:.67rem">📋 Expediente</a>`:''}
+        <button class="btn btn-sm btn-fin" style="font-size:.72rem;font-weight:800;white-space:nowrap" onclick="abrirFinalizarConsulta('${c.id}','${(c.paciente||'').replace(/'/g,"\\'")}','${(c.tratamiento||'').replace(/'/g,"\\'")}',${trans},${dur})">✅ Finalizar consulta</button>
       </div>
     </td>
   </tr>`;
@@ -835,97 +726,63 @@ function tickAllConsultas(){
 }
 // ── PRÓXIMO TURNO ─────────────────────────────────────────
 function renderTurno(){
-  const el=document.getElementById('turnoSection'); if(!el) return;
+  const el=document.getElementById('turnoSection');if(!el)return;
   const hA=getHoraMin(),ch=getCitasHoy();
   const enCurso=getCitasEnCurso();
   const ocupados=new Set(enCurso.map(c=>c.doctor).filter(Boolean));
   const libres=ALL_DOCTORES.filter(d=>!ocupados.has(d.nombre));
-
-  const pend=ch.filter(c=>{
-    if(['Completado','No Asistió','Cancelado','En tratamiento'].includes(c.estado)) return false;
-    return true;
-  });
+  const pend=ch.filter(c=>!['Completado','No Asistió','Cancelado','En tratamiento'].includes(c.estado));
   const enE=pend.filter(c=>c.estado==='En sala de espera');
   const fut=pend.filter(c=>c.estado!=='En sala de espera');
-  const lista=[...enE,...fut].slice(0,4);
+  const lista=[...enE,...fut].slice(0,5);
 
   if(!lista.length){
-    el.innerHTML=`<div class="turnos-wrap" style="padding:18px;text-align:center">
-      <div style="font-size:.8rem;color:var(--text-dim)">📋 Sin turnos pendientes hoy</div>
-    </div>`;
+    el.innerHTML=`<div class="ds-table-wrap tt-wrap" style="padding:18px;text-align:center"><span style="font-size:.78rem;color:var(--text-dim)">📋 Sin turnos pendientes hoy</span></div>`;
     return;
   }
 
   const dispTxt=libres.length>0
-    ?`<span class="turnos-head-disp" style="color:#34D399">🟢 ${libres.length} doctor${libres.length!==1?'es':''} disponible${libres.length!==1?'s':''}</span>`
-    :ALL_DOCTORES.length>0
-    ?`<span class="turnos-head-disp" style="color:#F4B942">⚠️ Todos en consulta</span>`
-    :'';
+    ?`<span class="tt-disp" style="color:#34D399">🟢 ${libres.length} doctor${libres.length!==1?'es':''} disponible${libres.length!==1?'s':''}</span>`
+    :ALL_DOCTORES.length>0?`<span class="tt-disp" style="color:#F4B942">⚠️ Todos en consulta</span>`:'';
 
   const rows=lista.map((p,i)=>{
     const isE=p.estado==='En sala de espera';
-    const acCol=isE?'#F4B942':'var(--blue)';
-    const rankBg=isE?'rgba(244,185,66,.15)':'rgba(74,158,255,.12)';
-    const rankLbl=i===0?(isE?'EN SALA':'SIGUIENTE'):`#${i+1}`;
+    const aC=isE?'#F4B942':'var(--blue)';
+    const rBg=isE?'rgba(244,185,66,.14)':'rgba(74,158,255,.12)';
+    const rLbl=i===0?(isE?'EN SALA':'SIGUIENTE'):`#${i+1}`;
     const dur=(durEst(p.tratamiento)||30)+(p.tiempoExtra||0);
     const todosOcu=ALL_DOCTORES.length>0&&libres.length===0&&!p.doctor;
-    let fechaStr='';
-    try{if(p.fecha){const[y,m,d]=p.fecha.split('-').map(Number);const fd=new Date(y,m-1,d);fechaStr=fd.toDateString()===new Date().toDateString()?'Hoy':fd.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});}}catch(e){}
+    let fStr='';
+    try{if(p.fecha){const[y,m,d]=p.fecha.split('-').map(Number);const fd=new Date(y,m-1,d);fStr=fd.toDateString()===new Date().toDateString()?'Hoy':fd.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});}}catch(e){}
 
-    let docHTML='';
-    if(!ALL_DOCTORES.length){
-      docHTML='<a href="configuracion.html" style="font-size:.7rem;color:var(--teal)">+ Registrar doctores</a>';
-    } else if(todosOcu){
-      docHTML='<span style="font-size:.7rem;color:#F4B942;font-weight:600">⚠️ Todos en consulta</span>';
-    } else {
-      docHTML=`<select id="docSelect_${p.id}"
-        style="background:var(--surface2);border:1px solid ${p.doctor?'var(--teal)':'var(--border)'};border-radius:7px;padding:4px 10px;color:var(--text);font-size:.72rem;outline:none;max-width:200px;cursor:pointer"
-        onchange="asignarDoctorTurno('${p.id}',this.value)">
-        <option value="">— Asignar doctor —</option>
-        ${ALL_DOCTORES.map(d=>{
-          const ocu=ocupados.has(d.nombre);
-          return`<option value="${d.nombre}" ${d.nombre===p.doctor?'selected':''} ${ocu?'disabled':''}>
-            ${ocu?'🔴':'🟢'} ${d.nombre}${d.especialidad?' — '+d.especialidad:''}${ocu?' (en consulta)':''}
-          </option>`;
-        }).join('')}
-      </select>`;
-    }
+    const docSel=!ALL_DOCTORES.length
+      ?'<a href="configuracion.html" style="font-size:.7rem;color:var(--teal)">+ Registrar doctores</a>'
+      :todosOcu
+      ?'<span style="font-size:.7rem;color:#F4B942;font-weight:600">⚠️ Todos ocupados</span>'
+      :`<select id="docSelect_${p.id}" class="tt-select ${p.doctor?'assigned':''}"
+          onchange="asignarDoctorTurno('${p.id}',this.value)">
+          <option value="">— Asignar doctor —</option>
+          ${ALL_DOCTORES.map(d=>`<option value="${d.nombre}" ${d.nombre===p.doctor?'selected':''} ${ocupados.has(d.nombre)?'disabled':''}>
+            ${ocupados.has(d.nombre)?'🔴':'🟢'} ${d.nombre}${d.especialidad?' — '+d.especialidad:''}${ocupados.has(d.nombre)?' (ocupado)':''}</option>`).join('')}
+        </select>`;
 
     const btnIni=todosOcu
-      ?`<button class="btn btn-sm" disabled style="opacity:.35;cursor:not-allowed;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);font-size:.68rem">⏳ Sin doctor</button>`
-      :`<button class="btn btn-sm btn-iniciar" style="font-size:.72rem;font-weight:800"
-          onclick="iniciarTratamiento('${p.id}','${(p.paciente||'').replace(/'/g,"\\'")}')">
-          ▶️ Iniciar
-        </button>`;
+      ?`<button class="btn btn-sm btn-iniciar" disabled style="font-size:.68rem">⏳ Sin doctor</button>`
+      :`<button class="btn btn-sm btn-iniciar" style="font-size:.7rem" onclick="iniciarTratamiento('${p.id}','${(p.paciente||'').replace(/'/g,"\\'")}')">▶️ Iniciar</button>`;
 
-    return `
-    <tr>
-      <!-- RANK + PACIENTE -->
+    return`<tr>
       <td>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-          <span class="tt-rank" style="background:${rankBg};color:${acCol}">${rankLbl}</span>
-          ${isE?`<span style="font-size:.62rem;color:#F4B942;font-weight:600">🪑 En sala</span>`:''}
-          ${p.doctor?`<span style="font-size:.62rem;color:var(--teal);font-weight:600">👨‍⚕️ ${p.doctor.split(' ').slice(0,2).join(' ')}</span>`:''}
-        </div>
+        <div style="margin-bottom:4px"><span class="tt-rank" style="background:${rBg};color:${aC}">${rLbl}</span>${isE?` <span style="font-size:.6rem;color:#F4B942;font-weight:600">🪑 En sala</span>`:''}${p.doctor?` <span style="font-size:.6rem;color:var(--teal)">👨‍⚕️ ${p.doctor.split(' ').slice(0,2).join(' ')}</span>`:''}</div>
         <div class="tt-nombre">${p.paciente||'—'}</div>
         <div class="tt-trat">🦷 ${p.tratamiento||'Sin tratamiento'}</div>
       </td>
-      <!-- HORARIO -->
-      <td class="tt-time">
-        ${fechaStr?`<div style="color:var(--text-dim);font-size:.68rem;margin-bottom:2px">📅 ${fechaStr}</div>`:''}
-        <div style="color:${acCol};font-weight:700">⏰ ${p.hora||'—'}</div>
-        <div style="color:var(--text-dim);font-size:.68rem;margin-top:2px">⏱ ~${fmtDur(dur)}</div>
-      </td>
-      <!-- DOCTOR -->
-      <td>${docHTML}</td>
-      <!-- ACCIONES -->
+      <td class="tt-time">${fStr?`<div style="color:var(--text-dim);font-size:.65rem">📅 ${fStr}</div>`:''}<div style="color:${aC};font-weight:700">⏰ ${p.hora||'—'}</div><div style="color:var(--text-dim);font-size:.65rem">⏱ ~${fmtDur(dur)}</div></td>
+      <td>${p.tel?`<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-muted)">📱 ${p.tel}</div>`:''}<div style="margin-top:${p.tel?'4px':'0'}">${docSel}</div></td>
       <td style="text-align:right">
         <div class="tt-actions">
-          ${p.tel?`<button class="btn btn-sm btn-wa" style="font-size:.68rem" onclick="whatsapp('${p.tel}','Hola ${(p.paciente||'').split(' ')[0]}')">💬 WA</button>`:''}
-          ${!isE?`<button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:#F4B942;border-color:rgba(244,185,66,.3)" onclick="marcarEspera('${p.id}')">🪑 Sala</button>`:''}
+          ${!isE?`<button class="btn btn-ghost btn-sm" style="font-size:.67rem;color:#F4B942;border-color:rgba(244,185,66,.28)" onclick="marcarEspera('${p.id}')">🪑 En sala</button>`:''}
           ${btnIni}
-          <button class="btn btn-ghost btn-sm" style="font-size:.66rem"
-            onclick="abrirEstadoPrevio('${p.id}','${(p.paciente||'').replace(/'/g,"\\'")}','${p.hora||''}','${p.fecha||''}')">📋 Estado</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:.65rem" onclick="abrirEstadoPrevio('${p.id}','${(p.paciente||'').replace(/'/g,"\\'")}','${p.hora||''}','${p.fecha||''}')">📋 Estado</button>
         </div>
       </td>
     </tr>`;
@@ -933,24 +790,24 @@ function renderTurno(){
 
   const resto=[...enE,...fut].length-lista.length;
   el.innerHTML=`
-  <div class="turnos-wrap">
-    <div class="turnos-head">
+  <div class="ds-table-wrap tt-wrap">
+    <div class="ds-table-head">
       <div style="display:flex;align-items:center;gap:8px">
-        <span class="turnos-head-lbl">⏰ Próximos turnos</span>
-        <span class="turnos-head-count">${lista.length}</span>
+        <span style="font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--blue)">⏰ Próximos turnos</span>
+        <span class="tt-count">${lista.length}</span>
       </div>
       ${dispTxt}
     </div>
-    <table class="turnos-table">
+    <table class="ds-table">
       <thead><tr>
-        <th>Paciente</th>
-        <th>Horario</th>
-        <th>Asignar doctor</th>
+        <th>Paciente / Tratamiento</th>
+        <th>Fecha y hora</th>
+        <th>Tel. paciente / Asignar doctor</th>
         <th style="text-align:right">Acciones</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    ${resto>0?`<div style="padding:9px 16px;font-size:.7rem;color:var(--text-dim);border-top:1px solid var(--border);text-align:center">+${resto} más · <a href="agenda.html" style="color:var(--teal)">ver agenda completa</a></div>`:''}
+    ${resto>0?`<div style="padding:8px 16px;font-size:.68rem;color:var(--text-dim);border-top:1px solid var(--border);text-align:center">+${resto} más hoy · <a href="agenda.html" style="color:var(--teal)">ver agenda completa</a></div>`:''}
   </div>`;
 }
 
