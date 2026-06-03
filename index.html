@@ -324,8 +324,15 @@
         </div>
       </div>
       <div class="form-group" style="margin-top:12px">
-        <label class="form-label">Notas (opcional)</label>
-        <textarea class="form-textarea" id="finCitaNotas" rows="2" placeholder="Observaciones, indicaciones para el paciente..."></textarea>
+        <label class="form-label">Observaciones internas (opcional)</label>
+        <textarea class="form-textarea" id="finCitaNotas" rows="2" placeholder="Notas para el expediente..."></textarea>
+      </div>
+      <!-- Acceso rápido a receta médica -->
+      <div id="recetaAcceso" style="display:none;margin-top:10px">
+        <button type="button" class="btn btn-ghost btn-sm" style="width:100%;border:1.5px dashed rgba(0,194,168,.4);color:var(--teal);font-size:.78rem;padding:8px"
+          onclick="abrirRecetaDesdeModal()">
+          💊 Emitir receta médica para este paciente
+        </button>
       </div>
     </div>
     <div class="modal-footer">
@@ -1528,6 +1535,9 @@ function buildOpts(opts, selectedVal){
     });
     const ew=document.getElementById('tiempoExtraWrap');
     if(ew) ew.style.display=_estadoSeleccionado==='Extendido'?'block':'none';
+    // Mostrar acceso a receta solo para Completado
+    const ra=document.getElementById('recetaAcceso');
+    if(ra) ra.style.display=_estadoSeleccionado==='Completado'?'block':'none';
   };
 }
 
@@ -1609,8 +1619,22 @@ document.addEventListener('DOMContentLoaded',function(){
   resetPausa();
 });
 
+// Abrir receta médica desde el modal de finalizar consulta
+window.abrirRecetaDesdeModal = function(){
+  const cita = ALL_CITAS.find(c=>c.id===citaActualId);
+  if(!cita) return;
+  const px = ALL_PACIENTES.find(p=>p.nombre===cita.paciente||p.id===cita.expId);
+  const params = new URLSearchParams({
+    paciente:  cita.paciente||'',
+    pxId:      px?.id||'',
+    doctor:    cita.doctor||'',
+    cita:      citaActualId||'',
+  });
+  closeModal('modalFinCita');
+  window.location.href='recetas.html?'+params.toString();
+};
+
 async function confirmarFinCita(){
-  const estado   = _estadoSeleccionado;
   const pausa    = _pausaSeleccionada||'';
   const notas    = (document.getElementById('finCitaNotas')||{}).value||'';
   const extraMin = estado==='Extendido'?parseInt((document.getElementById('tiempoExtraMin')||{}).value||30):0;

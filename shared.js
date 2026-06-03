@@ -223,6 +223,7 @@ function renderSidebar() {
     <div class="nav-section">Avanzado</div>
     ${navItem('odontograma','🦷','Odontograma','odontograma')}
     ${navItem('inventario','💊','Inventario','inventario')}
+    ${navItem('recetas','📋','Recetas Médicas','any')}
     ${navItem('ofertas','🎁','Ofertas & Promos','ofertas')}
     ${navItem('metricas','📈','Métricas','metricas')}
     ${navItem('reportes','📊','Reportes','reportes')}
