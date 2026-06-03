@@ -895,6 +895,50 @@ window.asignarDoctorTurno = async function(citaId, doctorNombre){
     renderTurno();
   }catch(e){ showToast('Error: '+e.message,'error'); }
 };
+
+// ── INICIAR TRATAMIENTO ───────────────────────────────────
+window.iniciarTratamiento = async function(citaId, paciente){
+  const cita = ALL_CITAS.find(c=>c.id===citaId);
+  if(!cita){ showToast('Cita no encontrada','error'); return; }
+
+  // Validar doctor asignado
+  if(!cita.doctor){
+    showToast('⚠️ Asigna un doctor antes de iniciar','error');
+    const sel = document.getElementById('docSelect_'+citaId);
+    if(sel){ sel.style.border='2px solid var(--red,#FF5C5C)'; setTimeout(()=>sel.style.border='1px solid var(--border)',2500); }
+    return;
+  }
+
+  // Verificar que el doctor no esté en otra consulta activa
+  const doctorOcupado = getCitasEnCurso().some(c=>c.doctor===cita.doctor && c.id!==citaId);
+  if(doctorOcupado){
+    showToast('🔴 '+cita.doctor+' ya está en consulta — elige otro doctor','error');
+    return;
+  }
+
+  // Hora de inicio = ahora
+  const ahora    = new Date();
+  const horaMin  = ahora.getHours()*60+ahora.getMinutes();
+  const horaStr  = String(ahora.getHours()).padStart(2,'0')+':'+String(ahora.getMinutes()).padStart(2,'0');
+
+  try{
+    const update = {
+      estado:        'En tratamiento',
+      inicioRealMin:  horaMin,
+      inicioRealHora: horaStr,
+    };
+    await fsUpdate('citas', citaId, update);
+    ALL_CITAS = ALL_CITAS.map(c=>c.id===citaId?{...c,...update}:c);
+    showToast('▶️ '+paciente+' en consulta con '+cita.doctor+' · '+horaStr,'success');
+    renderEnConsulta();
+    renderTurno();
+    renderCitasHoy();
+    renderChartDiaHoy();
+    if(typeof renderMetricasDia==='function') renderMetricasDia();
+    if(typeof renderEstadoDoctores==='function') renderEstadoDoctores();
+  }catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
 window.confirmarCita = async function(id) {
   try {
     await fsUpdate('citas', id, {estado:'Confirmado'});
