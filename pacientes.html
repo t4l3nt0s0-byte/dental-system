@@ -97,8 +97,9 @@
         <div>
           <div style="font-size:.68rem;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">Datos personales</div>
           <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="f-nombre" placeholder="Apellido Apellido Nombre"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
             <div class="form-group"><label class="form-label">F. nacimiento</label><input type="date" class="form-input" id="f-fnac"></div>
+            <div class="form-group"><label class="form-label">Peso (kg)</label><input type="number" class="form-input" id="f-peso" placeholder="70" min="1" max="300" step="0.1"></div>
             <div class="form-group"><label class="form-label">Género</label>
               <select class="form-select" id="f-genero"><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
             </div>
@@ -243,14 +244,13 @@ function renderGrid() {
              ARCHIVO: pacientes.html
              BUSCA este bloque de comentario y
              reemplázalo con la siguiente línea:
-             La función deletePaciente() está en la línea ~314
-             ════════════════════════════════════════ -->
 
              <div class="px-actions-row">
                <button class="btn btn-ghost btn-sm" style="color:var(--red);flex:1" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️ Eliminar</button>
              </div>
 
-             
+             La función deletePaciente() está en la línea ~314
+             ════════════════════════════════════════ -->
       </div>
     </div>`;
   }).join('');
@@ -264,6 +264,7 @@ function openNewModal() {
   document.getElementById('modalPxTitle').textContent = 'Nuevo Paciente';
   ['f-nombre','f-tel','f-email','f-dir','f-alergias','f-padecimientos','f-medicamentos','f-obs','f-familiar','f-telFamiliar'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-fnac').value = '';
+  const pesoEl=document.getElementById('f-peso'); if(pesoEl) pesoEl.value='';
   document.getElementById('f-genero').value = 'Masculino';
   document.getElementById('f-embarazo').value = 'No';
   document.getElementById('f-sangre').value = '';
@@ -277,6 +278,7 @@ function editPaciente(id) {
   document.getElementById('modalPxTitle').textContent = 'Editar Paciente';
   document.getElementById('f-nombre').value = p.nombre||'';
   document.getElementById('f-fnac').value = p.fnac||'';
+  const pesoEdEl=document.getElementById('f-peso'); if(pesoEdEl) pesoEdEl.value=p.peso||'';
   document.getElementById('f-genero').value = p.genero||'Masculino';
   document.getElementById('f-tel').value = p.tel||'';
   document.getElementById('f-email').value = p.email||'';
@@ -308,6 +310,7 @@ async function savePaciente() {
   const btn = document.getElementById('btnSavePx');
   btn.disabled = true; btn.textContent = 'Guardando...';
   const fnac = document.getElementById('f-fnac').value;
+  const pesoVal = parseFloat(document.getElementById('f-peso')?.value||0)||null;
   const edad = fnac ? Math.floor((new Date()-new Date(fnac))/31557600000) : null;
   const data = {
     nombre,
@@ -316,6 +319,7 @@ async function savePaciente() {
     tel: document.getElementById('f-tel').value.trim(),
     email: document.getElementById('f-email').value.trim().toLowerCase(),
     direccion: document.getElementById('f-dir').value.trim(),
+    peso: pesoVal,
     nombreFamiliar: document.getElementById('f-familiar').value.trim(),
     parentesco: document.getElementById('f-parentesco').value,
     telFamiliar: document.getElementById('f-telFamiliar').value.trim(),
