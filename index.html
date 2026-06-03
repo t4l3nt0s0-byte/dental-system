@@ -460,8 +460,8 @@ function renderMetricasDia(){
 
   const cards = [
     { icon:'📅', val: total,       label:'Citas del día',         color:'var(--blue)',   bg:'rgba(74,158,255,.1)',   border:'rgba(74,158,255,.25)' },
-    { icon:'🔵', val: enProceso+enSala, label:'En atención / proceso',color:'var(--teal)',   bg:'rgba(0,194,168,.1)',    border:'rgba(0,194,168,.3)'   },
-    { icon:'✅', val: completadas,  label:'Finalizadas / Completadas',           color:'#34D399',       bg:'rgba(52,211,153,.1)',   border:'rgba(52,211,153,.3)'  },
+    { icon:'🔵', val: enProceso+enSala, label:'En atención / sala',color:'var(--teal)',   bg:'rgba(0,194,168,.1)',    border:'rgba(0,194,168,.3)'   },
+    { icon:'✅', val: completadas,  label:'Completadas',           color:'#34D399',       bg:'rgba(52,211,153,.1)',   border:'rgba(52,211,153,.3)'  },
     { icon:'⏳', val: pendientes,   label:'Pendientes',            color:'var(--gold)',   bg:'rgba(244,185,66,.1)',   border:'rgba(244,185,66,.3)'  },
   ];
 
@@ -1578,10 +1578,27 @@ window.abrirFinalizarConsulta = function(id, paciente, trat, tiempoRealMin, durE
     '<span>⏱ Estimado: '+fmtDur(durEstMin)+'</span>'+
     (tiempoRealMin>0?'<span style="color:var(--teal)">⏳ Tiempo real: <strong>'+fmtDur(tiempoRealMin)+'</strong></span>':'')+
     '</div>';
+
+  // Siempre inyectar las opciones correctas para EN CONSULTA (Completado + Extendido)
+  const grid = document.getElementById('estadoGrid');
+  if(grid) grid.innerHTML =
+    '<div class="opt-estado" data-val="Completado" style="border:2px solid var(--teal);background:var(--teal-dim);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s">'+
+      '<div style="font-size:1.6rem;margin-bottom:6px">✅</div>'+
+      '<div style="font-size:.82rem;font-weight:700;color:var(--teal)">Completado</div>'+
+      '<div style="font-size:.65rem;color:var(--text-dim)">Cita realizada</div>'+
+    '</div>'+
+    '<div class="opt-estado" data-val="Extendido" style="border:2px solid var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s">'+
+      '<div style="font-size:1.6rem;margin-bottom:6px">⏰</div>'+
+      '<div style="font-size:.82rem;font-weight:700;color:var(--text)">Cita se extiende</div>'+
+      '<div style="font-size:.65rem;color:var(--text-dim)">Requiere más tiempo</div>'+
+    '</div>';
+
   resetModal();
-  // Mostrar sección de pausa del doctor (solo al finalizar consulta activa)
+  // Mostrar sección de pausa del doctor
   const pausaSection = document.getElementById('pausaSection');
   if(pausaSection) pausaSection.style.display='block';
+  // Re-inicializar eventos para las nuevas opciones
+  initModalEvents();
   openModal('modalFinCita');
 };
 
