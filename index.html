@@ -362,6 +362,12 @@ function renderDashboard(clinica,user){
     <div class="greeting-sub">${clinica.nombre||'DentalOS'}</div>
   </div>
 
+  <!-- MÉTRICAS DEL DÍA -->
+  <div id="metricasDia" style="margin-bottom:16px"></div>
+
+  <!-- ESTADO DE DOCTORES -->
+  ${ALL_DOCTORES.length>0?`<div id="estadoDoctores" style="margin-bottom:16px"></div>`:''}
+
   <!-- 1. EN CONSULTA AHORA -->
   <div id="enConsultaSection"></div>
 
@@ -405,12 +411,15 @@ function renderDashboard(clinica,user){
   </div>
 `;
 
+  renderMetricasDia();
+  renderEstadoDoctores();
   renderEnConsulta();
   renderTurno();
   renderCitasHoy();
   renderChartDiaHoy();
-  // Actualizar todo cada minuto
   setInterval(()=>{
+    renderMetricasDia();
+    renderEstadoDoctores();
     renderEnConsulta();
     renderTurno();
     renderCitasHoy();
@@ -435,6 +444,105 @@ function durEst(trat){
 function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'min':'')):min+'min';}
 
 // ── DURACIONES ESTIMADAS ─────────────────────────────────
+
+// ── MÉTRICAS DEL DÍA ─────────────────────────────────────
+function renderMetricasDia(){
+  const el = document.getElementById('metricasDia');
+  if(!el) return;
+  const hoy      = todayISO();
+  const citasH   = ALL_CITAS.filter(c => c.fecha === hoy);
+  const total      = citasH.length;
+  const enProceso  = citasH.filter(c => c.estado === 'En tratamiento').length;
+  const enSala     = citasH.filter(c => c.estado === 'En sala de espera').length;
+  const completadas= citasH.filter(c => c.estado === 'Completado').length;
+  const pendientes = citasH.filter(c => !['Completado','No Asistió','Cancelado','En tratamiento','En sala de espera'].includes(c.estado||'')).length;
+  const canceladas = citasH.filter(c => ['Cancelado','No Asistió'].includes(c.estado||'')).length;
+
+  const cards = [
+    { icon:'📅', val: total,       label:'Citas del día',         color:'var(--blue)',   bg:'rgba(74,158,255,.1)',   border:'rgba(74,158,255,.25)' },
+    { icon:'🔵', val: enProceso+enSala, label:'En atención / sala',color:'var(--teal)',   bg:'rgba(0,194,168,.1)',    border:'rgba(0,194,168,.3)'   },
+    { icon:'✅', val: completadas,  label:'Completadas',           color:'#34D399',       bg:'rgba(52,211,153,.1)',   border:'rgba(52,211,153,.3)'  },
+    { icon:'⏳', val: pendientes,   label:'Pendientes',            color:'var(--gold)',   bg:'rgba(244,185,66,.1)',   border:'rgba(244,185,66,.3)'  },
+  ];
+
+  el.innerHTML = `
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    ${cards.map(c=>`
+    <div style="background:${c.bg};border:1px solid ${c.border};border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:12px;min-height:72px">
+      <span style="font-size:1.6rem;flex-shrink:0">${c.icon}</span>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:1.5rem;font-weight:800;color:${c.color};line-height:1">${c.val}</div>
+        <div style="font-size:.65rem;color:var(--text-muted);margin-top:3px;font-weight:600">${c.label}</div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── ESTADO DE DOCTORES ────────────────────────────────────
+function renderEstadoDoctores(){
+  const el = document.getElementById('estadoDoctores');
+  if(!el || !ALL_DOCTORES.length) return;
+
+  const horaActual = getHoraMin();
+  const citasHoy   = getCitasHoy();
+
+  const doctorEstado = ALL_DOCTORES.map(doc => {
+    // Buscar si tiene cita activa
+    const citaActiva = citasHoy.find(c =>
+      c.doctor === doc.nombre && c.estado === 'En tratamiento'
+    );
+    // Buscar si tiene pausa registrada (última cita completada con pausa)
+    const ultimaCita = [...citasHoy]
+      .filter(c => c.doctor === doc.nombre && ['Completado'].includes(c.estado||''))
+      .sort((a,b) => (b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))
+      [0];
+    const pausa = ultimaCita?.pausaDoctor || '';
+
+    let status, statusColor, statusBg, statusIcon;
+    if(citaActiva){
+      const [h,m] = (citaActiva.hora||'00:00').split(':').map(Number);
+      const durMin = (durEst(citaActiva.tratamiento)||30)+(citaActiva.tiempoExtra||0);
+      const trans  = Math.max(0, horaActual-(h*60+m));
+      const rest   = Math.max(0, durMin-trans);
+      status      = 'En consulta' + (rest>0 ? ' · ~'+fmtDur(rest)+' rest.' : ' · tiempo cumplido');
+      statusColor = 'var(--teal)';
+      statusBg    = 'rgba(0,194,168,.08)';
+      statusIcon  = '🟢';
+    } else if(pausa === 'baño'){
+      status='Pausa / Baño'; statusColor='var(--gold)'; statusBg='rgba(244,185,66,.08)'; statusIcon='🚻';
+    } else if(pausa === 'comida'){
+      status='Salió a comer'; statusColor='var(--gold)'; statusBg='rgba(244,185,66,.08)'; statusIcon='🍽️';
+    } else if(pausa === 'salida'){
+      status='Fin de turno'; statusColor='var(--text-dim)'; statusBg='var(--surface2)'; statusIcon='🏠';
+    } else {
+      status='Disponible'; statusColor='#34D399'; statusBg='rgba(52,211,153,.08)'; statusIcon='🟢';
+    }
+
+    const initials = doc.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
+    return { doc, status, statusColor, statusBg, statusIcon, initials, citaActiva };
+  });
+
+  el.innerHTML = `
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px">
+    <div style="font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);margin-bottom:12px">👨‍⚕️ ESTADO DE DOCTORES</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${doctorEstado.map(({doc, status, statusColor, statusBg, statusIcon, initials, citaActiva})=>`
+      <div style="background:${statusBg};border:1px solid ${statusColor}33;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;min-width:180px;flex:1">
+        <!-- Avatar con color del doctor -->
+        <div style="width:36px;height:36px;border-radius:50%;background:${doc.color||'var(--teal)'};display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0">${initials}</div>
+        <div style="min-width:0;flex:1">
+          <div style="font-size:.82rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${doc.nombre.split(' ').slice(0,3).join(' ')}</div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-bottom:3px">${doc.especialidad||'Dentista'}</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:${statusColor}">
+            <span>${statusIcon}</span>
+            <span>${status}</span>
+          </div>
+          ${citaActiva?`<div style="font-size:.63rem;color:var(--text-dim);margin-top:2px">Pac: ${(citaActiva.paciente||'').split(' ').slice(0,2).join(' ')}</div>`:''}
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
 
 // ── EN CONSULTA AHORA (múltiples consultas simultáneas) ────
 // Estado por cita activa: { citaId: { inicioRealMin, inicioRealDate } }
@@ -1568,6 +1676,8 @@ async function confirmarFinCita(){
     }
 
     closeModal('modalFinCita');
+    renderMetricasDia();
+    renderEstadoDoctores();
     renderEnConsulta();
     renderTurno();
     renderCitasHoy();
