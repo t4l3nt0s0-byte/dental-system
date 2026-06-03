@@ -564,27 +564,126 @@ function renderMetricasDia(){
 
 
 function renderEstadoDoctores(){
-  const el=document.getElementById('estadoDoctores');if(!el||!ALL_DOCTORES.length)return;
-  const hA=getHoraMin(),ch=getCitasHoy();
-  // COLORES: naranja=en consulta, verde=disponible (no se confunden)
+  const el=document.getElementById('estadoDoctores');
+  if(!el||!ALL_DOCTORES.length) return;
+  const hA=getHoraMin(), ch=getCitasHoy();
+
+  // Estado por doctor
   const CFG={
-    consulta:{bg:'rgba(255,140,0,.1)',b:'rgba(255,140,0,.3)',bar:'#FF8C00',dot:'#FF8C00',lbl:'En consulta'},
-    disponible:{bg:'rgba(52,211,153,.09)',b:'rgba(52,211,153,.28)',bar:'#34D399',dot:'#34D399',lbl:'Disponible'},
-    pausa:{bg:'rgba(244,185,66,.09)',b:'rgba(244,185,66,.28)',bar:'#F4B942',dot:'#F4B942',lbl:'En pausa'},
-    salida:{bg:'rgba(107,114,128,.08)',b:'rgba(107,114,128,.22)',bar:'#6B7280',dot:'#6B7280',lbl:'Fin turno'},
+    consulta:  {col:'#FF8C00',bg:'rgba(255,140,0,.08)', border:'rgba(255,140,0,.25)',  lbl:'En consulta',  icon:'🩺', canToggle:false},
+    disponible:{col:'#34D399',bg:'rgba(52,211,153,.07)',border:'rgba(52,211,153,.22)', lbl:'Disponible',   icon:'✅', canToggle:false},
+    pausa:     {col:'#F4B942',bg:'rgba(244,185,66,.07)',border:'rgba(244,185,66,.22)', lbl:'Pausa / Baño', icon:'🚻', canToggle:true},
+    comida:    {col:'#F4B942',bg:'rgba(244,185,66,.07)',border:'rgba(244,185,66,.22)', lbl:'Sale a comer',  icon:'🍽️',canToggle:true},
+    salida:    {col:'#6B7280',bg:'rgba(107,114,128,.07)',border:'rgba(107,114,128,.2)',lbl:'Fin de turno', icon:'🏠', canToggle:true},
   };
-  const items=ALL_DOCTORES.map(d=>{
-    const act=ch.find(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');
-    const ult=[...ch].filter(c=>c.doctor===d.nombre&&c.estado==='Completado').sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
+
+  const rows=ALL_DOCTORES.map(doc=>{
+    const act=ch.find(c=>c.doctor===doc.nombre&&c.estado==='En tratamiento');
+    const ult=[...ch].filter(c=>c.doctor===doc.nombre&&c.estado==='Completado')
+               .sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
     const pausa=ult?.pausaDoctor||'';
-    let tipo='disponible',icon='✅',extra='';
-    if(act){tipo='consulta';icon='🩺';const[h,m]=(act.hora||'00:00').split(':').map(Number),dur=(durEst(act.tratamiento)||30)+(act.tiempoExtra||0),rest=Math.max(0,dur-(hA-(h*60+m)));extra=`<div class="doc-px" style="color:#FF8C00">👤 ${(act.paciente||'').split(' ').slice(0,2).join(' ')}${rest>0?' · ⌛'+fmtDur(rest):''}</div>`;}
-    else if(pausa==='baño'){tipo='pausa';icon='🚻';}else if(pausa==='comida'){tipo='pausa';icon='🍽️';}else if(pausa==='salida'){tipo='salida';icon='🏠';}
-    const cfg=CFG[tipo],ini=d.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
-    return`<div class="doc-card" style="background:${cfg.bg};border:1px solid ${cfg.b}"><div class="doc-bar" style="background:${cfg.bar}"></div><div class="doc-dot" style="background:${cfg.dot}"></div><div style="display:flex;align-items:center;gap:8px"><div class="doc-av" style="background:${d.color||'var(--teal)'};box-shadow:0 2px 6px ${d.color||'#00C2A8'}44">${ini}</div><div style="min-width:0;flex:1"><div class="doc-name">${d.nombre.split(' ').slice(0,3).join(' ')}</div><div class="doc-esp">${d.especialidad||'Dentista'}</div><div class="doc-st" style="color:${cfg.bar}">${icon} ${cfg.lbl}</div>${extra}</div></div></div>`;
-  });
-  el.innerHTML=`<div class="doc-wrap"><div class="doc-wrap-head">👨‍⚕️ &nbsp;ESTADO DE DOCTORES</div><div class="doc-grid">${items.join('')}</div></div>`;
+
+    let tipo='disponible';
+    if(act)            tipo='consulta';
+    else if(pausa==='baño')   tipo='pausa';
+    else if(pausa==='comida') tipo='comida';
+    else if(pausa==='salida') tipo='salida';
+
+    const cfg=CFG[tipo];
+    const ini=doc.nombre.split(' ').filter(w=>w).slice(0,2).map(w=>w[0]).join('');
+
+    // Info de paciente si está en consulta
+    let pacienteTd='<span style="color:var(--text-dim);font-size:.75rem">—</span>';
+    let tiempoTd  ='<span style="color:var(--text-dim);font-size:.75rem">—</span>';
+    if(act){
+      const[h,m]=(act.hora||'00:00').split(':').map(Number);
+      const dur=(durEst(act.tratamiento)||30)+(act.tiempoExtra||0);
+      const rest=Math.max(0,dur-(hA-(h*60+m)));
+      pacienteTd=`<div style="font-size:.82rem;font-weight:600;color:var(--text)">${act.paciente||'—'}</div>
+        <div style="font-size:.68rem;color:var(--text-muted)">🦷 ${act.tratamiento||'Sin tratamiento'}</div>`;
+      tiempoTd=`<div style="font-family:var(--font-mono);font-size:.8rem;color:#FF8C00;font-weight:700">⌛ ${fmtDur(rest)} rest.</div>
+        <div style="font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim)">🕐 ${act.hora||''}</div>`;
+    }
+
+    // Badge de estado — si puede togglearse, es clickeable
+    const badgeStyle=`display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;
+      background:${cfg.bg};border:1px solid ${cfg.border};color:${cfg.col};
+      border-radius:7px;padding:4px 10px;white-space:nowrap;
+      ${cfg.canToggle?'cursor:pointer;transition:all .15s;user-select:none':'cursor:default'}`;
+
+    const badge=cfg.canToggle
+      ? `<span style="${badgeStyle}" title="Click para marcar disponible"
+           onclick="toggleDoctorDisponible('${doc.nombre}','${ult?.id||''}')"
+           onmouseover="this.style.background='rgba(52,211,153,.18)';this.style.borderColor='rgba(52,211,153,.4)';this.style.color='#34D399'"
+           onmouseout="this.style.background='${cfg.bg}';this.style.borderColor='${cfg.border}';this.style.color='${cfg.col}'">
+           ${cfg.icon} ${cfg.lbl} <span style="font-size:.6rem;opacity:.7">· Toca para activar</span>
+         </span>`
+      : `<span style="${badgeStyle}">${cfg.icon} ${cfg.lbl}</span>`;
+
+    return`<tr style="border-left:3px solid ${cfg.col}">
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:50%;background:${doc.color||'var(--teal)'};
+            display:flex;align-items:center;justify-content:center;
+            font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0;
+            box-shadow:0 2px 6px ${doc.color||'#00C2A8'}55">${ini}</div>
+          <div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--text)">${doc.nombre}</div>
+            <div style="font-size:.65rem;color:var(--text-dim)">${doc.especialidad||'Dentista'}</div>
+          </div>
+        </div>
+      </td>
+      <td>${badge}</td>
+      <td>${pacienteTd}</td>
+      <td>${tiempoTd}</td>
+      <td style="text-align:right">
+        ${act?`<button class="btn btn-ghost btn-sm" style="font-size:.68rem"
+            onclick="abrirFinalizarConsulta('${act.id}','${(act.paciente||'').replace(/'/g,"\\'")}','${(act.tratamiento||'').replace(/'/g,"\\'")}',0,${(durEst(act.tratamiento)||30)+(act.tiempoExtra||0)})">
+            ✅ Finalizar
+          </button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML=`
+  <div class="ds-table-wrap" style="border-color:rgba(74,158,255,.2);margin-bottom:14px">
+    <div class="ds-table-head" style="background:linear-gradient(90deg,rgba(74,158,255,.12),transparent)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--blue)">👨‍⚕️ Estado de doctores</span>
+        <span style="background:rgba(74,158,255,.14);color:var(--blue);font-size:.58rem;font-weight:700;border-radius:20px;padding:1px 8px">${ALL_DOCTORES.length}</span>
+      </div>
+      <span style="font-size:.65rem;color:var(--text-dim)">
+        ${ALL_DOCTORES.filter(d=>{const a=ch.find(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');return !a&&!(([...ch].filter(c=>c.doctor===d.nombre&&c.estado==='Completado').sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0])?.pausaDoctor);}).length} disponible${ALL_DOCTORES.filter(d=>{const a=ch.find(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');return !a&&!(([...ch].filter(c=>c.doctor===d.nombre&&c.estado==='Completado').sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0])?.pausaDoctor);}).length!==1?'s':''}
+      </span>
+    </div>
+    <table class="ds-table">
+      <thead>
+        <tr>
+          <th>Doctor / Especialidad</th>
+          <th>Estado</th>
+          <th>Paciente en consulta</th>
+          <th>Tiempo</th>
+          <th style="text-align:right">Acción</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
+
+// ── TOGGLE DISPONIBLE ─────────────────────────────────────
+window.toggleDoctorDisponible = async function(doctorNombre, citaId){
+  try{
+    // Limpiar pausa en la última cita completada del doctor
+    if(citaId){
+      await fsUpdate('citas', citaId, {pausaDoctor:''});
+      ALL_CITAS=ALL_CITAS.map(c=>c.id===citaId?{...c,pausaDoctor:''}:c);
+    }
+    showToast('✅ Dr. '+doctorNombre+' marcado como disponible','success');
+    renderEstadoDoctores();
+    renderTurno(); // actualizar dropdown de doctores en próximos turnos
+  }catch(e){ showToast('Error: '+e.message,'error'); }
+};
 
 
 // ── EN CONSULTA AHORA (múltiples consultas simultáneas) ────
