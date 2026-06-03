@@ -243,13 +243,14 @@ function renderGrid() {
              ARCHIVO: pacientes.html
              BUSCA este bloque de comentario y
              reemplázalo con la siguiente línea:
+             La función deletePaciente() está en la línea ~314
+             ════════════════════════════════════════ -->
 
              <div class="px-actions-row">
                <button class="btn btn-ghost btn-sm" style="color:var(--red);flex:1" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️ Eliminar</button>
              </div>
 
-             La función deletePaciente() está en la línea ~314
-             ════════════════════════════════════════ -->
+             
       </div>
     </div>`;
   }).join('');
