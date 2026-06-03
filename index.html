@@ -488,8 +488,10 @@ function fmtDur(min){return min>=60?(Math.floor(min/60)+'h'+(min%60?' '+min%60+'
 // ── DURACIONES ESTIMADAS ─────────────────────────────────
 
 // ── EN CONSULTA AHORA ────────────────────────────────────
-let _consultaTimer = null;
-let _citaEnCursoId = null;
+let _consultaTimer   = null;
+let _citaEnCursoId   = null;
+let _consultasActivas = {}; // mapa citaId -> { inicioRealMin, inicioRealDate }
+let _masterTimer     = null; // cronómetro maestro
 
 // ── MODAL: EVENTOS Y APERTURA ────────────────────────────
 let _estadoSeleccionado = 'Completado';
