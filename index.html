@@ -655,6 +655,10 @@ function renderEstadoDoctores(){
               onclick="abrirFinalizarConsulta('${act.id}','${(act.paciente||'').replace(/'/g,"\\'")}','${(act.tratamiento||'').replace(/'/g,"\\'")}',0,${(durEst(act.tratamiento)||30)+(act.tiempoExtra||0)})">
               ✅ Finalizar
             </button>
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:var(--blue);border-color:rgba(74,158,255,.3)"
+              onclick="abrirExpedienteDoctor('${(act.paciente||'').replace(/'/g,"\\'")}','${act.expId||''}')">
+              📋 Expediente
+            </button>
             <button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:var(--teal);border-color:rgba(0,194,168,.3)"
               onclick="abrirRecetaDoctor('${doc.nombre}','${act.paciente||''}','${act.id||''}')">
               💊 Receta
@@ -693,6 +697,17 @@ function renderEstadoDoctores(){
     </table>
   </div>`;
 }
+
+// ── ABRIR EXPEDIENTE DESDE PANEL DE DOCTORES ─────────────
+window.abrirExpedienteDoctor = function(pacienteNombre, expIdDirecto){
+  // Primero usar id directo, sino buscar por nombre
+  const pxId = expIdDirecto || (ALL_PACIENTES.find(p=>p.nombre===pacienteNombre)?.id||'');
+  if(pxId){
+    window.location.href='expediente.html?px='+pxId;
+  } else {
+    showToast('Sin expediente registrado para este paciente','error');
+  }
+};
 
 // ── ABRIR RECETA DESDE PANEL DE DOCTORES ─────────────────
 window.abrirRecetaDoctor = function(doctorNombre, pacienteNombre, citaId){
@@ -822,7 +837,7 @@ function buildConsultaCard(c){
     }</td>
     <td style="text-align:right">
       <div class="ct-actions">
-        ${c.expId?`<a href="expediente.html?px=${c.expId}" class="btn btn-ghost btn-sm" style="font-size:.67rem">📋 Expediente</a>`:''}
+
         <button class="btn btn-sm btn-fin" style="font-size:.72rem;font-weight:800;white-space:nowrap" onclick="abrirFinalizarConsulta('${c.id}','${(c.paciente||'').replace(/'/g,"\\'")}','${(c.tratamiento||'').replace(/'/g,"\\'")}',${trans},${dur})">✅ Finalizar consulta</button>
       </div>
     </td>
