@@ -649,10 +649,21 @@ function renderEstadoDoctores(){
       <td>${pacienteTd}</td>
       <td>${tiempoTd}</td>
       <td style="text-align:right">
-        ${act?`<button class="btn btn-ghost btn-sm" style="font-size:.68rem"
-            onclick="abrirFinalizarConsulta('${act.id}','${(act.paciente||'').replace(/'/g,"\\'")}','${(act.tratamiento||'').replace(/'/g,"\\'")}',0,${(durEst(act.tratamiento)||30)+(act.tiempoExtra||0)})">
-            ✅ Finalizar
-          </button>`:''}
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+          ${act?`
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem"
+              onclick="abrirFinalizarConsulta('${act.id}','${(act.paciente||'').replace(/'/g,"\\'")}','${(act.tratamiento||'').replace(/'/g,"\\'")}',0,${(durEst(act.tratamiento)||30)+(act.tiempoExtra||0)})">
+              ✅ Finalizar
+            </button>
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:var(--teal);border-color:rgba(0,194,168,.3)"
+              onclick="abrirRecetaDoctor('${doc.nombre}','${act.paciente||''}','${act.id||''}')">
+              💊 Receta
+            </button>`
+          :`<button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:var(--teal);border-color:rgba(0,194,168,.3)"
+              onclick="abrirRecetaDoctor('${doc.nombre}','','')">
+              💊 Receta
+            </button>`}
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -683,7 +694,19 @@ function renderEstadoDoctores(){
   </div>`;
 }
 
-// ── TOGGLE DISPONIBLE ─────────────────────────────────────
+// ── ABRIR RECETA DESDE PANEL DE DOCTORES ─────────────────
+window.abrirRecetaDoctor = function(doctorNombre, pacienteNombre, citaId){
+  const params = new URLSearchParams();
+  if(doctorNombre) params.set('doctor',   doctorNombre);
+  if(pacienteNombre) params.set('paciente', pacienteNombre);
+  if(citaId)       params.set('cita',     citaId);
+  // Buscar id del paciente para prellenar expediente
+  const px = ALL_PACIENTES.find(p=>p.nombre===pacienteNombre);
+  if(px?.id) params.set('pxId', px.id);
+  window.location.href = 'recetas.html?' + params.toString();
+};
+
+
 window.toggleDoctorDisponible = async function(doctorNombre, citaId){
   try{
     // Limpiar pausa en la última cita completada del doctor
