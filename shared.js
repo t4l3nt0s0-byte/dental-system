@@ -23,17 +23,26 @@ const auth = firebase.auth();
 
 // ── PLAN DEFINITIONS ─────────────────────────────────────────
 const PLANES = {
+  trial: {
+    nombre:'Trial', color:'#9CA3AF', maxPacientes:5, maxUsuarios:1,
+    maxDoctores:0, maxRecepcion:0,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','recetas'],
+    diasPrueba:7,
+  },
   basico: {
-    nombre:'Básico', color:'#4A9EFF', maxPacientes:50, maxUsuarios:1,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda'],
+    nombre:'Básico', color:'#4A9EFF', maxPacientes:50, maxUsuarios:3,
+    maxDoctores:1, maxRecepcion:1,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','recetas'],
   },
   profesional: {
-    nombre:'Profesional', color:'#00C2A8', maxPacientes:Infinity, maxUsuarios:5,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios'],
+    nombre:'Profesional', color:'#00C2A8', maxPacientes:Infinity, maxUsuarios:4,
+    maxDoctores:2, maxRecepcion:1,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','recetas'],
   },
   premium: {
     nombre:'Premium', color:'#F4B942', maxPacientes:Infinity, maxUsuarios:Infinity,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','multisucursal','kpi-avanzado','expediente'],
+    maxDoctores:Infinity, maxRecepcion:Infinity,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','multisucursal','kpi-avanzado','expediente','recetas'],
   }
 };
 
