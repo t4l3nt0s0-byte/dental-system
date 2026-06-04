@@ -299,6 +299,19 @@ function editPaciente(id) {
 async function savePaciente() {
   const nombre = document.getElementById('f-nombre').value.trim().toUpperCase();
   if (!nombre) { showToast('El nombre es obligatorio','error'); return; }
+
+  // ── Verificar límite de pacientes según plan ──────────────
+  if (!editId) { // Solo al crear, no al editar
+    const plan = SESSION?.clinica?.plan || 'trial';
+    const maxPx = (typeof PLANES !== 'undefined' && PLANES[plan]?.maxPacientes) || 5;
+    if (maxPx !== Infinity && allPacientes.length >= maxPx) {
+      const planNombre = (typeof PLANES !== 'undefined' && PLANES[plan]?.nombre) || plan;
+      showToast(`Plan ${planNombre}: límite de ${maxPx} pacientes alcanzado`, 'error');
+      setTimeout(() => { window.location.href = 'planes.html?limit=pacientes'; }, 1800);
+      return;
+    }
+  }
+
   // Detección de duplicados (normaliza a mayúsculas para comparar)
   if (!editId) {
     const dup = allPacientes.find(p => (p.nombre||'').toUpperCase().trim() === nombre);
