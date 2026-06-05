@@ -436,3 +436,22 @@ tbody tr { transition: all .15s; }
   margin-bottom: 20px; font-size: .82rem; color: var(--text-muted);
 }
 .upgrade-banner strong { color: var(--gold); }
+
+/* ── TRIAL BANNER (top) ──────────────────────────────────── */
+/* Cuando el banner de prueba está activo, empujar sidebar y topbar */
+body.trial-banner-active .sidebar {
+  top: 38px;
+}
+body.trial-banner-active .main {
+  /* El topbar ya es sticky top:0 dentro del .main, 
+     el .main empieza después del sidebar que ahora inicia en 38px */
+}
+body.trial-banner-active .hamburger {
+  top: 48px;
+}
+/* En móvil el sidebar es overlay, no afecta tanto */
+@media(max-width:768px){
+  body.trial-banner-active .hamburger {
+    top: 46px;
+  }
+}

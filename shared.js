@@ -126,10 +126,10 @@ function showTrialBannerIfNeeded() {
   if (!banner) {
     banner = document.createElement('div');
     banner.id = '_trial_banner';
-    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:300;background:linear-gradient(135deg,rgba(244,185,66,.97),rgba(255,154,60,.97));color:#060D14;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:\'DM Sans\',sans-serif;font-size:.82rem;font-weight:600;box-shadow:0 -4px 20px rgba(244,185,66,.3);';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:300;background:linear-gradient(135deg,rgba(244,185,66,.97),rgba(255,154,60,.97));color:#060D14;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:\'DM Sans\',sans-serif;font-size:.82rem;font-weight:600;box-shadow:0 4px 20px rgba(244,185,66,.3);';
     document.body.appendChild(banner);
-    const main = document.querySelector('.main');
-    if (main) main.style.paddingBottom = '52px';
+    // Agregar clase al body para que CSS empuje todo hacia abajo
+    document.body.classList.add('trial-banner-active');
   }
   const txt = dias > 0
     ? `⏳ Período de prueba · <strong>${dias} día${dias!==1?'s':''} restante${dias!==1?'s':''}</strong> · Activa un plan para continuar`
