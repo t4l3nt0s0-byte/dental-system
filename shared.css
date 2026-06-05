@@ -1,35 +1,97 @@
 /* shared.css — Hersantych Dental · Global Styles */
 :root {
-  --bg:        #060D14;
-  --surface:   #0C1622;
-  --surface2:  #111E2E;
-  --surface3:  #162336;
-  --border:    rgba(255,255,255,.07);
-  --border2:   rgba(255,255,255,.12);
-  --teal:      #00C2A8;
-  --teal-dim:  rgba(0,194,168,.12);
-  --teal-glow: rgba(0,194,168,.25);
-  --gold:      #F4B942;
-  --gold-dim:  rgba(244,185,66,.1);
-  --red:       #FF5C5C;
-  --red-dim:   rgba(255,92,92,.1);
-  --blue:      #4A9EFF;
-  --blue-dim:  rgba(74,158,255,.1);
-  --purple:    #A78BFA;
-  --purple-dim:rgba(167,139,250,.1);
-  --green:     #34D399;
-  --green-dim: rgba(52,211,153,.1);
-  --text:      #E8F0F8;
-  --text-muted:rgba(232,240,248,.50);
-  --text-dim:  rgba(232,240,248,.25);
-  --font-display: 'Instrument Serif', Georgia, serif;
-  --font-body:    'DM Sans', sans-serif;
-  --font-mono:    'JetBrains Mono', monospace;
-  --r:   12px;
-  --r-lg:20px;
-  --shadow: 0 4px 24px rgba(0,0,0,.4);
-  --shadow-lg: 0 8px 48px rgba(0,0,0,.6);
+  /* ── Tema oscuro (default) ─────────────────────────────── */
+  --bg:          #060D14;
+  --surface:     #0C1622;
+  --surface2:    #111E2E;
+  --surface3:    #162336;
+  --border:      rgba(255,255,255,.07);
+  --border2:     rgba(255,255,255,.12);
+  --sidebar-bg:  #0A1628;
+  --topbar-bg:   rgba(6,13,20,.95);
+  --input-bg:    #111E2E;
+  --text:        #E8F0F8;
+  --text-muted:  rgba(232,240,248,.50);
+  --text-dim:    rgba(232,240,248,.25);
+  --teal:        #00C2A8;
+  --teal-dim:    rgba(0,194,168,.12);
+  --teal-glow:   rgba(0,194,168,.25);
+  --gold:        #F4B942;
+  --gold-dim:    rgba(244,185,66,.1);
+  --red:         #FF5C5C;
+  --red-dim:     rgba(255,92,92,.1);
+  --blue:        #4A9EFF;
+  --blue-dim:    rgba(74,158,255,.1);
+  --purple:      #A78BFA;
+  --purple-dim:  rgba(167,139,250,.1);
+  --green:       #34D399;
+  --green-dim:   rgba(52,211,153,.1);
+  --shadow:      0 4px 24px rgba(0,0,0,.4);
+  --shadow-lg:   0 8px 48px rgba(0,0,0,.6);
+  --font-display:'Instrument Serif', Georgia, serif;
+  --font-body:   'DM Sans', sans-serif;
+  --font-mono:   'JetBrains Mono', monospace;
+  --r:           12px;
+  --r-lg:        20px;
 }
+
+/* ── Tema claro ─────────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg:          #f0f4f8;
+  --surface:     #ffffff;
+  --surface2:    #f0f4f8;
+  --surface3:    #e4ecf4;
+  --border:      rgba(0,0,0,.08);
+  --border2:     rgba(0,0,0,.15);
+  --sidebar-bg:  #ffffff;
+  --topbar-bg:   rgba(255,255,255,.97);
+  --input-bg:    #f8fafc;
+  --text:        #111827;
+  --text-muted:  rgba(17,24,39,.55);
+  --text-dim:    rgba(17,24,39,.30);
+  --shadow:      0 4px 24px rgba(0,0,0,.08);
+  --shadow-lg:   0 8px 48px rgba(0,0,0,.14);
+}
+
+/* ── Modo claro: componentes específicos ────────────────── */
+html[data-theme="light"] body { background: #f0f4f8; color: #111827; }
+html[data-theme="light"] .sidebar { background: #ffffff; border-color: rgba(0,0,0,.08); }
+html[data-theme="light"] .sidebar-nav .nav-item { color: rgba(17,24,39,.65); }
+html[data-theme="light"] .sidebar-nav .nav-item:hover { background: #f0f4f8; color: #111827; }
+html[data-theme="light"] .sidebar-nav .nav-item.active { background: rgba(0,194,168,.1); color: var(--teal); }
+html[data-theme="light"] .sidebar-footer { border-color: rgba(0,0,0,.08); color: #374151; }
+html[data-theme="light"] .nav-section { color: rgba(17,24,39,.35); }
+html[data-theme="light"] .topbar { background: rgba(255,255,255,.97); border-color: rgba(0,0,0,.08); }
+html[data-theme="light"] .topbar-title { color: #111827; }
+html[data-theme="light"] .content { background: #f0f4f8; }
+html[data-theme="light"] .main { background: #f0f4f8; }
+html[data-theme="light"] .form-input,
+html[data-theme="light"] .form-select,
+html[data-theme="light"] .form-textarea { background: #ffffff; border-color: rgba(0,0,0,.12); color: #111827; }
+html[data-theme="light"] .form-input::placeholder,
+html[data-theme="light"] .form-select::placeholder,
+html[data-theme="light"] .form-textarea::placeholder { color: rgba(17,24,39,.3); }
+html[data-theme="light"] .btn-ghost { border-color: rgba(0,0,0,.15); color: #374151; }
+html[data-theme="light"] .btn-ghost:hover { background: #f0f4f8; }
+html[data-theme="light"] .modal-overlay { background: rgba(0,0,0,.4); }
+html[data-theme="light"] .modal { background: #ffffff; border-color: rgba(0,0,0,.1); }
+html[data-theme="light"] .ds-table-wrap,
+html[data-theme="light"] .ds-table { background: #ffffff; }
+html[data-theme="light"] .ds-table thead th { color: rgba(17,24,39,.5); border-color: rgba(0,0,0,.08); }
+html[data-theme="light"] .ds-table tbody tr:hover { background: #f8fafc; }
+html[data-theme="light"] .ds-table td { color: #111827; border-color: rgba(0,0,0,.06); }
+html[data-theme="light"] .dash-card { background: #ffffff; }
+html[data-theme="light"] .plan-badge { background: #f0f4f8; }
+html[data-theme="light"] select,
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="email"],
+html[data-theme="light"] input[type="number"],
+html[data-theme="light"] input[type="date"],
+html[data-theme="light"] input[type="password"],
+html[data-theme="light"] textarea { background: #ffffff; color: #111827; border-color: rgba(0,0,0,.12); }
+html[data-theme="light"] .hamburger { color: #374151; }
+
+
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; }
