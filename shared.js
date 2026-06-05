@@ -188,7 +188,50 @@ function showTrialBannerIfNeeded() {
 
 }
 
-// ── initSession ─────────────────────────────────────────────
+// ── applyTema ─────────────────────────────────────────────────
+function applyTema(tema, colorPrimario) {
+  const root = document.documentElement;
+  const t = tema || localStorage.getItem('dental_tema') || 'dark';
+  const c = colorPrimario || localStorage.getItem('dental_color') || '';
+  localStorage.setItem('dental_tema', t);
+  if (c) localStorage.setItem('dental_color', c);
+  if (t === 'light') {
+    root.style.setProperty('--bg',         '#f8fafc');
+    root.style.setProperty('--surface',    '#ffffff');
+    root.style.setProperty('--surface2',   '#f0f4f8');
+    root.style.setProperty('--border',     'rgba(0,0,0,.08)');
+    root.style.setProperty('--border2',    'rgba(0,0,0,.15)');
+    root.style.setProperty('--text',       '#111827');
+    root.style.setProperty('--text-muted', 'rgba(17,24,39,.55)');
+    root.style.setProperty('--text-dim',   'rgba(17,24,39,.3)');
+    root.style.setProperty('--sidebar-bg', '#ffffff');
+    root.style.setProperty('--topbar-bg',  'rgba(255,255,255,.97)');
+    if (document.body) document.body.style.background = '#f8fafc';
+  } else {
+    root.style.setProperty('--bg',         '#060D14');
+    root.style.setProperty('--surface',    '#0C1622');
+    root.style.setProperty('--surface2',   '#111E2E');
+    root.style.setProperty('--border',     'rgba(255,255,255,.07)');
+    root.style.setProperty('--border2',    'rgba(255,255,255,.12)');
+    root.style.setProperty('--text',       '#E8F0F8');
+    root.style.setProperty('--text-muted', 'rgba(232,240,248,.50)');
+    root.style.setProperty('--text-dim',   'rgba(232,240,248,.25)');
+    root.style.setProperty('--sidebar-bg', '#0A1628');
+    root.style.setProperty('--topbar-bg',  'rgba(6,13,20,.95)');
+    if (document.body) document.body.style.background = '#060D14';
+  }
+  if (c && /^#[0-9A-Fa-f]{6}$/.test(c)) {
+    const r = parseInt(c.slice(1,3),16);
+    const g = parseInt(c.slice(3,5),16);
+    const b = parseInt(c.slice(5,7),16);
+    root.style.setProperty('--teal',      c);
+    root.style.setProperty('--teal-dim',  `rgba(${r},${g},${b},.12)`);
+    root.style.setProperty('--teal-glow', `rgba(${r},${g},${b},.25)`);
+  }
+}
+window.applyTema = applyTema;
+
+// ── initSession ─────────────────────────────────────────────────
 async function initSession(requiredPage) {
   return new Promise((resolve) => {
     // Usar unsubscribe para que solo dispare UNA vez
