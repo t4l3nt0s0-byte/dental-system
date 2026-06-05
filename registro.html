@@ -236,187 +236,187 @@ const DENTAL_CONFIG = {
   appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
 };
 
-// ══ INICIALIZAR APPS (evitar duplicados) ════════════════════
+// ══ INICIALIZAR APPS ════════════════════════════════════════
 function getOrInitApp(config, name) {
-  try {
-    return firebase.app(name);
-  } catch(e) {
-    return firebase.initializeApp(config, name);
-  }
+  try { return firebase.app(name); }
+  catch(e) { return firebase.initializeApp(config, name); }
 }
 const saasApp    = getOrInitApp(SAAS_CONFIG,   'saas');
 const dentalApp  = getOrInitApp(DENTAL_CONFIG, 'dental');
-
-// Auth y Firestore — patrón correcto para SDK compat con apps nombradas
 const saasAuth   = saasApp.auth();
 const saasDB     = saasApp.firestore();
 const dentalAuth = dentalApp.auth();
 const dentalDB   = dentalApp.firestore();
-
-// Helpers de timestamps
 const TS = firebase.firestore.Timestamp;
 const SV = () => firebase.firestore.FieldValue.serverTimestamp();
 
-// ══ ESTADO GLOBAL ═══════════════════════════════════════════
+// ══ ESTADO ══════════════════════════════════════════════════
 let selectedPlan = new URLSearchParams(window.location.search).get('plan') || 'basico';
-let currentStep  = 0;
 
-// ══ PLAN SELECTOR ════════════════════════════════════════════
-window.selectPlan = function(plan) {
-  selectedPlan = plan;
-  document.querySelectorAll('.plan-mini').forEach(c =>
-    c.classList.toggle('selected', c.dataset.plan === plan)
-  );
-};
-// Activar plan inicial
-document.addEventListener('DOMContentLoaded', () => {
-  selectPlan(selectedPlan);
-});
-
-// ══ NAVEGACIÓN DE PASOS ══════════════════════════════════════
-window.goStep = function(n) {
-  if (n === 1) {
-    const clinica = document.getElementById('f-clinica').value.trim();
-    if (!clinica) { showErr('El nombre del consultorio es obligatorio'); return; }
-  }
-  if (n === 2) {
-    const email = document.getElementById('f-email').value.trim();
-    const pass  = document.getElementById('f-pass').value;
-    const pass2 = document.getElementById('f-pass2').value;
-    if (!email || !pass) { showErr('Completa correo y contraseña'); return; }
-    if (pass.length < 6) { showErr('La contraseña debe tener mínimo 6 caracteres'); return; }
-    if (pass !== pass2)  { showErr('Las contraseñas no coinciden'); return; }
-  }
-  hideErr();
-  document.querySelectorAll('.step-panel').forEach((p,i) =>
-    p.classList.toggle('active', i === n)
-  );
-  currentStep = n;
-  for(let i=0;i<3;i++){
-    const d = document.getElementById('dot'+i);
-    if(!d) continue;
-    d.classList.toggle('active', i===n);
-    d.classList.toggle('done', i<n);
-    d.style.width      = i===n ? '24px' : '8px';
-    d.style.background = i<=n ? 'var(--teal)' : 'rgba(255,255,255,.15)';
-  }
-};
-
-// ══ HELPERS UI ════════════════════════════════════════════════
+// ══ HELPERS UI ══════════════════════════════════════════════
 function showErr(msg) {
   const b = document.getElementById('errBox');
-  if(b){ b.textContent=msg; b.classList.add('show'); }
+  if(b){ b.textContent = msg; b.style.display = 'block'; b.classList.add('show'); }
 }
 function hideErr() {
   const b = document.getElementById('errBox');
-  if(b) b.classList.remove('show');
+  if(b){ b.style.display = 'none'; b.classList.remove('show'); }
 }
 
-// Toggle password visibility
-document.addEventListener('DOMContentLoaded', () => {
-  const togglePw = document.getElementById('togglePw');
-  if(togglePw) togglePw.addEventListener('click', () => {
-    const pw = document.getElementById('f-pass');
-    const icon = togglePw.querySelector('span');
-    if(pw.type==='password'){ pw.type='text'; if(icon) icon.textContent='🙈'; }
-    else { pw.type='password'; if(icon) icon.textContent='👁'; }
+// ══ PLAN SELECTOR ═══════════════════════════════════════════
+// Definido directamente en window para que onclick funcione antes de DOMContentLoaded
+window.selectPlan = function(plan) {
+  selectedPlan = plan;
+  document.querySelectorAll('.plan-mini').forEach(function(c) {
+    c.classList.toggle('selected', c.dataset.plan === plan);
   });
-});
+};
 
-// ══ REGISTRAR ════════════════════════════════════════════════
-window.registrar = async function() {
-  const nombre  = document.getElementById('f-nombre').value.trim();
-  const email   = document.getElementById('f-email').value.trim();
-  const pass    = document.getElementById('f-pass').value;
-  const clinica = document.getElementById('f-clinica').value.trim();
-  const ciudad  = document.getElementById('f-ciudad')?.value.trim()||'';
-  const tel     = document.getElementById('f-tel')?.value.trim()||'';
-  const dentistas = document.getElementById('f-dentistas')?.value||'1';
-
-  if(!nombre||!email||!pass||!clinica){
-    showErr('Completa todos los campos'); return;
-  }
-
-  const btn = document.getElementById('btnRegistrar');
-  if(btn){ btn.classList.add('loading'); btn.disabled=true; }
+// ══ NAVEGACIÓN DE PASOS ═════════════════════════════════════
+// Definido directamente en window para que onclick funcione inmediatamente
+window.goStep = function(n) {
   hideErr();
 
-  const trialEnd = new Date(Date.now() + 7*24*60*60*1000);
+  // Validaciones por paso
+  if (n === 1) {
+    var clinica = document.getElementById('f-clinica').value.trim();
+    if (!clinica) { showErr('El nombre del consultorio es obligatorio'); return; }
+  }
+  if (n === 2) {
+    var email = document.getElementById('f-email').value.trim();
+    var pass  = document.getElementById('f-pass').value;
+    var pass2 = document.getElementById('f-pass2').value;
+    if (!email || !pass) { showErr('Completa correo y contraseña'); return; }
+    if (pass.length < 6) { showErr('Contraseña mínimo 6 caracteres'); return; }
+    if (pass !== pass2)  { showErr('Las contraseñas no coinciden'); return; }
+  }
+
+  // Mostrar el panel correcto
+  var panels = document.querySelectorAll('.step-panel');
+  panels.forEach(function(p, i) {
+    p.classList.toggle('active', i === n);
+  });
+
+  // Actualizar dots de progreso
+  for(var i = 0; i < 3; i++){
+    var d = document.getElementById('dot' + i);
+    if(!d) continue;
+    d.style.width      = (i === n) ? '24px' : '8px';
+    d.style.background = (i <= n) ? 'var(--teal)' : 'rgba(255,255,255,.15)';
+  }
+};
+
+// Al cargar: activar plan por defecto + toggle password
+document.addEventListener('DOMContentLoaded', function() {
+  window.selectPlan(selectedPlan);
+  var togglePw = document.getElementById('togglePw');
+  if(togglePw) {
+    togglePw.addEventListener('click', function() {
+      var pw = document.getElementById('f-pass');
+      if(pw.type === 'password') {
+        pw.type = 'text'; togglePw.textContent = '🙈';
+      } else {
+        pw.type = 'password'; togglePw.textContent = '👁';
+      }
+    });
+  }
+});
+
+// ══ REGISTRAR ═══════════════════════════════════════════════
+window.registrar = async function() {
+  var nombre  = document.getElementById('f-nombre').value.trim();
+  var email   = document.getElementById('f-email').value.trim();
+  var pass    = document.getElementById('f-pass').value;
+  var clinica = document.getElementById('f-clinica').value.trim();
+  var ciudad  = (document.getElementById('f-ciudad') || {value:''}).value.trim();
+  var tel     = (document.getElementById('f-tel')    || {value:''}).value.trim();
+  var dentistas = (document.getElementById('f-dentistas') || {value:'1'}).value;
+
+  if(!nombre || !email || !pass || !clinica) {
+    showErr('Completa todos los campos obligatorios'); return;
+  }
+
+  var btn = document.getElementById('btnRegistrar');
+  if(btn){ btn.disabled = true; btn.querySelector('.btn-text').textContent = 'Creando cuenta...'; }
+  hideErr();
+
+  var trialEnd = new Date(Date.now() + 7*24*60*60*1000);
 
   try {
-    // 1. Crear usuario en dental-add (sistema principal)
-    const cred = await dentalAuth.createUserWithEmailAndPassword(email, pass);
-    const uid  = cred.user.uid;
-    const clinicaId = 'clinica_' + uid;
+    // 1. Crear usuario en dental-add
+    var cred = await dentalAuth.createUserWithEmailAndPassword(email, pass);
+    var uid  = cred.user.uid;
+    var clinicaId = 'clinica_' + uid;
 
-    // 2. Crear documento de clínica
+    // 2. Crear clínica
     await dentalDB.collection('clinicas').doc(clinicaId).set({
-      nombre: clinica, ciudad, telefono: tel,
+      nombre: clinica, ciudad: ciudad, telefono: tel,
       plan: 'trial',
       planDeseado: selectedPlan,
       trialEnd: TS.fromDate(trialEnd),
       adminUid: uid, activo: true,
       tema: 'dark',
-      creadoEn: SV(),
+      creadoEn: SV()
     });
 
-    // 3. Crear documento de usuario
+    // 3. Crear usuario admin
     await dentalDB.collection('usuarios').doc(uid).set({
-      nombre, email, rol: 'admin',
-      clinicaId, activo: true,
-      creadoEn: SV(),
+      nombre: nombre, email: email, rol: 'admin',
+      clinicaId: clinicaId, activo: true,
+      creadoEn: SV()
     });
 
-    // 4. Registrar en SAAS (panel maestro)
+    // 4. Registrar en SAAS (no bloquea si falla)
     try {
       await saasDB.collection('solicitudes').add({
-        uid, clinica, nombre, email, tel, ciudad,
-        dentistas, planDeseado: selectedPlan,
+        uid: uid, clinica: clinica, nombre: nombre,
+        email: email, tel: tel, ciudad: ciudad,
+        dentistas: dentistas, planDeseado: selectedPlan,
         trialEnd: trialEnd.toISOString(),
-        estado: 'trial',
-        creadoEn: SV(),
+        estado: 'trial', creadoEn: SV()
       });
     } catch(saasErr) {
-      // No bloquear el registro si SAAS falla
-      console.warn('SAAS log failed:', saasErr.message);
+      console.warn('SAAS registro:', saasErr.message);
     }
 
-    // 5. Catálogo inicial básico
-    const catalogo = [
-      {tratamiento:'Consulta',      desc:'Valoración y diagnóstico',           min:300,  max:500,   sugerido:400},
-      {tratamiento:'Limpieza',      desc:'Profilaxis dental + fluoruro',        min:500,  max:900,   sugerido:700},
-      {tratamiento:'Endodoncia',    desc:'Tratamiento de conducto',             min:7000, max:12000, sugerido:9500},
-      {tratamiento:'Resina',        desc:'Restauración de composite',           min:1500, max:3500,  sugerido:2500},
-      {tratamiento:'Corona',        desc:'Corona de porcelana/zirconia',        min:8000, max:18000, sugerido:13000},
-      {tratamiento:'Extracción',    desc:'Extracción simple sin complicaciones',min:600,  max:1200,  sugerido:900},
-      {tratamiento:'Blanqueamiento',desc:'Con lámpara LED',                     min:2500, max:5000,  sugerido:3750},
+    // 5. Catálogo inicial (en lote para ser rápido)
+    var catalogo = [
+      {tratamiento:'Consulta',       sugerido:400,  min:300,  max:500,   desc:'Valoración y diagnóstico'},
+      {tratamiento:'Limpieza',       sugerido:700,  min:500,  max:900,   desc:'Profilaxis dental + fluoruro'},
+      {tratamiento:'Endodoncia',     sugerido:9500, min:7000, max:12000, desc:'Tratamiento de conducto'},
+      {tratamiento:'Resina',         sugerido:2500, min:1500, max:3500,  desc:'Restauración de composite'},
+      {tratamiento:'Corona',         sugerido:13000,min:8000, max:18000, desc:'Corona de porcelana/zirconia'},
+      {tratamiento:'Extracción',     sugerido:900,  min:600,  max:1200,  desc:'Extracción simple'},
+      {tratamiento:'Blanqueamiento', sugerido:3750, min:2500, max:5000,  desc:'Con lámpara LED'},
     ];
-    const batch = dentalDB.batch();
-    catalogo.forEach(item => {
-      const ref = dentalDB.collection('clinicas').doc(clinicaId)
-                          .collection('catalogo')
-                          .doc(item.tratamiento.replace(/\s+/g,'-').toLowerCase());
-      batch.set(ref, {...item, vigente:true, creadoEn:SV()});
+    var batch = dentalDB.batch();
+    catalogo.forEach(function(item) {
+      var ref = dentalDB.collection('clinicas').doc(clinicaId)
+                        .collection('catalogo')
+                        .doc(item.tratamiento.replace(/\s+/g,'-').toLowerCase());
+      batch.set(ref, Object.assign({}, item, {vigente:true, creadoEn:SV()}));
     });
     await batch.commit();
 
-    // 6. Éxito — mostrar confirmación y redirigir
-    document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
-    const sw = document.getElementById('successWrap');
-    if(sw) sw.style.display='block';
-    const bar = document.getElementById('redirectBar');
-    if(bar) bar.style.width='100%';
-    setTimeout(() => { window.location.href='index.html'; }, 3000);
+    // 6. Éxito
+    document.querySelectorAll('.step-panel').forEach(function(p){ p.classList.remove('active'); });
+    var sw = document.getElementById('successWrap');
+    if(sw) sw.style.display = 'block';
+    var bar = document.getElementById('redirectBar');
+    if(bar) bar.style.width = '100%';
+    setTimeout(function(){ window.location.href = 'index.html'; }, 3000);
 
   } catch(e) {
-    const msgs = {
-      'auth/email-already-in-use': 'Este correo ya está registrado. ¿Ya tienes cuenta?',
-      'auth/weak-password':        'La contraseña es demasiado débil (mínimo 6 caracteres)',
-      'auth/invalid-email':        'Correo electrónico no válido',
-      'auth/network-request-failed':'Sin conexión. Verifica tu internet e intenta de nuevo.',
+    console.error('Error registro:', e);
+    var msgs = {
+      'auth/email-already-in-use': '⚠️ Este correo ya está registrado. ¿Ya tienes cuenta?',
+      'auth/weak-password':        '⚠️ Contraseña muy débil (mínimo 6 caracteres)',
+      'auth/invalid-email':        '⚠️ Correo electrónico no válido',
+      'auth/network-request-failed':'⚠️ Sin conexión. Verifica tu internet.',
+      'auth/too-many-requests':    '⚠️ Demasiados intentos. Espera unos minutos.',
     };
-    showErr(msgs[e.code] || 'Error: ' + e.message);
-    if(btn){ btn.classList.remove('loading'); btn.disabled=false; }
+    showErr(msgs[e.code] || ('Error: ' + e.message));
+    if(btn){ btn.disabled = false; btn.querySelector('.btn-text').textContent = '🚀 Crear cuenta gratis'; }
   }
 };
 </script>
