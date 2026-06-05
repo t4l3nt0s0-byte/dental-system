@@ -234,100 +234,126 @@ window.applyTema = applyTema;
 
 // ── initSession ─────────────────────────────────────────────────
 async function initSession(requiredPage) {
-  return new Promise((resolve) => {
-    // Usar unsubscribe para que solo dispare UNA vez
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      unsubscribe(); // Cancelar listener inmediatamente después del primer disparo
+  // Páginas que NO requieren autenticación
+  var href = window.location.href;
+  var isPublic = ['login','registro','landing'].some(function(p){
+    return href.indexOf(p) !== -1;
+  });
+
+  return new Promise(function(resolve) {
+
+    // onAuthStateChanged puede tardar — esperamos el primer disparo
+    // y cancelamos inmediatamente para no tener listeners acumulados
+    var done = false;
+    var unsubscribe = auth.onAuthStateChanged(function(user) {
+      if (done) return;  // ignorar disparos extras
+      done = true;
+      unsubscribe();     // cancelar listener — solo necesitamos el primero
 
       if (!user) {
-        // Si estamos haciendo logout, no redirigir (ya lo maneja logout())
-        if (_loggingOut) { resolve(null); return; }
-        // No hay sesión → redirigir a login solo si no estamos ya ahí
-        var href = window.location.href;
-        var isPublic = ['login','registro','landing'].some(p => href.indexOf(p) !== -1);
-        if (!isPublic) {
-          window.location.replace('login.html');
-        }
-        resolve(null); return;
-      }
-
-      try {
-        // Cargar datos del usuario
-        const userSnap = await db.collection('usuarios').doc(user.uid).get();
-        if (!userSnap.exists) {
-          await auth.signOut().catch(()=>{});
-          window.location.replace('login.html');
-          resolve(null); return;
-        }
-        const userData = userSnap.data();
-
-        // Usuario inactivo
-        if (userData.activo === false) {
-          await auth.signOut().catch(()=>{});
-          window.location.replace('login.html');
-          resolve(null); return;
-        }
-
-        // Cargar datos de la clínica
-        const clinicaId = userData.clinicaId;
-        if (!clinicaId) {
-          await auth.signOut().catch(()=>{});
-          window.location.replace('login.html');
-          resolve(null); return;
-        }
-
-        const clinicaSnap = await db.collection('clinicas').doc(clinicaId).get();
-        if (!clinicaSnap.exists) {
-          await auth.signOut().catch(()=>{});
-          window.location.replace('login.html');
-          resolve(null); return;
-        }
-        const clinicaData = { id: clinicaId, ...clinicaSnap.data() };
-
-        // Verificar permiso de rol para esta página
-        const ROLES_PERMITIDOS = {
-          admin:    'any',
-          doctor:   ['agenda','pacientes','tratamientos','odontograma','recetas'],
-          recepcion:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda'],
-        };
-        const rol = userData.rol || 'recepcion';
-        const permitidos = ROLES_PERMITIDOS[rol];
-        if (requiredPage && requiredPage !== 'any' && permitidos !== 'any') {
-          if (!permitidos.includes(requiredPage)) {
-            window.location.replace('index.html');
-            resolve(null); return;
-          }
-        }
-
-        // Sesión establecida
-        SESSION = { user: { ...userData, uid: user.uid }, clinica: clinicaData };
-        window.SESSION = SESSION;
-
-        // Aplicar tema visual
-        if (typeof applyTema === 'function') {
-          applyTema(clinicaData.tema, clinicaData.colorPrimario);
-        }
-
-        // Renderizar sidebar
-        if (typeof renderSidebar === 'function') renderSidebar();
-
-        // Banner de prueba si aplica
-        if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
-
-        resolve(SESSION);
-
-      } catch (e) {
-        // Error de red o Firestore: NO redirigir, solo reportar
-        // Evita el loop: error → login → index → error → login...
-        console.error('initSession:', e.code || e.message);
-        if (e.code === 'permission-denied' || e.code === 'auth/user-token-expired') {
-          await auth.signOut().catch(()=>{});
+        // Sin sesión: ir a login (si no estamos ya en página pública)
+        if (!isPublic && !_loggingOut) {
           window.location.replace('login.html');
         }
         resolve(null);
+        return;
       }
+
+      // HAY usuario — cargar sus datos de Firestore
+      db.collection('usuarios').doc(user.uid).get()
+        .then(function(userSnap) {
+          if (!userSnap.exists) {
+            // Usuario de Auth pero sin registro en Firestore
+            // Puede pasar si el registro no completó
+            if (!isPublic) window.location.replace('login.html');
+            resolve(null);
+            return;
+          }
+
+          var userData = userSnap.data();
+
+          // Verificar que está activo
+          if (userData.activo === false) {
+            auth.signOut().catch(function(){});
+            if (!isPublic) window.location.replace('login.html');
+            resolve(null);
+            return;
+          }
+
+          var clinicaId = userData.clinicaId;
+          if (!clinicaId) {
+            if (!isPublic) window.location.replace('login.html');
+            resolve(null);
+            return;
+          }
+
+          // Cargar datos de la clínica
+          db.collection('clinicas').doc(clinicaId).get()
+            .then(function(clinicaSnap) {
+              if (!clinicaSnap.exists) {
+                if (!isPublic) window.location.replace('login.html');
+                resolve(null);
+                return;
+              }
+
+              var clinicaData = Object.assign({ id: clinicaId }, clinicaSnap.data());
+
+              // Verificar permiso de página según rol
+              var ROLES_PERM = {
+                admin:    'any',
+                doctor:   ['agenda','pacientes','tratamientos','odontograma','recetas'],
+                recepcion:['agenda','pacientes','tratamientos','abonos','cotizacion',
+                           'catalogo','corte-caja','busqueda'],
+              };
+              var rol = userData.rol || 'recepcion';
+              var perms = ROLES_PERM[rol];
+              if (requiredPage && requiredPage !== 'any' && perms !== 'any') {
+                if (perms.indexOf(requiredPage) === -1) {
+                  window.location.replace('index.html');
+                  resolve(null);
+                  return;
+                }
+              }
+
+              // ✅ Sesión válida
+              SESSION = { user: Object.assign({}, userData, { uid: user.uid }), clinica: clinicaData };
+              window.SESSION = SESSION;
+
+              // Aplicar tema
+              if (typeof applyTema === 'function') {
+                applyTema(clinicaData.tema, clinicaData.colorPrimario);
+              }
+
+              // Sidebar
+              if (typeof renderSidebar === 'function') renderSidebar();
+
+              // Banner trial
+              if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
+
+              resolve(SESSION);
+            })
+            .catch(function(e) {
+              // Error cargando clínica — NO redirigir, solo loguear
+              console.warn('initSession [clinica]:', e.message);
+              resolve(null);
+            });
+        })
+        .catch(function(e) {
+          // Error cargando usuario — NO redirigir salvo permiso denegado
+          console.warn('initSession [usuario]:', e.message);
+          if (e.code === 'permission-denied') {
+            if (!isPublic) window.location.replace('login.html');
+          }
+          resolve(null);
+        });
     });
   });
+}
+
+async function logout() {
+  _loggingOut = true;
+  try { await auth.signOut(); } catch(e) { console.warn('logout:', e.message); }
+  window.location.replace('login.html');
 }
 
 
