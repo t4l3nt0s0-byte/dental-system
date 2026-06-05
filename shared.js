@@ -146,7 +146,7 @@ function showTrialBannerIfNeeded() {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap:        '12px',
-    fontFamily: ''DM Sans',sans-serif',
+    fontFamily: 'DM Sans,sans-serif',
     fontSize:   '.82rem',
     fontWeight: '700',
     boxShadow:  '0 2px 12px rgba(245,158,11,.4)',

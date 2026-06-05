@@ -456,10 +456,9 @@ body.trial-banner-active .hamburger {
   }
 }
 
-/* ── TRIAL BANNER ────────────────────────────────────────
-   Barra de prueba SIEMPRE en la parte superior.
-   Nunca tapa el botón de cerrar sesión.
-──────────────────────────────────────────────────────── */
+/* ── TRIAL BANNER ──────────────────────────────────────────
+   Banner SIEMPRE top:0. Sidebar, topbar y hamburger bajan.
+───────────────────────────────────────────────────────── */
 #_trial_banner {
   position: fixed !important;
   top: 0 !important;
@@ -467,6 +466,17 @@ body.trial-banner-active .hamburger {
   left: 0 !important;
   right: 0 !important;
   z-index: 9999 !important;
+}
+/* Todo el layout baja 38px cuando el banner está activo */
+body.trial-banner-active .sidebar {
+  top: 38px !important;
+}
+body.trial-banner-active .main .topbar {
+  top: 38px !important;
+  position: sticky !important;
+}
+body.trial-banner-active #hamburger {
+  top: 46px !important;
 }
 
 /* Cuando el banner está activo, bajar sidebar y hamburger */
