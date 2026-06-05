@@ -301,13 +301,15 @@ async function initSession(requiredPage) {
         window.SESSION = SESSION;
 
         // Aplicar tema visual
-        applyTema(clinicaData.tema, clinicaData.colorPrimario);
+        if (typeof applyTema === 'function') {
+          applyTema(clinicaData.tema, clinicaData.colorPrimario);
+        }
 
         // Renderizar sidebar
-        renderSidebar();
+        if (typeof renderSidebar === 'function') renderSidebar();
 
         // Banner de prueba si aplica
-        showTrialBannerIfNeeded();
+        if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
 
         resolve(SESSION);
 
