@@ -122,67 +122,70 @@ function showTrialBannerIfNeeded() {
   const trialEnd = clinica.trialEnd?.toDate ? clinica.trialEnd.toDate() : null;
   if (!trialEnd) return;
   const dias = Math.ceil((trialEnd - new Date()) / 86400000);
-  let banner = document.getElementById('_trial_banner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = '_trial_banner';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:300;background:linear-gradient(135deg,rgba(244,185,66,.97),rgba(255,154,60,.97));color:#060D14;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:\'DM Sans\',sans-serif;font-size:.82rem;font-weight:600;box-shadow:0 4px 20px rgba(244,185,66,.3);';
-    document.body.appendChild(banner);
-    // Agregar clase al body para que CSS empuje todo hacia abajo
-    document.body.classList.add('trial-banner-active');
-  }
-  const txt = dias > 0
-    ? `⏳ Período de prueba · <strong>${dias} día${dias!==1?'s':''} restante${dias!==1?'s':''}</strong> · Activa un plan para continuar`
-    : `⚠️ <strong>Tu período de prueba terminó.</strong> Activa un plan para seguir usando el sistema.`;
-  banner.innerHTML = `<div>${txt}</div><a href="planes.html" style="background:#060D14;color:#F4B942;padding:6px 16px;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;flex-shrink:0;white-space:nowrap">💎 Ver planes →</a>`;
-}
 
-async function initSession(requiredFeature) {
-  return new Promise((resolve) => {
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) { window.location.href = 'login.html'; resolve(null); return; }
-      try {
-        const uSnap = await db.collection('usuarios').doc(user.uid).get();
-        if (!uSnap.exists) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
-        const uData = uSnap.data();
-        if (uData.activo === false) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
-        const cSnap = await db.collection('clinicas').doc(uData.clinicaId).get();
-        SESSION = { user: { uid: user.uid, email: user.email, ...uData }, clinica: { id: uData.clinicaId, ...cSnap.data() } };
-        // ── TRIAL: verificar expiración ────────────────────
-        const cData = cSnap.data() || {};
-        if (cData.plan === 'trial' && cData.trialEnd) {
-          const trialEndDate = cData.trialEnd.toDate ? cData.trialEnd.toDate() : new Date(cData.trialEnd);
-          const diasRestantes = Math.ceil((trialEndDate - new Date()) / 86400000);
-          if (diasRestantes <= 0) {
-            const allowed = ['planes','configuracion'];
-            const curPage = window.CURRENT_PAGE || '';
-            if (!allowed.includes(curPage)) {
-              window.location.href = 'planes.html?expired=1';
-              resolve(null); return;
-            }
-          }
-        }
-        // ── PLAN FEATURE GUARD ─────────────────────────────
-        if (requiredFeature && requiredFeature !== 'any') {
-          const isAdmin = uData.rol === 'admin';
-          if (!isAdmin) {
-            const planKey = cSnap.data()?.plan || 'basico';
-            const feats = planKey === 'trial'
-              ? TRIAL_FEATURES
-              : (PLANES[planKey] || PLANES.basico).features;
-            if (!feats.includes(requiredFeature)) {
-              window.location.href = `upgrade.html?feat=${requiredFeature}`;
-              resolve(null); return;
-            }
-          }
-        }
-        // Render sidebar
-        renderSidebar();
-        showTrialBannerIfNeeded();
-        resolve(SESSION);
-      } catch(e) { console.error('Session error:', e); resolve(null); }
-    });
+  // Eliminar banner previo si existe
+  const prev = document.getElementById('_trial_banner');
+  if (prev) prev.remove();
+
+  const banner = document.createElement('div');
+  banner.id = '_trial_banner';
+
+  // SIEMPRE arriba — position fixed top:0
+  // z-index 9999 para que esté sobre todo incluyendo sidebar y topbar
+  Object.assign(banner.style, {
+    position:   'fixed',
+    top:        '0',
+    left:       '0',
+    right:      '0',
+    bottom:     'auto',
+    zIndex:     '9999',
+    background: 'linear-gradient(90deg,#F59E0B,#F97316)',
+    color:      '#1a0a00',
+    padding:    '9px 20px',
+    display:    'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap:        '12px',
+    fontFamily: ''DM Sans',sans-serif',
+    fontSize:   '.82rem',
+    fontWeight: '700',
+    boxShadow:  '0 2px 12px rgba(245,158,11,.4)',
+    lineHeight: '1',
   });
+
+  const msg = dias > 0
+    ? `⏳ Período de prueba · <strong>${dias} día${dias !== 1 ? 's' : ''} restante${dias !== 1 ? 's' : ''}</strong> · Activa un plan para continuar`
+    : `⚠️ <strong>Período de prueba vencido</strong> · Activa un plan para seguir usando el sistema`;
+
+  banner.innerHTML = `
+    <span>${msg}</span>
+    <a href="planes.html" style="
+      background:#1a0a00;color:#F59E0B;
+      padding:5px 14px;border-radius:8px;
+      font-size:.78rem;font-weight:800;
+      text-decoration:none;white-space:nowrap;
+      flex-shrink:0;
+    ">💎 Ver planes →</a>`;
+
+  document.body.prepend(banner); // prepend = primer hijo del body
+
+  // Empujar sidebar y topbar hacia abajo exactamente la altura del banner
+  const bannerH = 38;
+  document.body.classList.add('trial-banner-active');
+
+  // Aplicar estilos directamente como fallback adicional
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) sidebar.style.top = bannerH + 'px';
+  const hamburger = document.getElementById('hamburger');
+  if (hamburger) hamburger.style.top = (bannerH + 8) + 'px';
+
+  // Asegurar que el main no empiece tapado (en caso de que sea margin)
+  const main = document.querySelector('.main');
+  if (main) {
+    main.style.paddingTop   = '0';
+    main.style.paddingBottom = '0';
+  }
+
 }
 
 function renderSidebar() {

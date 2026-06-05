@@ -437,7 +437,7 @@ tbody tr { transition: all .15s; }
 }
 .upgrade-banner strong { color: var(--gold); }
 
-/* ── TRIAL BANNER (top) ──────────────────────────────────── */
+
 /* Cuando el banner de prueba está activo, empujar sidebar y topbar */
 body.trial-banner-active .sidebar {
   top: 38px;
@@ -454,4 +454,25 @@ body.trial-banner-active .hamburger {
   body.trial-banner-active .hamburger {
     top: 46px;
   }
+}
+
+/* ── TRIAL BANNER ────────────────────────────────────────
+   Barra de prueba SIEMPRE en la parte superior.
+   Nunca tapa el botón de cerrar sesión.
+──────────────────────────────────────────────────────── */
+#_trial_banner {
+  position: fixed !important;
+  top: 0 !important;
+  bottom: auto !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+}
+
+/* Cuando el banner está activo, bajar sidebar y hamburger */
+body.trial-banner-active .sidebar {
+  top: 38px !important;
+}
+body.trial-banner-active #hamburger {
+  top: 46px !important;
 }
