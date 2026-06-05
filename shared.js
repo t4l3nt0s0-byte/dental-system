@@ -54,7 +54,8 @@ const ROLES = {
 };
 
 // ── SESSION ───────────────────────────────────────────────────
-let SESSION = null; // { user, clinica }
+let SESSION = null;
+let _loggingOut = false; // Flag para evitar redirect loop durante logout // { user, clinica }
 
 // Plan TRIAL — funciones permitidas en prueba
 const TRIAL_FEATURES = ['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','recibo','estado-cuenta'];
@@ -239,6 +240,8 @@ async function initSession(requiredPage) {
       unsubscribe(); // Cancelar listener inmediatamente después del primer disparo
 
       if (!user) {
+        // Si estamos haciendo logout, no redirigir (ya lo maneja logout())
+        if (_loggingOut) { resolve(null); return; }
         // No hay sesión → redirigir a login solo si no estamos ya ahí
         var href = window.location.href;
         var isPublic = ['login','registro','landing'].some(p => href.indexOf(p) !== -1);
@@ -443,8 +446,13 @@ function renderSidebar() {
 }
 
 async function logout() {
-  await auth.signOut();
-  window.location.href = 'login.html';
+  _loggingOut = true; // Marcar antes de signOut para evitar redirect loop
+  try {
+    await auth.signOut();
+  } catch(e) {
+    console.warn('signOut:', e.message);
+  }
+  window.location.replace('login.html');
 }
 
 // ── FIRESTORE HELPERS ────────────────────────────────────────

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DentalOS · Recetas Médicas</title>
+<title>Hersantych Dental · Recetas Médicas</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -280,7 +280,7 @@
       <div class="rp-logo-area">
         <div id="rp-logo-container"></div>
         <div>
-          <div class="rp-clinic-name" id="rp-clinicName">DentalOS</div>
+          <div class="rp-clinic-name" id="rp-clinicName">Hersantych Dental</div>
           <div class="rp-clinic-slogan" id="rp-clinicSlogan">Sistema de salud dental</div>
           <div class="rp-clinic-contact" id="rp-clinicContact"></div>
         </div>
@@ -343,7 +343,7 @@
 
     <!-- FOOTER -->
     <div class="rp-footer" id="rp-footer">
-      <span id="rp-footerClinica">DentalOS</span> &nbsp;|&nbsp;
+      <span id="rp-footerClinica">Hersantych Dental</span> &nbsp;|&nbsp;
       <span id="rp-footerDir"></span> &nbsp;|&nbsp;
       <span id="rp-footerTel"></span>
     </div>
@@ -545,7 +545,7 @@ function generarReceta(){
   const folio = 'RX-'+Date.now().toString(36).toUpperCase().slice(-6);
 
   // ── Clinica info ──
-  document.getElementById('rp-clinicName').textContent    = CLINICA.nombre||'DentalOS';
+  document.getElementById('rp-clinicName').textContent    = CLINICA.nombre||'Hersantych Dental';
   document.getElementById('rp-clinicSlogan').textContent  = CLINICA.eslogan||'Sistema integral dental';
   document.getElementById('rp-clinicContact').innerHTML   =
     [CLINICA.telefono?'📞 '+CLINICA.telefono:'', CLINICA.emailClinica?'✉ '+CLINICA.emailClinica:'', CLINICA.direccion||''].filter(Boolean).join('<br>');
@@ -618,7 +618,7 @@ function generarReceta(){
   document.getElementById('rp-validez').textContent='⚕ '+document.getElementById('r-validez').value;
 
   // ── Footer ──
-  document.getElementById('rp-footerClinica').textContent=CLINICA.nombre||'DentalOS';
+  document.getElementById('rp-footerClinica').textContent=CLINICA.nombre||'Hersantych Dental';
   document.getElementById('rp-footerDir').textContent=CLINICA.direccion||CLINICA.ciudad||'';
   document.getElementById('rp-footerTel').textContent=CLINICA.telefono||'';
 

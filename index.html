@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Panel Clínico</title>
+<title>Hersantych Dental · Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -227,7 +227,7 @@
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">📊 Panel Clínico</div>
+    <div class="topbar-title">📊 Dashboard Clínico</div>
     <div class="topbar-actions" style="gap:12px">
       <div style="display:flex;align-items:center;gap:12px">
         <div style="display:flex;align-items:center;gap:5px;font-size:.78rem;font-family:var(--font-mono)">
@@ -466,7 +466,7 @@ function renderDashboard(clinica,user){
   <!-- GREETING -->
   <div class="greeting">
     <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
-    <div class="greeting-sub">${clinica.nombre||'DentalOS'}</div>
+    <div class="greeting-sub">${clinica.nombre||'Hersantych Dental'}</div>
   </div>
 
   <!-- MÉTRICAS DEL DÍA -->

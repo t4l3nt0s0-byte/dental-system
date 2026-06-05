@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Configuración del Consultorio</title>
+<title>Hersantych Dental · Configuración del Consultorio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -134,7 +134,7 @@
                 <div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#060D14" id="checkDefault">✓</div>
                 <div style="font-size:2.8rem;margin-bottom:8px">🦷</div>
                 <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:3px">Ícono predeterminado</div>
-                <div style="font-size:.68rem;color:var(--text-muted)">El ícono de muela de DentalOS</div>
+                <div style="font-size:.68rem;color:var(--text-muted)">El ícono de muela de Hersantych Dental</div>
               </div>
 
               <!-- OPCIÓN B: Logo personalizado -->
@@ -269,7 +269,7 @@
           </div>
           <div class="section-card">
             <div class="section-title">💎 Plan & Suscripción</div>
-            <div class="section-sub">Gestiona tu plan de DentalOS.</div>
+            <div class="section-sub">Gestiona tu plan de Hersantych Dental.</div>
             <div id="planInfo" style="margin-bottom:14px;font-size:.82rem;color:var(--text-muted)"></div>
             <a href="planes.html" class="btn btn-primary">💎 Ver planes y precios</a>
           </div>
@@ -870,7 +870,7 @@ async function ejecutarRestauracion(file) {
     const text = await file.text();
     const backup = JSON.parse(text);
     if (!backup.pacientes && !backup.catalogo) {
-      addLog('❌ Archivo inválido — no es un backup de DentalOS','var(--red)'); return;
+      addLog('❌ Archivo inválido — no es un backup de Hersantych Dental','var(--red)'); return;
     }
     addLog(`📋 Backup: <strong>${backup.clinica||'—'}</strong> · ${backup.exportadoEl?.slice(0,10)||''} · v${backup.version||'1.0'}`,'var(--teal)');
     addLog(`📊 Contiene: ${backup.pacientes?.length||0} pacientes · ${backup.tratamientos?.length||0} trats · ${backup.abonos?.length||0} abonos · ${backup.catalogo?.length||0} catálogo`);
