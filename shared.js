@@ -191,61 +191,91 @@ function showTrialBannerIfNeeded() {
 // ── initSession ─────────────────────────────────────────────
 async function initSession(requiredPage) {
   return new Promise((resolve) => {
-    auth.onAuthStateChanged(async (user) => {
+    // Usar unsubscribe para que solo dispare UNA vez
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      unsubscribe(); // Cancelar listener inmediatamente después del primer disparo
+
       if (!user) {
-        // Solo redirigir si NO estamos en páginas públicas
-        var path = window.location.pathname + window.location.href;
-        var isPublic = ['login','registro','landing'].some(function(p){
-          return path.indexOf(p) !== -1;
-        });
+        // No hay sesión → redirigir a login solo si no estamos ya ahí
+        var href = window.location.href;
+        var isPublic = ['login','registro','landing'].some(p => href.indexOf(p) !== -1);
         if (!isPublic) {
           window.location.replace('login.html');
         }
         resolve(null); return;
       }
+
       try {
-        // Cargar usuario
+        // Cargar datos del usuario
         const userSnap = await db.collection('usuarios').doc(user.uid).get();
-        if (!userSnap.exists) { window.location.href = 'login.html'; resolve(null); return; }
+        if (!userSnap.exists) {
+          await auth.signOut().catch(()=>{});
+          window.location.replace('login.html');
+          resolve(null); return;
+        }
         const userData = userSnap.data();
 
-        // Cargar clínica
+        // Usuario inactivo
+        if (userData.activo === false) {
+          await auth.signOut().catch(()=>{});
+          window.location.replace('login.html');
+          resolve(null); return;
+        }
+
+        // Cargar datos de la clínica
         const clinicaId = userData.clinicaId;
+        if (!clinicaId) {
+          await auth.signOut().catch(()=>{});
+          window.location.replace('login.html');
+          resolve(null); return;
+        }
+
         const clinicaSnap = await db.collection('clinicas').doc(clinicaId).get();
-        if (!clinicaSnap.exists) { window.location.href = 'login.html'; resolve(null); return; }
+        if (!clinicaSnap.exists) {
+          await auth.signOut().catch(()=>{});
+          window.location.replace('login.html');
+          resolve(null); return;
+        }
         const clinicaData = { id: clinicaId, ...clinicaSnap.data() };
 
-        // Verificar rol
+        // Verificar permiso de rol para esta página
         const ROLES_PERMITIDOS = {
-          'admin':    'any',
-          'doctor':   ['agenda','pacientes','tratamientos','odontograma','recetas'],
-          'recepcion':['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda'],
+          admin:    'any',
+          doctor:   ['agenda','pacientes','tratamientos','odontograma','recetas'],
+          recepcion:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda'],
         };
         const rol = userData.rol || 'recepcion';
         const permitidos = ROLES_PERMITIDOS[rol];
         if (requiredPage && requiredPage !== 'any' && permitidos !== 'any') {
           if (!permitidos.includes(requiredPage)) {
-            window.location.href = 'index.html'; resolve(null); return;
+            window.location.replace('index.html');
+            resolve(null); return;
           }
         }
 
-        // Sesión global
+        // Sesión establecida
         SESSION = { user: { ...userData, uid: user.uid }, clinica: clinicaData };
         window.SESSION = SESSION;
 
-        // Aplicar tema
+        // Aplicar tema visual
         applyTema(clinicaData.tema, clinicaData.colorPrimario);
 
-        // Render sidebar
+        // Renderizar sidebar
         renderSidebar();
 
-        // Banner de trial
+        // Banner de prueba si aplica
         showTrialBannerIfNeeded();
 
         resolve(SESSION);
+
       } catch (e) {
-        console.error('initSession error:', e);
-        window.location.href = 'login.html';
+        // Error de red o Firestore: NO redirigir, solo reportar
+        // Evita el loop: error → login → index → error → login...
+        console.error('initSession:', e.code || e.message);
+        if (e.code === 'permission-denied' || e.code === 'auth/user-token-expired') {
+          await auth.signOut().catch(()=>{});
+          window.location.replace('login.html');
+        }
         resolve(null);
       }
     });

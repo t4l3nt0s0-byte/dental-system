@@ -251,21 +251,29 @@ try {
 _auth = _app.auth();
 _db   = _app.firestore();
 
-// ── Auto-redirect: si YA está logueado ir al dashboard ────
-// Solo redirigir una vez, sin bucles
-var _redirected = false;
+// ── Auto-redirect si ya está logueado ─────────────────────
+// Verificar silenciosamente — si hay sesión activa ir al dashboard
+// Solo una vez, sin disparar múltiples veces
+var _checked = false;
 _auth.onAuthStateChanged(function(user) {
-  if (user && !_redirected) {
-    _redirected = true;
-    // Verificar que tiene registro en Firestore antes de redirigir
-    _db.collection('usuarios').doc(user.uid).get().then(function(snap) {
-      if (snap.exists) {
-        window.location.replace('index.html');
-      }
-    }).catch(function() {
-      // Si falla Firestore, dejar al usuario en login
-    });
+  if (_checked) return;
+  _checked = true;
+  if (user) {
+    // Usuario ya logueado → verificar que existe en Firestore
+    _db.collection('usuarios').doc(user.uid).get()
+      .then(function(snap) {
+        if (snap.exists && snap.data().activo !== false) {
+          // Sesión válida → ir al dashboard SIN crear loop
+          window.location.replace('index.html');
+        }
+        // Si no existe en Firestore: quedarse en login
+      })
+      .catch(function(e) {
+        // Error de red o permisos → quedarse en login, no redirigir
+        console.warn('Auth check:', e.message);
+      });
   }
+  // Si no hay usuario: mostrar login normalmente
 });
 
 // ── Helpers ────────────────────────────────────────────────
