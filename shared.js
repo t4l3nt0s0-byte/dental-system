@@ -3,9 +3,9 @@
 
 // ── Firebase CDN (loaded from HTML) ──────────────────────────
 // All pages must include these script tags before shared.js:
-// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 const FIREBASE_CONFIG = {
   apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
@@ -234,24 +234,20 @@ window.applyTema = applyTema;
 
 // ── initSession ─────────────────────────────────────────────────
 async function initSession(requiredPage) {
-  // Páginas que NO requieren autenticación
   var href = window.location.href;
   var isPublic = ['login','registro','landing'].some(function(p){
     return href.indexOf(p) !== -1;
   });
 
   return new Promise(function(resolve) {
-
-    // onAuthStateChanged puede tardar — esperamos el primer disparo
-    // y cancelamos inmediatamente para no tener listeners acumulados
     var done = false;
     var unsubscribe = auth.onAuthStateChanged(function(user) {
-      if (done) return;  // ignorar disparos extras
+      if (done) return;
       done = true;
-      unsubscribe();     // cancelar listener — solo necesitamos el primero
+      unsubscribe();
 
+      // Sin sesión activa
       if (!user) {
-        // Sin sesión: ir a login (si no estamos ya en página pública)
         if (!isPublic && !_loggingOut) {
           window.location.replace('login.html');
         }
@@ -259,42 +255,24 @@ async function initSession(requiredPage) {
         return;
       }
 
-      // HAY usuario — cargar sus datos de Firestore
+      // Con sesión — cargar datos
       db.collection('usuarios').doc(user.uid).get()
         .then(function(userSnap) {
-          if (!userSnap.exists) {
-            // Usuario de Auth pero sin registro en Firestore
-            // Puede pasar si el registro no completó
-            if (!isPublic) window.location.replace('login.html');
-            resolve(null);
-            return;
-          }
+          // Sin datos de usuario: sesión de Auth sin registro Firestore
+          if (!userSnap.exists) { resolve(null); return; }
 
           var userData = userSnap.data();
-
-          // Verificar que está activo
           if (userData.activo === false) {
             auth.signOut().catch(function(){});
-            if (!isPublic) window.location.replace('login.html');
-            resolve(null);
-            return;
+            resolve(null); return;
           }
 
           var clinicaId = userData.clinicaId;
-          if (!clinicaId) {
-            if (!isPublic) window.location.replace('login.html');
-            resolve(null);
-            return;
-          }
+          if (!clinicaId) { resolve(null); return; }
 
-          // Cargar datos de la clínica
           db.collection('clinicas').doc(clinicaId).get()
             .then(function(clinicaSnap) {
-              if (!clinicaSnap.exists) {
-                if (!isPublic) window.location.replace('login.html');
-                resolve(null);
-                return;
-              }
+              if (!clinicaSnap.exists) { resolve(null); return; }
 
               var clinicaData = Object.assign({ id: clinicaId }, clinicaSnap.data());
 
@@ -310,45 +288,33 @@ async function initSession(requiredPage) {
               if (requiredPage && requiredPage !== 'any' && perms !== 'any') {
                 if (perms.indexOf(requiredPage) === -1) {
                   window.location.replace('index.html');
-                  resolve(null);
-                  return;
+                  resolve(null); return;
                 }
               }
 
-              // ✅ Sesión válida
-              SESSION = { user: Object.assign({}, userData, { uid: user.uid }), clinica: clinicaData };
+              // ✅ Todo OK — establecer sesión
+              SESSION = Object.assign({ user: Object.assign({}, userData, { uid: user.uid }) }, { clinica: clinicaData });
               window.SESSION = SESSION;
 
-              // Aplicar tema
-              if (typeof applyTema === 'function') {
-                applyTema(clinicaData.tema, clinicaData.colorPrimario);
-              }
-
-              // Sidebar
+              if (typeof applyTema === 'function') applyTema(clinicaData.tema, clinicaData.colorPrimario);
               if (typeof renderSidebar === 'function') renderSidebar();
-
-              // Banner trial
               if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
 
               resolve(SESSION);
             })
             .catch(function(e) {
-              // Error cargando clínica — NO redirigir, solo loguear
-              console.warn('initSession [clinica]:', e.message);
+              console.warn('initSession clinica:', e.message);
               resolve(null);
             });
         })
         .catch(function(e) {
-          // Error cargando usuario — NO redirigir salvo permiso denegado
-          console.warn('initSession [usuario]:', e.message);
-          if (e.code === 'permission-denied') {
-            if (!isPublic) window.location.replace('login.html');
-          }
+          console.warn('initSession usuario:', e.message);
           resolve(null);
         });
     });
   });
 }
+
 
 async function logout() {
   _loggingOut = true;
