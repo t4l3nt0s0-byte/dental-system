@@ -212,25 +212,21 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   </div>
 </div>
 
-<!-- Firebase SAAS (registro público) -->
+<!-- Firebase (una sola carga) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<!-- Firebase DENTAL (sistema principal) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 
 <script>
-// ── Firebase SAAS — registro público ─────────────────────
+// ══ FIREBASE CONFIGS ════════════════════════════════════════
 const SAAS_CONFIG = {
   apiKey:"AIzaSyB1UNZg74oW0DyZEVd3NRnGJ323bV-gj5c",
   authDomain:"dental-saas-f689c.firebaseapp.com",
   projectId:"dental-saas-f689c",
   storageBucket:"dental-saas-f689c.firebasestorage.app",
-  messagingSenderId:"621079090341",
-  appId:"1:621079090341:web:fea0ec621433143c03694c"
+  messagingSenderId:"961684286875",
+  appId:"1:961684286875:web:da0f52fc9ae1e85df52eb2"
 };
-
-// ── Firebase DENTAL — sistema principal ──────────────────
 const DENTAL_CONFIG = {
   apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
   authDomain:"dental-add.firebaseapp.com",
@@ -240,132 +236,187 @@ const DENTAL_CONFIG = {
   appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
 };
 
-const saasApp   = firebase.initializeApp(SAAS_CONFIG,  'saas');
-const dentalApp = firebase.initializeApp(DENTAL_CONFIG,'dental');
-const saasAuth  = saasApp.auth();
-const saasDB    = saasApp.firestore();
+// ══ INICIALIZAR APPS (evitar duplicados) ════════════════════
+function getOrInitApp(config, name) {
+  try {
+    return firebase.app(name);
+  } catch(e) {
+    return firebase.initializeApp(config, name);
+  }
+}
+const saasApp    = getOrInitApp(SAAS_CONFIG,   'saas');
+const dentalApp  = getOrInitApp(DENTAL_CONFIG, 'dental');
+
+// Auth y Firestore — patrón correcto para SDK compat con apps nombradas
+const saasAuth   = saasApp.auth();
+const saasDB     = saasApp.firestore();
 const dentalAuth = dentalApp.auth();
 const dentalDB   = dentalApp.firestore();
 
-let selectedPlan = 'basico';
+// Helpers de timestamps
+const TS = firebase.firestore.Timestamp;
+const SV = () => firebase.firestore.FieldValue.serverTimestamp();
+
+// ══ ESTADO GLOBAL ═══════════════════════════════════════════
+let selectedPlan = new URLSearchParams(window.location.search).get('plan') || 'basico';
 let currentStep  = 0;
 
-// ── Toggle password ───────────────────────────────────────
-document.getElementById('togglePw').addEventListener('click', () => {
-  const pw = document.getElementById('f-pass');
-  pw.type = pw.type === 'password' ? 'text' : 'password';
-});
-
-// ── Plan selector ─────────────────────────────────────────
+// ══ PLAN SELECTOR ════════════════════════════════════════════
 window.selectPlan = function(plan) {
   selectedPlan = plan;
-  document.querySelectorAll('.plan-mini').forEach(c => c.classList.toggle('selected', c.dataset.plan === plan));
+  document.querySelectorAll('.plan-mini').forEach(c =>
+    c.classList.toggle('selected', c.dataset.plan === plan)
+  );
 };
+// Activar plan inicial
+document.addEventListener('DOMContentLoaded', () => {
+  selectPlan(selectedPlan);
+});
 
-// ── Step navigation ───────────────────────────────────────
+// ══ NAVEGACIÓN DE PASOS ══════════════════════════════════════
 window.goStep = function(n) {
-  // Validaciones
   if (n === 1) {
     const clinica = document.getElementById('f-clinica').value.trim();
-    if (!clinica) { alert('El nombre del consultorio es obligatorio'); return; }
+    if (!clinica) { showErr('El nombre del consultorio es obligatorio'); return; }
   }
-  document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  if (n === 2) {
+    const email = document.getElementById('f-email').value.trim();
+    const pass  = document.getElementById('f-pass').value;
+    const pass2 = document.getElementById('f-pass2').value;
+    if (!email || !pass) { showErr('Completa correo y contraseña'); return; }
+    if (pass.length < 6) { showErr('La contraseña debe tener mínimo 6 caracteres'); return; }
+    if (pass !== pass2)  { showErr('Las contraseñas no coinciden'); return; }
+  }
+  hideErr();
+  document.querySelectorAll('.step-panel').forEach((p,i) =>
+    p.classList.toggle('active', i === n)
+  );
   currentStep = n;
   for(let i=0;i<3;i++){
-    const d=document.getElementById('dot'+i);
-    d.classList.toggle('active',i===n);
-    d.classList.toggle('done',i<n);
-    d.style.width = i===n ? '24px' : i<n ? '8px' : '8px';
-    d.style.background = i<=n ? 'var(--teal)' : 'var(--border)';
+    const d = document.getElementById('dot'+i);
+    if(!d) continue;
+    d.classList.toggle('active', i===n);
+    d.classList.toggle('done', i<n);
+    d.style.width      = i===n ? '24px' : '8px';
+    d.style.background = i<=n ? 'var(--teal)' : 'rgba(255,255,255,.15)';
   }
 };
 
-// ── REGISTRO ──────────────────────────────────────────────
-window.registrar = async function() {
-  const nombre = document.getElementById('f-nombre').value.trim();
-  const email  = document.getElementById('f-email').value.trim();
-  const pass   = document.getElementById('f-pass').value;
-  const pass2  = document.getElementById('f-pass2').value;
-  const errBox = document.getElementById('errBox');
-  errBox.classList.remove('show');
+// ══ HELPERS UI ════════════════════════════════════════════════
+function showErr(msg) {
+  const b = document.getElementById('errBox');
+  if(b){ b.textContent=msg; b.classList.add('show'); }
+}
+function hideErr() {
+  const b = document.getElementById('errBox');
+  if(b) b.classList.remove('show');
+}
 
-  if (!nombre || !email || !pass) { errBox.textContent='Completa todos los campos'; errBox.classList.add('show'); return; }
-  if (pass !== pass2) { errBox.textContent='Las contraseñas no coinciden'; errBox.classList.add('show'); return; }
-  if (pass.length < 6) { errBox.textContent='La contraseña debe tener al menos 6 caracteres'; errBox.classList.add('show'); return; }
+// Toggle password visibility
+document.addEventListener('DOMContentLoaded', () => {
+  const togglePw = document.getElementById('togglePw');
+  if(togglePw) togglePw.addEventListener('click', () => {
+    const pw = document.getElementById('f-pass');
+    const icon = togglePw.querySelector('span');
+    if(pw.type==='password'){ pw.type='text'; if(icon) icon.textContent='🙈'; }
+    else { pw.type='password'; if(icon) icon.textContent='👁'; }
+  });
+});
+
+// ══ REGISTRAR ════════════════════════════════════════════════
+window.registrar = async function() {
+  const nombre  = document.getElementById('f-nombre').value.trim();
+  const email   = document.getElementById('f-email').value.trim();
+  const pass    = document.getElementById('f-pass').value;
+  const clinica = document.getElementById('f-clinica').value.trim();
+  const ciudad  = document.getElementById('f-ciudad')?.value.trim()||'';
+  const tel     = document.getElementById('f-tel')?.value.trim()||'';
+  const dentistas = document.getElementById('f-dentistas')?.value||'1';
+
+  if(!nombre||!email||!pass||!clinica){
+    showErr('Completa todos los campos'); return;
+  }
 
   const btn = document.getElementById('btnRegistrar');
-  btn.classList.add('loading'); btn.disabled = true;
+  if(btn){ btn.classList.add('loading'); btn.disabled=true; }
+  hideErr();
 
-  const clinica    = document.getElementById('f-clinica').value.trim();
-  const ciudad     = document.getElementById('f-ciudad').value.trim();
-  const tel        = document.getElementById('f-tel').value.trim();
-  const dentistas  = document.getElementById('f-dentistas').value;
-  const trialEnd   = new Date(Date.now() + 7*24*60*60*1000); // 7 días
+  const trialEnd = new Date(Date.now() + 7*24*60*60*1000);
 
   try {
-    // 1. Crear usuario en Firebase DENTAL (sistema principal)
-    const dentalCred = await dentalAuth.createUserWithEmailAndPassword(email, pass);
-    const uid = dentalCred.user.uid;
+    // 1. Crear usuario en dental-add (sistema principal)
+    const cred = await dentalAuth.createUserWithEmailAndPassword(email, pass);
+    const uid  = cred.user.uid;
     const clinicaId = 'clinica_' + uid;
 
-    // 2. Crear clínica en Firebase DENTAL
+    // 2. Crear documento de clínica
     await dentalDB.collection('clinicas').doc(clinicaId).set({
       nombre: clinica, ciudad, telefono: tel,
       plan: 'trial',
-      planSeleccionado: selectedPlan, // plan que quiere cuando pague
-      trialEnd: firebase.firestore.Timestamp.fromDate(trialEnd),
+      planDeseado: selectedPlan,
+      trialEnd: TS.fromDate(trialEnd),
       adminUid: uid, activo: true,
-      tema: 'dark', // tema por defecto
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      tema: 'dark',
+      creadoEn: SV(),
     });
 
-    // 3. Crear usuario en Firebase DENTAL
+    // 3. Crear documento de usuario
     await dentalDB.collection('usuarios').doc(uid).set({
       nombre, email, rol: 'admin',
       clinicaId, activo: true,
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      creadoEn: SV(),
     });
 
-    // 4. Registrar solicitud en Firebase SAAS (para tu panel maestro)
-    await saasDB.collection('solicitudes').add({
-      uid, clinica, nombre, email, tel, ciudad, dentistas,
-      planDeseado: selectedPlan,
-      trialEnd: trialEnd.toISOString(),
-      estado: 'trial',
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    // 5. Crear catálogo inicial
-    const catalogoInicial = [
-      {tratamiento:'Consulta',desc:'Valoración y diagnóstico',min:300,max:500,sugerido:400,vigente:true},
-      {tratamiento:'Limpieza',desc:'Profilaxis dental + fluoruro',min:500,max:900,sugerido:700,vigente:true},
-      {tratamiento:'Endodoncia',desc:'Tratamiento de conducto',min:7000,max:12000,sugerido:9500,vigente:true},
-      {tratamiento:'Resina',desc:'Restauración de composite',min:1500,max:3500,sugerido:2500,vigente:true},
-      {tratamiento:'Corona',desc:'Corona de porcelana/zirconia',min:8000,max:18000,sugerido:13000,vigente:true},
-      {tratamiento:'Extracción Simple',desc:'Sin complicaciones',min:600,max:1200,sugerido:900,vigente:true},
-      {tratamiento:'Blanqueamiento',desc:'Con lámpara LED',min:2500,max:5000,sugerido:3750,vigente:true},
-    ];
-    for (const item of catalogoInicial) {
-      await dentalDB.collection('clinicas').doc(clinicaId).collection('catalogo')
-        .doc(item.tratamiento.replace(/\s+/g,'-').toLowerCase())
-        .set({...item, creadoEn: firebase.firestore.FieldValue.serverTimestamp()});
+    // 4. Registrar en SAAS (panel maestro)
+    try {
+      await saasDB.collection('solicitudes').add({
+        uid, clinica, nombre, email, tel, ciudad,
+        dentistas, planDeseado: selectedPlan,
+        trialEnd: trialEnd.toISOString(),
+        estado: 'trial',
+        creadoEn: SV(),
+      });
+    } catch(saasErr) {
+      // No bloquear el registro si SAAS falla
+      console.warn('SAAS log failed:', saasErr.message);
     }
 
-    // 6. Mostrar éxito y redirigir
+    // 5. Catálogo inicial básico
+    const catalogo = [
+      {tratamiento:'Consulta',      desc:'Valoración y diagnóstico',           min:300,  max:500,   sugerido:400},
+      {tratamiento:'Limpieza',      desc:'Profilaxis dental + fluoruro',        min:500,  max:900,   sugerido:700},
+      {tratamiento:'Endodoncia',    desc:'Tratamiento de conducto',             min:7000, max:12000, sugerido:9500},
+      {tratamiento:'Resina',        desc:'Restauración de composite',           min:1500, max:3500,  sugerido:2500},
+      {tratamiento:'Corona',        desc:'Corona de porcelana/zirconia',        min:8000, max:18000, sugerido:13000},
+      {tratamiento:'Extracción',    desc:'Extracción simple sin complicaciones',min:600,  max:1200,  sugerido:900},
+      {tratamiento:'Blanqueamiento',desc:'Con lámpara LED',                     min:2500, max:5000,  sugerido:3750},
+    ];
+    const batch = dentalDB.batch();
+    catalogo.forEach(item => {
+      const ref = dentalDB.collection('clinicas').doc(clinicaId)
+                          .collection('catalogo')
+                          .doc(item.tratamiento.replace(/\s+/g,'-').toLowerCase());
+      batch.set(ref, {...item, vigente:true, creadoEn:SV()});
+    });
+    await batch.commit();
+
+    // 6. Éxito — mostrar confirmación y redirigir
     document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
-    document.getElementById('successWrap').style.display='block';
-    document.getElementById('redirectBar').style.width='100%';
-    setTimeout(() => { window.location.href = 'index.html'; }, 3200);
+    const sw = document.getElementById('successWrap');
+    if(sw) sw.style.display='block';
+    const bar = document.getElementById('redirectBar');
+    if(bar) bar.style.width='100%';
+    setTimeout(() => { window.location.href='index.html'; }, 3000);
 
   } catch(e) {
     const msgs = {
-      'auth/email-already-in-use':'Este correo ya está registrado. ¿Ya tienes cuenta?',
-      'auth/weak-password':'La contraseña es demasiado débil',
-      'auth/invalid-email':'Correo electrónico inválido',
+      'auth/email-already-in-use': 'Este correo ya está registrado. ¿Ya tienes cuenta?',
+      'auth/weak-password':        'La contraseña es demasiado débil (mínimo 6 caracteres)',
+      'auth/invalid-email':        'Correo electrónico no válido',
+      'auth/network-request-failed':'Sin conexión. Verifica tu internet e intenta de nuevo.',
     };
-    errBox.textContent = msgs[e.code] || 'Error: ' + e.message;
-    errBox.classList.add('show');
-    btn.classList.remove('loading'); btn.disabled = false;
+    showErr(msgs[e.code] || 'Error: ' + e.message);
+    if(btn){ btn.classList.remove('loading'); btn.disabled=false; }
   }
 };
 </script>
