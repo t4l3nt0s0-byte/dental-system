@@ -188,6 +188,68 @@ function showTrialBannerIfNeeded() {
 
 }
 
+// ── initSession ─────────────────────────────────────────────
+async function initSession(requiredPage) {
+  return new Promise((resolve) => {
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        if (window.location.pathname.indexOf('login') === -1 &&
+            window.location.pathname.indexOf('registro') === -1 &&
+            window.location.pathname.indexOf('landing') === -1) {
+          window.location.href = 'login.html';
+        }
+        resolve(null); return;
+      }
+      try {
+        // Cargar usuario
+        const userSnap = await db.collection('usuarios').doc(user.uid).get();
+        if (!userSnap.exists) { window.location.href = 'login.html'; resolve(null); return; }
+        const userData = userSnap.data();
+
+        // Cargar clínica
+        const clinicaId = userData.clinicaId;
+        const clinicaSnap = await db.collection('clinicas').doc(clinicaId).get();
+        if (!clinicaSnap.exists) { window.location.href = 'login.html'; resolve(null); return; }
+        const clinicaData = { id: clinicaId, ...clinicaSnap.data() };
+
+        // Verificar rol
+        const ROLES_PERMITIDOS = {
+          'admin':    'any',
+          'doctor':   ['agenda','pacientes','tratamientos','odontograma','recetas'],
+          'recepcion':['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda'],
+        };
+        const rol = userData.rol || 'recepcion';
+        const permitidos = ROLES_PERMITIDOS[rol];
+        if (requiredPage && requiredPage !== 'any' && permitidos !== 'any') {
+          if (!permitidos.includes(requiredPage)) {
+            window.location.href = 'index.html'; resolve(null); return;
+          }
+        }
+
+        // Sesión global
+        SESSION = { user: { ...userData, uid: user.uid }, clinica: clinicaData };
+        window.SESSION = SESSION;
+
+        // Aplicar tema
+        applyTema(clinicaData.tema, clinicaData.colorPrimario);
+
+        // Render sidebar
+        renderSidebar();
+
+        // Banner de trial
+        showTrialBannerIfNeeded();
+
+        resolve(SESSION);
+      } catch (e) {
+        console.error('initSession error:', e);
+        window.location.href = 'login.html';
+        resolve(null);
+      }
+    });
+  });
+}
+
+
 function renderSidebar() {
   if (!SESSION) return;
   const { clinica, user } = SESSION;
