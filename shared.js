@@ -193,10 +193,13 @@ async function initSession(requiredPage) {
   return new Promise((resolve) => {
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        if (window.location.pathname.indexOf('login') === -1 &&
-            window.location.pathname.indexOf('registro') === -1 &&
-            window.location.pathname.indexOf('landing') === -1) {
-          window.location.href = 'login.html';
+        // Solo redirigir si NO estamos en páginas públicas
+        var path = window.location.pathname + window.location.href;
+        var isPublic = ['login','registro','landing'].some(function(p){
+          return path.indexOf(p) !== -1;
+        });
+        if (!isPublic) {
+          window.location.replace('login.html');
         }
         resolve(null); return;
       }
@@ -278,7 +281,7 @@ function renderSidebar() {
         ? `<img src="${clinica.logoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:#fff;padding:3px;flex-shrink:0">`
         : '<div class="logo-icon">🦷</div>'}
       <div style="min-width:0">
-        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'DentalOS'}</div>
+        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'Hersantych Dental'}</div>
         <div class="logo-sub">${clinica.eslogan || 'Sistema integral'}</div>
       </div>
     </div>
