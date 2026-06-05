@@ -168,24 +168,40 @@ function doLogin() {
   var email = document.getElementById('email').value.trim();
   var pass  = document.getElementById('password').value;
   if(!email||!pass){ showErr('Completa correo y contraseña'); return; }
+
+  // Verificar que Firebase está listo
+  if(!_auth){
+    showErr('Error: Firebase no inicializado. Recarga la página.');
+    return;
+  }
+
   hideErr(); setBusy(true);
 
   _auth.signInWithEmailAndPassword(email, pass)
     .then(function(cred){
-      // Login OK → ir directo al sistema
+      if(!cred || !cred.user){
+        showErr('Error inesperado. Intenta de nuevo.');
+        setBusy(false);
+        return;
+      }
+      // Login OK → redirigir al dashboard
       window.location.replace('index.html');
     })
     .catch(function(e){
+      console.error('Login error code:', e.code, 'message:', e.message);
       var msgs = {
         'auth/invalid-credential':     'Correo o contraseña incorrectos',
         'auth/user-not-found':         'No existe cuenta con ese correo',
         'auth/wrong-password':         'Contraseña incorrecta',
+        'auth/invalid-password':       'Contraseña incorrecta',
         'auth/too-many-requests':      'Demasiados intentos. Espera unos minutos.',
-        'auth/network-request-failed': 'Sin conexión. Verifica tu internet.',
-        'auth/invalid-email':          'Correo no válido',
+        'auth/network-request-failed': 'Sin conexión a internet. Intenta de nuevo.',
+        'auth/invalid-email':          'El correo no tiene formato válido',
         'auth/user-disabled':          'Esta cuenta fue desactivada.',
+        'auth/operation-not-allowed':  'Inicio de sesión no habilitado. Contacta al administrador.',
+        'auth/internal-error':         'Error interno. Intenta de nuevo.',
       };
-      showErr(msgs[e.code]||'Error: '+e.message);
+      showErr(msgs[e.code] || 'Error ('+e.code+'): '+e.message);
       setBusy(false);
     });
 }

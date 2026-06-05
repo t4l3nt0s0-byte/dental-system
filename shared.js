@@ -16,10 +16,16 @@ const FIREBASE_CONFIG = {
   appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
 };
 
-// Initialize Firebase (compat mode — no import needed)
-if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-const db   = firebase.firestore();
-const auth = firebase.auth();
+// ── Firebase init ─────────────────────────────────────────────
+// Usa app nombrada 'dental' para no conflictuar con otras instancias
+var _dentalApp;
+try {
+  _dentalApp = firebase.app('dental');
+} catch(e) {
+  _dentalApp = firebase.initializeApp(FIREBASE_CONFIG, 'dental');
+}
+const db   = _dentalApp.firestore();
+const auth = _dentalApp.auth();
 
 // ── PLAN DEFINITIONS ─────────────────────────────────────────
 const PLANES = {
