@@ -366,43 +366,77 @@ function editUser(id){
 
 // ── SAVE USER ─────────────────────────────────────────────────
 async function saveUser(){
-  const nombre = document.getElementById('f-nombre').value.trim();
-  const email  = document.getElementById('f-email').value.trim();
-  const pass   = document.getElementById('f-pass').value;
-  const rol    = document.getElementById('f-rol').value;
-  const activo = document.getElementById('f-activo').value==='true';
+  const nombre   = document.getElementById('f-nombre').value.trim();
+  const email    = document.getElementById('f-email').value.trim();
+  const pass     = document.getElementById('f-pass').value;
+  const rol      = document.getElementById('f-rol').value;
+  const activo   = document.getElementById('f-activo').value==='true';
   const permisos = rol==='admin' ? Object.keys(ALL_PAGES) : getSelectedPerms();
 
   if(!nombre||!email){ showToast('Nombre y correo son obligatorios','error'); return; }
   const btn = document.getElementById('btnSaveUser');
   btn.disabled=true; btn.textContent='Guardando...';
+
   try{
     if(editId){
+      // ── EDITAR usuario existente ─────────────────────────────
+      // El admin edita directamente con el db principal
       await db.collection('usuarios').doc(editId).update({
         nombre, rol, activo, permisos,
         actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
       });
       showToast('Usuario actualizado correctamente','success');
+
     } else {
-      if(!pass||pass.length<6){ showToast('La contraseña debe tener al menos 6 caracteres','error'); btn.disabled=false; btn.textContent='💾 Guardar usuario'; return; }
-      const secondApp  = firebase.initializeApp(firebase.apps[0].options,'secondary_'+Date.now());
-      const secondAuth = secondApp.auth();
-      const cred = await secondAuth.createUserWithEmailAndPassword(email,pass);
-      await db.collection('usuarios').doc(cred.user.uid).set({
-        nombre, email, rol, activo, permisos,
-        clinicaId: SESSION.clinica.id,
-        creadoEn:  firebase.firestore.FieldValue.serverTimestamp()
-      });
-      await secondAuth.signOut();
-      secondApp.delete();
-      showToast('Usuario creado correctamente','success');
+      // ── CREAR nuevo usuario ──────────────────────────────────
+      if(!pass||pass.length<6){
+        showToast('La contraseña debe tener al menos 6 caracteres','error');
+        btn.disabled=false; btn.textContent='💾 Guardar usuario';
+        return;
+      }
+
+      // 1. Crear cuenta en Firebase Auth usando app secundaria
+      //    (evita cerrar sesión del admin actual)
+      const appName   = 'secondary_'+Date.now();
+      const secondApp = firebase.initializeApp(firebase.app().options, appName);
+      const secondAuth= secondApp.auth();
+      const secondDb  = secondApp.firestore();
+
+      let newUid = null;
+      try{
+        const cred = await secondAuth.createUserWithEmailAndPassword(email, pass);
+        newUid = cred.user.uid;
+
+        // 2. Escribir doc de usuario con secondDb
+        //    (request.auth = nuevo usuario → request.auth.uid == uid → regla cumplida)
+        await secondDb.collection('usuarios').doc(newUid).set({
+          nombre, email, rol, activo, permisos,
+          clinicaId: SESSION.clinica.id,
+          creadoEn:  firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        showToast('Usuario creado correctamente','success');
+
+      } finally {
+        // 3. Limpiar siempre: cerrar sesión del nuevo user y destruir app secundaria
+        try{ await secondAuth.signOut(); }catch(_){}
+        try{ await secondApp.delete(); }catch(_){}
+      }
     }
+
     closeModal('modalUser');
     await loadUsers();
+
   }catch(e){
-    const msgs={'auth/email-already-in-use':'Ese correo ya está en uso','auth/weak-password':'Contraseña muy débil'};
-    showToast(msgs[e.code]||'Error: '+e.message,'error');
+    console.error('saveUser error:', e);
+    const msgs = {
+      'auth/email-already-in-use': 'Ese correo ya está en uso',
+      'auth/weak-password':        'La contraseña es muy débil (mínimo 6 caracteres)',
+      'auth/invalid-email':        'El correo no es válido',
+      'permission-denied':         'Sin permisos — verifica las reglas de Firestore',
+    };
+    showToast(msgs[e.code] || msgs[e.message] || 'Error: '+e.message, 'error');
   }
+
   btn.disabled=false; btn.textContent='💾 Guardar usuario';
 }
 

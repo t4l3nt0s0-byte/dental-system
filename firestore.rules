@@ -2,61 +2,58 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Verifica que el usuario pertenece a la clínica
+    // ── Helpers ───────────────────────────────────────────────
     function belongsToClinica(clinicaId) {
       return request.auth != null &&
         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.clinicaId == clinicaId;
     }
-
-    // ── Verifica si el usuario es admin
     function isAdmin() {
       return request.auth != null &&
         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
     }
+    function isAdminOf(clinicaId) {
+      return belongsToClinica(clinicaId) && isAdmin();
+    }
 
-    // ── Usuarios: cada quien lee/edita el suyo, admin lee todos
+    // ── Usuarios ──────────────────────────────────────────────
+    // Crear: propio uid ó admin autenticado (para que admin pueda crear usuarios)
     match /usuarios/{uid} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null &&
+                       (request.auth.uid == uid || isAdmin());
+      allow update: if request.auth != null &&
+                       (request.auth.uid == uid || isAdmin());
       allow delete: if isAdmin();
     }
 
-    // ── Clínica: solo miembros de esa clínica
+    // ── Clínicas ──────────────────────────────────────────────
+    // Crear clínica: solo el admin recién creado puede crear la suya
     match /clinicas/{clinicaId} {
-      allow read, write: if belongsToClinica(clinicaId);
+      allow read:   if belongsToClinica(clinicaId);
+      allow create: if request.auth != null;  // alta inicial de registro
+      allow update: if belongsToClinica(clinicaId);
+      allow delete: if isAdminOf(clinicaId);
 
-      // ── COMODÍN: cubre TODAS las subcolecciones de 1 nivel
-      // pacientes, tratamientos, abonos, citas, catalogo,
-      // cotizaciones, cortes, inventario, ofertas, rx,
-      // notas-clinicas, recibos, plantillas, recordatorios, etc.
+      // Todas las subcolecciones: pacientes, citas, tratamientos, etc.
       match /{collection}/{docId} {
         allow read, write: if belongsToClinica(clinicaId);
       }
-
-      // ── COMODÍN: cubre subcolecciones anidadas de 2 niveles
-      // odontogramas/{pacienteId}/historial/{histId}
       match /{col1}/{doc1}/{col2}/{doc2} {
         allow read, write: if belongsToClinica(clinicaId);
       }
-
-      // ── COMODÍN: cubre subcolecciones anidadas de 3 niveles
-      // por si acaso en el futuro
       match /{col1}/{doc1}/{col2}/{doc2}/{col3}/{doc3} {
         allow read, write: if belongsToClinica(clinicaId);
       }
     }
 
-    // Calificaciones globales (solo escritura de usuarios autenticados)
+    // ── Globales ──────────────────────────────────────────────
     match /_calificaciones_globales/{docId} {
       allow create: if request.auth != null;
-      allow read: if false; // Solo Hersantych lee desde Console
+      allow read:   if false;
     }
-
-    // Mensajes de soporte (solo escritura de usuarios autenticados)
     match /_mensajes_soporte/{docId} {
       allow create: if request.auth != null;
-      allow read: if false; // Solo Hersantych lee desde Console
+      allow read:   if false;
     }
   }
 }
