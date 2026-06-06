@@ -745,61 +745,83 @@ async function cargarUltimaReceta(){
   const btn = document.getElementById('btnCargarUltima');
   if(btn){ btn.disabled=true; btn.textContent='Cargando...'; }
   try{
+    // Sin orderBy — evita requerir índice compuesto en Firestore
     const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
                          .collection('rx')
                          .where('expId','==',pxId)
-                         .orderBy('creadoEn','desc')
-                         .limit(1).get();
+                         .get();
     if(snap.empty){
       showToast('Este paciente no tiene recetas previas','error');
       if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
       return;
     }
-    const rx = snap.docs[0].data();
-    _rxGuardadaId = null; // nueva receta basada en anterior
+    // Ordenar en cliente: más reciente primero
+    const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    docs.sort((a,b)=>{
+      const ta=a.creadoEn?.toDate?.()?.getTime()||new Date(a.fecha||'2000-01-01').getTime();
+      const tb=b.creadoEn?.toDate?.()?.getTime()||new Date(b.fecha||'2000-01-01').getTime();
+      return tb-ta;
+    });
+    const rx = docs[0];
+    _rxGuardadaId = null;
 
-    // Rellenar campos
-    if(rx.diagnostico)  document.getElementById('r-diagnostico').value = rx.diagnostico;
-    if(rx.indicaciones) document.getElementById('r-indicaciones').value= rx.indicaciones;
-    if(rx.peso)         document.getElementById('r-peso').value         = rx.peso;
-    if(rx.validez){
-      const sv=document.getElementById('r-validez');
-      const ov=Array.from(sv.options).find(o=>o.value===rx.validez);
-      if(ov) sv.value=rx.validez;
-    }
+    // Helpers
+    const setVal=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; };
+    const setSelect=(id,v)=>{ const s=document.getElementById(id); if(s&&v){ const o=Array.from(s.options).find(o=>o.value===v||o.text===v); if(o) s.value=o.value; } };
+
+    setVal('r-diagnostico', rx.diagnostico);
+    setVal('r-indicaciones',rx.indicaciones);
+    setVal('r-peso',        rx.peso);
+    setSelect('r-validez',  rx.validez);
+
+    // Doctor
     if(rx.doctor){
       const sd=document.getElementById('r-doctor');
-      const od=Array.from(sd.options).find(o=>o.text.includes(rx.doctor.split(' ')[0])||o.value===rx.doctor);
-      if(od){ sd.value=od.value; onDoctorChange(); }
+      if(sd){
+        const od=Array.from(sd.options).find(o=>
+          o.value===rx.doctor||
+          o.text.toLowerCase().includes((rx.doctor||'').toLowerCase().split(' ')[0])
+        );
+        if(od){ sd.value=od.value; onDoctorChange(); }
+      }
     }
-    // Medicamentos
+
+    // Medicamentos — reconstruir tabla
     document.getElementById('medBody').innerHTML='';
     medCount=0;
-    const medsRx = rx.medicamentos||[];
+    const medsRx=rx.medicamentos||[];
     if(medsRx.length){
       medsRx.forEach((med,i)=>{
-        addMed(med.nombre);
+        addMed();
         const n=medCount;
         setTimeout(()=>{
-          const setVal=(id,v)=>{ const el=document.getElementById(id); if(el&&v) el.value=v; };
+          const selNom=document.getElementById('med-nombre-'+n);
+          if(selNom){
+            const optM=Array.from(selNom.options).find(o=>o.value===med.nombre);
+            if(optM){ selNom.value=med.nombre; }
+            else if(med.nombre){
+              selNom.value='__otro';
+              const libre=document.getElementById('med-nombre-libre-'+n);
+              if(libre){ libre.style.display='block'; libre.value=med.nombre; }
+            }
+          }
           setVal('med-dosis-'+n, med.dosis);
           setVal('med-pres-'+n,  med.presentacion);
           setVal('med-ind-'+n,   med.indicaciones);
-          const setSelect=(id,v)=>{ const s=document.getElementById(id); if(s&&v){ const o=Array.from(s.options).find(o=>o.value===v); if(o) s.value=v; } };
           setSelect('med-forma-'+n, med.forma);
           setSelect('med-freq-'+n,  med.frecuencia);
           setSelect('med-dur-'+n,   med.duracion);
-        }, 60*i);
+        },80*(i+1));
       });
     } else { addMed(); }
 
-    // Fecha = hoy (receta nueva)
-    document.getElementById('r-fecha').value = todayISO();
-    const rxFecha = rx.fecha ? new Date(rx.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}) : 'anterior';
-    showToast('Receta del '+rxFecha+' cargada. Modifica y guarda como nueva','success');
+    document.getElementById('r-fecha').value=todayISO();
+    const rxFecha=rx.fecha?new Date(rx.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}):'anterior';
+    showToast('Receta del '+rxFecha+' cargada correctamente','success');
     if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
   }catch(e){
-    showToast('Error al cargar: '+e.message,'error');
+    console.error('cargarUltimaReceta:',e);
+    showToast('Error: '+e.message,'error');
     if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
   }
 }
