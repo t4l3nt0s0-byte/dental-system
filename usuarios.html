@@ -163,7 +163,7 @@ let allUsers = [], editId = null, changePassUid = null;
 const ALL_PAGES = {
   // Operación diaria
   agenda:          '📅 Agenda',
-  pacientes:       '👤 Pacientes',
+  pacientes:       '👤 Pacientes / Expedientes',
   tratamientos:    '🦷 Tratamientos',
   abonos:          '💰 Abonos / Pagos',
   cotizacion:      '📝 Cotizaciones',
@@ -188,13 +188,16 @@ const ALL_PAGES = {
 
 // Permisos por defecto según rol — claves deben coincidir con PAGE_PERM_MAP en shared.js
 const ROL_DEFAULT_PERMS = {
-  // Admin: acceso total (incluyendo páginas exclusivas de admin)
+  // Admin: acceso total — incluyendo páginas exclusivas de admin
   admin:     [...Object.keys(ALL_PAGES), 'usuarios','configuracion','importar','planes'],
+  // Doctor: clínica completa + recetas
   doctor:    ['agenda','pacientes','tratamientos','odontograma',
                'expediente','recetas','inventario'],
+  // Recepción: operación y finanzas del día
   recepcion: ['agenda','pacientes','cotizacion','abonos','catalogo',
                'recordatorios','expediente','recibo','busqueda',
                'corte-caja','estado-cuenta'],
+  // Asistente: mínimo operativo
   asistente: ['agenda','pacientes','busqueda'],
 };
 
@@ -217,6 +220,19 @@ async function loadUsers(){
     const snap = await db.collection('usuarios')
       .where('clinicaId','==',SESSION.clinica.id).get();
     allUsers = snap.docs.map(d=>({id:d.id,...d.data()}));
+
+    // Normalizar: si un usuario no tiene permisos guardados,
+    // asignar los defaults de su rol en Firebase (una sola vez)
+    const updates = allUsers
+      .filter(u => u.rol !== 'admin' && (!u.permisos || u.permisos.length === 0))
+      .map(u => db.collection('usuarios').doc(u.id).update({
+          permisos: ROL_DEFAULT_PERMS[u.rol] || [],
+          actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => { u.permisos = ROL_DEFAULT_PERMS[u.rol] || []; })
+         .catch(()=>{}) // silencioso si no hay permisos de escritura
+      );
+    if(updates.length) await Promise.all(updates);
+
     renderGrid();
   }catch(e){ showToast('Error al cargar usuarios: '+e.message,'error'); }
 }
@@ -225,26 +241,52 @@ async function loadUsers(){
 function renderGrid(){
   const grid = document.getElementById('userGrid');
   const isAdmin = SESSION?.user?.rol === 'admin';
+  const myUid   = SESSION?.user?.uid;
 
   if(!allUsers.length){
     grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-icon">👥</div>
-      <div class="empty-title">Sin usuarios registrados</div>
+      <div class="empty-icon">👥</div><div class="empty-title">Sin usuarios registrados</div>
     </div>`;
     return;
   }
 
   grid.innerHTML = allUsers.map(u=>{
-    const ini   = (u.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
-    const rolLbl= ROLES[u.rol]?.label || u.rol || '—';
+    const ini    = (u.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const rolLbl = ROLES[u.rol]?.label || u.rol || '—';
     const color  = ROL_COLORS[u.rol]||'#6B7280';
     const badge  = ROL_BADGE[u.rol]||'badge-blue';
-    const perms  = u.permisos || ROL_DEFAULT_PERMS[u.rol] || [];
-    const isAll  = u.rol==='admin' || perms.includes('all');
-    const permList = isAll
-      ? '<span class="perm-pill">⭐ Acceso total</span>'
-      : perms.slice(0,6).map(p=>`<span class="perm-pill">${ALL_PAGES[p]||p}</span>`).join('')
-        + (perms.length>6 ? `<span class="perm-pill">+${perms.length-6} más</span>` : '');
+    const isSelf = u.id === myUid;
+    const isUserAdmin = u.rol === 'admin';
+
+    // Permisos efectivos: los guardados en Firebase o los defaults del rol
+    const perms = (u.permisos && u.permisos.length > 0)
+      ? u.permisos
+      : (ROL_DEFAULT_PERMS[u.rol] || []);
+
+    // Mostrar permisos
+    let permHTML = '';
+    if(isUserAdmin){
+      permHTML = `<span class="perm-pill" style="background:rgba(244,185,66,.15);color:#F4B942;border-color:rgba(244,185,66,.3)">⭐ Acceso total al sistema</span>`;
+    } else {
+      const validPerms = perms.filter(p => ALL_PAGES[p]);
+      permHTML = validPerms.length
+        ? validPerms.map(p=>`<span class="perm-pill">${ALL_PAGES[p]}</span>`).join('')
+        : `<span style="font-size:.72rem;color:var(--text-dim)">Sin páginas asignadas</span>`;
+    }
+
+    // Acciones:
+    // - Uno mismo (admin): solo cambiar contraseña
+    // - Otros usuarios: gestionar permisos + pass + eliminar
+    let actionsHTML = '';
+    if(isSelf){
+      actionsHTML = `<button class="btn btn-ghost btn-sm" onclick="openChangePass('${u.id}','${(u.nombre||u.email||'').replace(/'/g,"\\'")}')" >🔑 Cambiar contraseña</button>`;
+    } else {
+      actionsHTML = `
+        ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}')">✏️ Gestionar permisos</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="openChangePass('${u.id}','${(u.nombre||u.email||'').replace(/'/g,"\\'")}')">🔑 Pass</button>
+        ${isAdmin?`<button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto" onclick="deleteUser('${u.id}')">🗑️ Eliminar</button>`:''}
+      `;
+    }
 
     return `<div class="user-card">
       <div class="user-header">
@@ -257,17 +299,11 @@ function renderGrid(){
       <div class="user-row">
         <span class="badge ${badge}">${rolLbl}</span>
         <span class="badge ${u.activo!==false?'badge-green':'badge-red'}">${u.activo!==false?'● Activo':'○ Inactivo'}</span>
-        ${u.id===SESSION?.user?.uid?'<span class="badge" style="background:rgba(160,120,255,.12);color:#a078ff;border-color:rgba(160,120,255,.25)">Tú</span>':''}
+        ${isSelf?'<span class="badge" style="background:rgba(160,120,255,.12);color:#a078ff;border-color:rgba(160,120,255,.25)">Tú</span>':''}
       </div>
-      <div class="user-perms">${permList}</div>
-      ${u.creadoEn?`<div class="user-row" style="margin-top:2px">📅 Alta: ${fmtDate(u.creadoEn)}</div>`:''}
-      <div class="user-actions">
-        ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}')">✏️ Editar</button>`:''}
-        <button class="btn btn-ghost btn-sm" onclick="openChangePass('${u.id}','${(u.nombre||u.email||'').replace(/'/g,"\\'")}')">🔑 Pass</button>
-        ${isAdmin && u.id!==SESSION?.user?.uid
-          ?`<button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto" onclick="deleteUser('${u.id}')">🗑️ Eliminar</button>`
-          :''}
-      </div>
+      <div class="user-perms">${permHTML}</div>
+      ${u.creadoEn?`<div class="user-row" style="margin-top:4px;font-size:.72rem">📅 Alta: ${fmtDate(u.creadoEn)}</div>`:''}
+      <div class="user-actions">${actionsHTML}</div>
     </div>`;
   }).join('');
 }
