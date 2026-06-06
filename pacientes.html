@@ -97,8 +97,9 @@
         <div>
           <div style="font-size:.68rem;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">Datos personales</div>
           <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="f-nombre" placeholder="Apellido Apellido Nombre"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
             <div class="form-group"><label class="form-label">F. nacimiento</label><input type="date" class="form-input" id="f-fnac"></div>
+            <div class="form-group"><label class="form-label">Peso (kg)</label><input type="number" class="form-input" id="f-peso" placeholder="70" min="1" max="300" step="0.1"></div>
             <div class="form-group"><label class="form-label">Género</label>
               <select class="form-select" id="f-genero"><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
             </div>
@@ -199,6 +200,276 @@ async function loadPacientes() {
   renderGrid();
 }
 
+// Calcular edad en años desde una fecha ISO (ej '1990-03-15')
+function calcEdad(fnac){
+  if(!fnac) return null;
+  try{
+    const fn  = new Date(fnac + 'T12:00:00');
+    const hoy = new Date();
+    let e = hoy.getFullYear() - fn.getFullYear();
+    if(hoy.getMonth()<fn.getMonth()||(hoy.getMonth()===fn.getMonth()&&hoy.getDate()<fn.getDate())) e--;
+    return (e>=0&&e<130) ? e : null;
+  }catch(e){ return null; }
+}
+
+function renderGrid() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const g = document.getElementById('filterGenero').value;
+  const filtered = allPacientes.filter(p =>
+    (!q || p.nombre?.toLowerCase().includes(q) || p.tel?.includes(q) || p.expediente?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q)) &&
+    (!g || p.genero === g)
+  );
+  const grid = document.getElementById('pxGrid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-title">Sin resultados</div><div class="empty-sub">Intenta con otro término de búsqueda</div></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(p => {
+    const initials = (p.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
+    const edadNum  = calcEdad(p.fnac);
+    const edadStr  = edadNum !== null ? edadNum + ' años' : (p.edad ? p.edad + ' años' : '—');
+    const pesoStr  = p.peso ? p.peso + ' kg' : null;
+    return `<div class="px-card" onclick="verPaciente('${p.id}')">
+      <div class="px-header">
+        <div class="px-avatar">${initials}</div>
+        <div>
+          <div class="px-name">${p.nombre||'Sin nombre'}</div>
+          <div class="px-exp">${p.expediente||p.id}</div>
+        </div>
+      </div>
+      <div class="px-row"><span class="icon">👤</span>
+        <span>${p.genero||'—'} · ${edadStr}${pesoStr
+          ? ' <span style="display:inline-flex;align-items:center;gap:2px;margin-left:5px;font-size:.63rem;font-weight:700;background:rgba(74,158,255,.12);color:var(--blue);border:1px solid rgba(74,158,255,.22);border-radius:4px;padding:1px 5px">⚖️ '+pesoStr+'</span>'
+          : ''}</span>
+      </div>
+      <div class="px-row"><span class="icon">📱</span><span>${p.tel||'Sin teléfono'}</span></div>
+      ${p.alergias&&p.alergias!=='Ninguna'?`<div class="px-row"><span class="icon">⚠️</span><span style="color:var(--gold)">${p.alergias}</span></div>`:''}
+      ${p.padecimientos&&p.padecimientos!=='Ninguno'?`<div class="px-row"><span class="icon">🏥</span><span>${p.padecimientos}</span></div>`:''}
+      <div class="px-actions">
+        <div class="px-actions-row">
+          <a href="expediente.html?px=${p.id}" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">📋 Expediente</a>
+          <a href="tratamientos.html?exp=${p.id}" class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">🦷 Trats.</a>
+        </div>
+        <div class="px-actions-row">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editPaciente('${p.id}')">✏️ Editar</button>
+          ${p.tel?`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();whatsapp('${p.tel}','Hola ${p.nombre?.split(' ')[0]||''}')">💬 WA</button>`:'<div style="flex:1"></div>'}
+        </div>
+      </div>
+    </div>`;
+}).join('');ml>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych Dental · Expedientes</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* FILTROS */
+.filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.filters .search-wrap{flex:1;min-width:180px}
+
+/* GRID DE PACIENTES */
+.px-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+
+/* TARJETA */
+.px-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:all .2s;cursor:pointer;position:relative;overflow:hidden}
+.px-card:hover{border-color:rgba(0,194,168,.3);transform:translateY(-2px)}
+.px-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--blue));opacity:0;transition:opacity .2s}
+.px-card:hover::before{opacity:1}
+
+/* HEADER */
+.px-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.px-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal-dim),var(--blue-dim));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.88rem;font-weight:700;color:var(--teal);flex-shrink:0}
+.px-name{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:2px}
+.px-exp{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim)}
+
+/* FILAS DE INFO */
+.px-row{display:flex;gap:6px;font-size:.73rem;color:var(--text-muted);margin-bottom:4px;align-items:center}
+.px-row span{color:var(--text)}
+.px-row .icon{font-size:.78rem;flex-shrink:0}
+
+/* ACCIONES — 2 filas limpias */
+.px-actions{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.px-actions-row{display:flex;gap:6px}
+.px-actions-row .btn{flex:1;justify-content:center;font-size:.72rem;padding:6px 8px}
+.px-actions-row .btn-icon-only{flex:0 0 34px;padding:6px;justify-content:center}
+
+/* BARRA LÍMITE */
+.limit-bar{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-size:.8rem;color:var(--text-muted)}
+.limit-progress{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.limit-fill{height:100%;border-radius:3px;transition:width .5s;background:var(--teal)}
+.limit-fill.warning{background:var(--gold)}
+.limit-fill.danger{background:var(--red)}
+
+/* MOBILE */
+@media(max-width:600px){
+  .px-grid{grid-template-columns:1fr}
+  .filters{flex-direction:column;align-items:stretch}
+  .filters .search-wrap{min-width:unset}
+  .topbar-actions .btn{font-size:.72rem;padding:7px 10px}
+}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">👤 Expedientes de Pacientes</div>
+    <div class="topbar-actions">
+      <a href="importar-datos.html" class="btn btn-ghost btn-sm">📥 Importar desde Excel</a>
+      <button class="btn btn-primary" id="btnNuevo">+ Nuevo paciente</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="limit-bar" id="limitBar" style="display:none">
+      <span>📊 Pacientes:</span>
+      <div class="limit-progress"><div class="limit-fill" id="limitFill"></div></div>
+      <span id="limitText"></span>
+    </div>
+    <div class="filters">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="searchInput" placeholder="Buscar por nombre, expediente, teléfono...">
+      </div>
+      <select class="form-select" id="filterGenero" style="width:140px">
+        <option value="">Todos los géneros</option>
+        <option>Masculino</option><option>Femenino</option><option>Otro</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" id="btnExport">📥 Exportar</button>
+    </div>
+    <div class="px-grid" id="pxGrid"><div class="loader"><div class="spinner"></div>Cargando expedientes...</div></div>
+  </div>
+</main>
+
+<!-- MODAL NUEVO/EDITAR PACIENTE -->
+<div class="modal-overlay" id="modalPx">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="modalPxTitle">Nuevo Paciente</div>
+      <button class="modal-close" onclick="closeModal('modalPx')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <!-- Col 1: Datos personales -->
+        <div>
+          <div style="font-size:.68rem;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">Datos personales</div>
+          <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="f-nombre" placeholder="Apellido Apellido Nombre"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="form-group"><label class="form-label">F. nacimiento</label><input type="date" class="form-input" id="f-fnac"></div>
+            <div class="form-group"><label class="form-label">Peso (kg)</label><input type="number" class="form-input" id="f-peso" placeholder="70" min="1" max="300" step="0.1"></div>
+            <div class="form-group"><label class="form-label">Género</label>
+              <select class="form-select" id="f-genero"><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Teléfono del paciente</label><input class="form-input" id="f-tel" placeholder="55 0000 0000" type="tel"></div>
+          <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" class="form-input" id="f-email" placeholder="paciente@correo.com"></div>
+          <!-- Contacto de emergencia / familiar -->
+          <div style="font-size:.68rem;font-weight:700;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 10px">📞 Contacto de emergencia</div>
+          <div class="form-group"><label class="form-label">Nombre del familiar</label><input class="form-input" id="f-familiar" placeholder="Nombre completo del familiar"></div>
+          <div class="form-group"><label class="form-label">Parentesco</label>
+            <select class="form-select" id="f-parentesco">
+              <option value="">Seleccionar...</option>
+              <option>Mamá</option><option>Papá</option><option>Esposo/a</option>
+              <option>Hijo/a</option><option>Hermano/a</option><option>Otro</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Teléfono del familiar</label><input class="form-input" id="f-telFamiliar" placeholder="55 0000 0000" type="tel"></div>
+          <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="f-dir" placeholder="Calle, número, colonia, ciudad"></div>
+          <div class="form-group"><label class="form-label">Cómo nos conoció</label>
+            <select class="form-select" id="f-referido"><option value="">Seleccionar...</option><option>Recomendación</option><option>Redes sociales</option><option>Google</option><option>Publicidad</option><option>Otro</option></select>
+          </div>
+        </div>
+        <!-- Col 2: Datos médicos -->
+        <div>
+          <div style="font-size:.68rem;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">Antecedentes médicos</div>
+          <div class="form-group"><label class="form-label">Alergias</label><input class="form-input" id="f-alergias" placeholder="Penicilina, Latex, Ninguna..."></div>
+          <div class="form-group"><label class="form-label">Padecimientos sistémicos</label><input class="form-input" id="f-padecimientos" placeholder="Diabetes, Hipertensión, Ninguno..."></div>
+          <div class="form-group"><label class="form-label">Medicamentos actuales</label><input class="form-input" id="f-medicamentos" placeholder="Metformina, Ninguno..."></div>
+          <div class="form-group"><label class="form-label">¿Está embarazada?</label>
+            <select class="form-select" id="f-embarazo"><option>No</option><option>Sí</option><option>N/A</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">Tipo de sangre</label>
+            <select class="form-select" id="f-sangre"><option value="">Desconocido</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">Observaciones / Notas</label><textarea class="form-textarea" id="f-obs" placeholder="Notas adicionales sobre el paciente..." rows="3"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalPx')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSavePx">💾 Guardar paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER PACIENTE -->
+<div class="modal-overlay" id="modalVer">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="verNombre"></div>
+      <button class="modal-close" onclick="closeModal('modalVer')">✕</button>
+    </div>
+    <div class="modal-body" id="verBody"></div>
+    <div class="modal-footer" id="verFooter"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'pacientes';
+let allPacientes = [], editId = null;
+
+initSession('any').then(async session => {
+  if (!session) return;
+  const { clinica } = session;
+  const plan = PLANES[clinica.plan] || PLANES.basico;
+
+  await loadPacientes();
+
+  // Limit bar
+  if (plan.maxPacientes !== Infinity) {
+    const lb = document.getElementById('limitBar');
+    lb.style.display = 'flex';
+    const pct = Math.round(allPacientes.length / plan.maxPacientes * 100);
+    document.getElementById('limitFill').style.width = pct + '%';
+    document.getElementById('limitFill').className = 'limit-fill' + (pct>=90?' danger':pct>=70?' warning':'');
+    document.getElementById('limitText').textContent = `${allPacientes.length} / ${plan.maxPacientes}`;
+  }
+
+  // Events
+  document.getElementById('searchInput').addEventListener('input', renderGrid);
+  document.getElementById('filterGenero').addEventListener('change', renderGrid);
+  document.getElementById('btnNuevo').addEventListener('click', () => {
+    if (plan.maxPacientes !== Infinity && allPacientes.length >= plan.maxPacientes) {
+      showToast(`Límite de ${plan.maxPacientes} pacientes alcanzado. Actualiza tu plan.`, 'error'); return;
+    }
+    openNewModal();
+  });
+  document.getElementById('btnSavePx').addEventListener('click', savePaciente);
+  document.getElementById('btnExport').addEventListener('click', exportCSV);
+});
+
+async function loadPacientes() {
+  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+  renderGrid();
+}
+
+// Calcular edad en años desde una fecha ISO (ej '1990-03-15')
+function calcEdad(fnac){
+  if(!fnac) return null;
+  try{
+    const fn  = new Date(fnac + 'T12:00:00');
+    const hoy = new Date();
+    let e = hoy.getFullYear() - fn.getFullYear();
+    if(hoy.getMonth()<fn.getMonth()||(hoy.getMonth()===fn.getMonth()&&hoy.getDate()<fn.getDate())) e--;
+    return (e>=0&&e<130) ? e : null;
+  }catch(e){ return null; }
+}
+
 function renderGrid() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const g = document.getElementById('filterGenero').value;
@@ -243,14 +514,13 @@ function renderGrid() {
              ARCHIVO: pacientes.html
              BUSCA este bloque de comentario y
              reemplázalo con la siguiente línea:
-             La función deletePaciente() está en la línea ~314
-             ════════════════════════════════════════ -->
 
              <div class="px-actions-row">
                <button class="btn btn-ghost btn-sm" style="color:var(--red);flex:1" onclick="event.stopPropagation();deletePaciente('${p.id}')">🗑️ Eliminar</button>
              </div>
 
-             
+             La función deletePaciente() está en la línea ~314
+             ════════════════════════════════════════ -->
       </div>
     </div>`;
   }).join('');
@@ -264,6 +534,7 @@ function openNewModal() {
   document.getElementById('modalPxTitle').textContent = 'Nuevo Paciente';
   ['f-nombre','f-tel','f-email','f-dir','f-alergias','f-padecimientos','f-medicamentos','f-obs','f-familiar','f-telFamiliar'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-fnac').value = '';
+  const pesoEl=document.getElementById('f-peso'); if(pesoEl) pesoEl.value='';
   document.getElementById('f-genero').value = 'Masculino';
   document.getElementById('f-embarazo').value = 'No';
   document.getElementById('f-sangre').value = '';
@@ -277,6 +548,7 @@ function editPaciente(id) {
   document.getElementById('modalPxTitle').textContent = 'Editar Paciente';
   document.getElementById('f-nombre').value = p.nombre||'';
   document.getElementById('f-fnac').value = p.fnac||'';
+  const pesoEdEl=document.getElementById('f-peso'); if(pesoEdEl) pesoEdEl.value=p.peso||'';
   document.getElementById('f-genero').value = p.genero||'Masculino';
   document.getElementById('f-tel').value = p.tel||'';
   document.getElementById('f-email').value = p.email||'';
@@ -297,6 +569,19 @@ function editPaciente(id) {
 async function savePaciente() {
   const nombre = document.getElementById('f-nombre').value.trim().toUpperCase();
   if (!nombre) { showToast('El nombre es obligatorio','error'); return; }
+
+  // ── Verificar límite de pacientes según plan ──────────────
+  if (!editId) { // Solo al crear, no al editar
+    const plan = SESSION?.clinica?.plan || 'trial';
+    const maxPx = (typeof PLANES !== 'undefined' && PLANES[plan]?.maxPacientes) || 5;
+    if (maxPx !== Infinity && allPacientes.length >= maxPx) {
+      const planNombre = (typeof PLANES !== 'undefined' && PLANES[plan]?.nombre) || plan;
+      showToast(`Plan ${planNombre}: límite de ${maxPx} pacientes alcanzado`, 'error');
+      setTimeout(() => { window.location.href = 'planes.html?limit=pacientes'; }, 1800);
+      return;
+    }
+  }
+
   // Detección de duplicados (normaliza a mayúsculas para comparar)
   if (!editId) {
     const dup = allPacientes.find(p => (p.nombre||'').toUpperCase().trim() === nombre);
@@ -308,6 +593,16 @@ async function savePaciente() {
   const btn = document.getElementById('btnSavePx');
   btn.disabled = true; btn.textContent = 'Guardando...';
   const fnac = document.getElementById('f-fnac').value;
+  const pesoRaw  = document.getElementById('f-peso')?.value||'';
+  const pesoNum  = parseFloat(pesoRaw);
+  const pesoVal  = (!pesoRaw || isNaN(pesoNum) || pesoNum < 1 || pesoNum > 300)
+    ? null
+    : Math.round(pesoNum * 10) / 10; // un decimal max
+  if(pesoRaw && pesoVal === null){
+    showToast('El peso debe ser un número entre 1 y 300 kg','error');
+    document.getElementById('f-peso')?.focus();
+    return;
+  }
   const edad = fnac ? Math.floor((new Date()-new Date(fnac))/31557600000) : null;
   const data = {
     nombre,
@@ -316,6 +611,7 @@ async function savePaciente() {
     tel: document.getElementById('f-tel').value.trim(),
     email: document.getElementById('f-email').value.trim().toLowerCase(),
     direccion: document.getElementById('f-dir').value.trim(),
+    peso: pesoVal,
     nombreFamiliar: document.getElementById('f-familiar').value.trim(),
     parentesco: document.getElementById('f-parentesco').value,
     telFamiliar: document.getElementById('f-telFamiliar').value.trim(),
