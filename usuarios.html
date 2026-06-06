@@ -157,41 +157,44 @@
 window.CURRENT_PAGE = 'usuarios';
 let allUsers = [], editId = null, changePassUid = null;
 
-// ── TODAS LAS PÁGINAS DEL SISTEMA ──────────────────────────────
+// ── TODAS LAS PÁGINAS ASIGNABLES A ROLES ───────────────────────────
+// No incluir páginas exclusivas de admin (planes, configuracion, usuarios, importar-datos)
+// El admin siempre tiene acceso a todo — esta lista es solo para otros roles
 const ALL_PAGES = {
   // Operación diaria
-  agenda:        '📅 Agenda',
-  pacientes:     '👤 Pacientes',
-  tratamientos:  '🦷 Tratamientos',
-  abonos:        '💰 Abonos / Pagos',
-  cotizacion:    '📝 Cotizaciones',
-  catalogo:      '📚 Catálogo & Precios',
-  expediente:    '📋 Expediente',
-  recetas:       '💊 Recetas médicas',
-  // Clínicas
-  odontograma:   '🦷 Odontograma',
-  inventario:    '🏥 Inventario',
-  recordatorios: '🔔 Recordatorios',
+  agenda:          '📅 Agenda',
+  pacientes:       '👤 Pacientes',
+  tratamientos:    '🦷 Tratamientos',
+  abonos:          '💰 Abonos / Pagos',
+  cotizacion:      '📝 Cotizaciones',
+  catalogo:        '📚 Catálogo & Precios',
+  expediente:      '📋 Expediente',
+  recetas:         '💊 Recetas médicas',
+  // Clínica
+  odontograma:     '🦷 Odontograma',
+  inventario:      '🏥 Inventario',
+  recordatorios:   '🔔 Recordatorios WA',
   // Finanzas
-  'corte-caja':  '🧾 Corte de caja',
-  'estado-cuenta':'📄 Estado de cuenta',
-  recibo:        '🧾 Recibos',
+  'corte-caja':    '🧾 Corte de caja',
+  'estado-cuenta': '📄 Estado de cuenta',
+  recibo:          '🧾 Recibos',
   // Reportes
-  metricas:      '📈 Métricas',
-  reportes:      '📊 Reportes',
-  ofertas:       '🎁 Ofertas & Promos',
-  // Administración
-  usuarios:      '👥 Usuarios & Roles',
-  configuracion: '⚙️ Configuración',
-  importar:      '📥 Importar datos',
-  busqueda:      '🔍 Búsqueda global',
+  metricas:        '📈 Métricas',
+  reportes:        '📊 Reportes',
+  ofertas:         '🎁 Ofertas & Promos',
+  // Herramientas
+  busqueda:        '🔍 Búsqueda global',
 };
 
-// Permisos por defecto según rol
+// Permisos por defecto según rol — claves deben coincidir con PAGE_PERM_MAP en shared.js
 const ROL_DEFAULT_PERMS = {
-  admin:     Object.keys(ALL_PAGES), // acceso total
-  doctor:    ['agenda','pacientes','tratamientos','odontograma','expediente','recetas','inventario'],
-  recepcion: ['agenda','pacientes','cotizacion','abonos','catalogo','recordatorios','expediente','recibo','busqueda'],
+  // Admin: acceso total (incluyendo páginas exclusivas de admin)
+  admin:     [...Object.keys(ALL_PAGES), 'usuarios','configuracion','importar','planes'],
+  doctor:    ['agenda','pacientes','tratamientos','odontograma',
+               'expediente','recetas','inventario'],
+  recepcion: ['agenda','pacientes','cotizacion','abonos','catalogo',
+               'recordatorios','expediente','recibo','busqueda',
+               'corte-caja','estado-cuenta'],
   asistente: ['agenda','pacientes','busqueda'],
 };
 
@@ -371,7 +374,9 @@ async function saveUser(){
   const pass     = document.getElementById('f-pass').value;
   const rol      = document.getElementById('f-rol').value;
   const activo   = document.getElementById('f-activo').value==='true';
-  const permisos = rol==='admin' ? Object.keys(ALL_PAGES) : getSelectedPerms();
+  const permisos = rol==='admin'
+    ? [...Object.keys(ALL_PAGES), 'usuarios','configuracion','importar','planes']
+    : getSelectedPerms();
 
   if(!nombre||!email){ showToast('Nombre y correo son obligatorios','error'); return; }
   const btn = document.getElementById('btnSaveUser');

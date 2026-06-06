@@ -392,17 +392,22 @@ const PAGE_PERM_MAP = {
   'importar-datos': 'importar',
   'usuarios':       'usuarios',
   'configuracion':  'configuracion',
-  'planes':         null,            // siempre visible
+  'planes':         'planes',         // solo admin
 };
 
 // ¿Tiene el usuario permiso para una página?
 function userCanAccess(page) {
   if (!SESSION) return false;
-  if (SESSION.user.rol === 'admin') return true;
-  const perm = PAGE_PERM_MAP[page];
-  if (perm === null) return true;                      // página pública del sistema
-  const perms = SESSION.user._permsEfectivos || [];
-  return perms.includes(perm);
+  if (SESSION.user.rol === 'admin') return true;  // admin: acceso total
+
+  // Páginas exclusivas del administrador — nunca aparecen para otros roles
+  var ADMIN_ONLY_PAGES = ['planes', 'configuracion', 'usuarios', 'importar-datos'];
+  if (ADMIN_ONLY_PAGES.indexOf(page) !== -1) return false;
+
+  var perm = PAGE_PERM_MAP[page];
+  if (perm === null) return true;                  // página pública del sistema (index)
+  var perms = SESSION.user._permsEfectivos || [];
+  return perms.indexOf(perm) !== -1;
 }
 window.userCanAccess = userCanAccess;
 
