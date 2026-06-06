@@ -1,146 +1,148 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Hersantych Dental · Acceso</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--teal-glow:rgba(0,194,168,.25);--gold:#F4B942;--red:#FF5C5C;--blue:#4A9EFF;--text:#E8F0F8;--text-muted:rgba(232,240,248,.50);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,194,168,.08),transparent);pointer-events:none}
-body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none}
-
-.login-wrap{position:relative;z-index:1;width:100%;max-width:420px;padding:20px}
-.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:40px 36px;box-shadow:0 24px 80px rgba(0,0,0,.6)}
-
+:root{
+  --bg:#060D14;--surface:#0C1622;--surface2:#111E2E;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);
+  --red:#FF5C5C;--text:#E8F0F8;--muted:rgba(232,240,248,.50);--dim:rgba(232,240,248,.25);
+}
+body{
+  font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background-image:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,194,168,.08),transparent);
+}
+.wrap{width:100%;max-width:400px}
+.card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:20px;padding:40px 32px;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
 .brand{text-align:center;margin-bottom:32px}
-.brand-icon{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--teal),#008F7A);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;box-shadow:0 8px 24px var(--teal-glow)}
-.brand-name{font-family:var(--font-display);font-size:1.6rem;color:var(--text)}.brand-name span{color:var(--teal)}
-.brand-sub{font-size:.75rem;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
-
-.form-group{margin-bottom:16px}
-.form-label{display:block;font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
-.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:var(--font-body);font-size:.9rem;outline:none;transition:all .2s}
-.form-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-dim)}
-.form-input::placeholder{color:var(--text-dim)}
-
-.input-wrap{position:relative}
-.input-wrap .form-input{padding-right:44px}
-.toggle-pw{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1rem;transition:color .15s}
-.toggle-pw:hover{color:var(--text-muted)}
-
-.btn-login{width:100%;padding:13px;background:var(--teal);color:#060D14;border:none;border-radius:10px;font-family:var(--font-body);font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-login:hover{background:#00d4b8;transform:translateY(-1px);box-shadow:0 6px 20px var(--teal-glow)}
-.btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none}
-
-.forgot{text-align:center;margin-top:14px}
-.forgot a{color:var(--text-muted);font-size:.78rem;text-decoration:none;transition:color .15s}
-.forgot a:hover{color:var(--teal)}
-
-.error-msg{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.2);border-radius:8px;padding:10px 14px;font-size:.8rem;color:var(--red);margin-top:14px;display:none;align-items:center;gap:8px}
-.error-msg.show{display:flex}
-
-.divider{display:flex;align-items:center;gap:12px;margin:20px 0}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
-.divider span{font-size:.7rem;color:var(--text-dim);white-space:nowrap}
-
-.plans-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-.plan-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;font-size:.68rem}
-.plan-chip .plan-name{font-weight:700;margin-bottom:2px}
-.plan-chip .plan-sub{color:var(--text-dim);font-size:.62rem}
-
-.spinner{width:18px;height:18px;border:2px solid rgba(6,13,20,.3);border-top-color:#060D14;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.btn-login.loading .spinner{display:block}
-.btn-login.loading .btn-text{display:none}
+.brand-icon{
+  width:56px;height:56px;border-radius:14px;
+  background:linear-gradient(135deg,#00C2A8,#008F7A);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;margin:0 auto 12px;
+  box-shadow:0 8px 24px rgba(0,194,168,.25);
+}
+.brand-name{
+  font-family:'Instrument Serif',serif;font-size:1.6rem;
+  color:var(--text);letter-spacing:-.01em;
+}
+.brand-name span{color:var(--teal)}
+.brand-sub{font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+.field{margin-bottom:14px}
+.label{display:block;font-size:.67rem;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.input{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:9px;padding:11px 13px;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;
+}
+.input:focus{border-color:var(--teal)}
+.input::placeholder{color:var(--dim)}
+.pw-wrap{position:relative}
+.pw-wrap .input{padding-right:42px}
+.pw-eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:.95rem;padding:4px}
+.pw-eye:hover{color:var(--teal)}
+.err{background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.25);border-radius:8px;padding:10px 13px;font-size:.82rem;color:var(--red);margin-bottom:14px;display:none}
+.err.show{display:block}
+.btn{
+  width:100%;padding:12px;
+  background:linear-gradient(135deg,#00C2A8,#00a08a);
+  color:#060D14;font-weight:800;font-size:.95rem;border:none;border-radius:10px;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 14px rgba(0,194,168,.28);transition:all .18s;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,194,168,.4)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.spin{width:16px;height:16px;border:2px solid rgba(6,13,20,.25);border-top-color:#060D14;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.btn.loading .spin{display:block}
+.btn.loading .lbl{display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* Reset password modal */
-.reset-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
-.reset-overlay.open{display:flex}
-.reset-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;width:100%;max-width:360px}
-.reset-title{font-family:var(--font-display);font-size:1.1rem;font-style:italic;margin-bottom:16px}
-.reset-close{float:right;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem}
+.links{display:flex;justify-content:space-between;margin-top:18px;font-size:.78rem;color:var(--muted)}
+.links a{color:var(--teal);text-decoration:none;font-weight:600}
+.overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.ocard{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:26px;max-width:340px;width:100%}
+.otitle{font-size:.95rem;font-weight:700;margin-bottom:5px}
+.osub{font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5}
+.omsg{font-size:.78rem;margin-top:8px;display:none}
+.brow{display:flex;gap:8px;margin-top:14px}
+.bsec{flex:1;padding:9px;border-radius:8px;font-size:.82rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted);transition:all .15s}
+.bsec:hover{background:var(--surface2);color:var(--text)}
+.bpri{flex:1;padding:9px;border-radius:8px;font-size:.82rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:var(--teal);color:#060D14}
+.bpri:hover{opacity:.9}
+.footer{text-align:center;margin-top:20px;font-size:.7rem;color:var(--dim)}
+.footer a{color:var(--muted);text-decoration:none}
+.footer a:hover{color:var(--teal)}
 </style>
 </head>
 <body>
-
-<div class="login-wrap">
-  <div class="login-card">
+<div class="wrap">
+  <div class="card">
     <div class="brand">
       <div class="brand-icon">🦷</div>
       <div class="brand-name">Hersantych<span> Dental</span></div>
       <div class="brand-sub">Sistema de Administración</div>
     </div>
-
-    <div class="form-group">
-      <label class="form-label">Correo electrónico</label>
-      <input class="form-input" id="email" type="email" placeholder="doctor@hersantych.com" autocomplete="email">
+    <div class="err" id="errBox"></div>
+    <div class="field">
+      <label class="label">Correo electrónico</label>
+      <input class="input" id="email" type="email" placeholder="doctor@consultorio.com" autocomplete="email">
     </div>
-    <div class="form-group">
-      <label class="form-label">Contraseña</label>
-      <div class="input-wrap">
-        <input class="form-input" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
-        <button class="toggle-pw" id="togglePw" type="button">👁</button>
+    <div class="field">
+      <label class="label">Contraseña</label>
+      <div class="pw-wrap">
+        <input class="input" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+        <button class="pw-eye" id="togglePw" type="button">👁</button>
       </div>
     </div>
-
-    <button class="btn-login" id="btnLogin">
-      <span class="btn-text">Iniciar sesión</span>
-      <div class="spinner"></div>
+    <button class="btn" id="btnLogin" onclick="doLogin()">
+      <span class="lbl">Iniciar sesión</span>
+      <div class="spin"></div>
     </button>
-
-    <div class="error-msg" id="errorMsg">
-      <span>⚠️</span><span id="errorText">Credenciales incorrectas</span>
-    </div>
-
-    <div class="forgot">
+    <div class="links">
       <a href="#" id="forgotLink">¿Olvidaste tu contraseña?</a>
+      <a href="registro.html">Crear cuenta</a>
     </div>
+  </div>
+  <div class="footer">
+    <a href="landing.html">← Inicio</a> &nbsp;·&nbsp; <a href="legal.html">Privacidad</a>
+  </div>
+</div>
 
-    <div class="divider"><span>Planes disponibles</span></div>
-    <div class="plans-preview">
-      <div class="plan-chip">
-        <div class="plan-name" style="color:#4A9EFF">Básico</div>
-        <div class="plan-sub">1 usuario · 50 px</div>
-      </div>
-      <div class="plan-chip">
-        <div class="plan-name" style="color:#00C2A8">Profesional</div>
-        <div class="plan-sub">5 usuarios · ∞ px</div>
-      </div>
-      <div class="plan-chip">
-        <div class="plan-name" style="color:#F4B942">Premium</div>
-        <div class="plan-sub">∞ usuarios · Multi</div>
-      </div>
+<!-- Reset overlay -->
+<div class="overlay" id="resetOverlay">
+  <div class="ocard">
+    <div class="otitle">🔑 Recuperar contraseña</div>
+    <div class="osub">Te enviaremos un enlace para restablecer tu contraseña.</div>
+    <div class="field">
+      <label class="label">Correo</label>
+      <input class="input" id="resetEmail" type="email" placeholder="tucorreo@ejemplo.com">
+    </div>
+    <div class="omsg" id="resetMsg"></div>
+    <div class="brow">
+      <button class="bsec" id="resetClose">Cancelar</button>
+      <button class="bpri" id="btnReset">Enviar enlace</button>
     </div>
   </div>
 </div>
 
-<!-- Reset Password Modal -->
-<div class="reset-overlay" id="resetOverlay">
-  <div class="reset-card">
-    <button class="reset-close" id="resetClose">✕</button>
-    <div class="reset-title">Recuperar contraseña</div>
-    <div class="form-group">
-      <label class="form-label">Correo electrónico</label>
-      <input class="form-input" id="resetEmail" type="email" placeholder="tu@correo.com">
-    </div>
-    <button class="btn-login" id="btnReset" style="margin-top:4px">
-      <span class="btn-text">Enviar enlace</span>
-      <div class="spinner"></div>
-    </button>
-    <div class="error-msg" id="resetMsg" style="margin-top:10px"></div>
-  </div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const firebaseConfig = {
+<!-- Firebase v9 compat -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase init (NO shared.js aquí — login es independiente) ──
+var DENTAL_CFG = {
   apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
   authDomain:"dental-add.firebaseapp.com",
   projectId:"dental-add",
@@ -148,105 +150,103 @@ const firebaseConfig = {
   messagingSenderId:"1350878692",
   appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
 };
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
+var _app;
+try { _app = firebase.app('dental'); }
+catch(e) { _app = firebase.initializeApp(DENTAL_CFG,'dental'); }
+var _auth = _app.auth();
+var _db   = _app.firestore();
 
-// Auto-redirect si ya está logueado
-onAuthStateChanged(auth, async user => {
-  if (user) {
-    const snap = await getDoc(doc(db,'usuarios',user.uid));
-    if (snap.exists()) { window.location.href = 'index.html'; }
+// ── NO hay onAuthStateChanged aquí ──────────────────────────────
+// El auto-redirect causaba el parpadeo. Login solo hace login.
+
+function showErr(msg){ var b=document.getElementById('errBox'); b.textContent=msg; b.className='err show'; }
+function hideErr()   { document.getElementById('errBox').className='err'; }
+function setBusy(on) { var btn=document.getElementById('btnLogin'); btn.disabled=on; btn.classList.toggle('loading',on); }
+
+// ── SOLO función de login — sin listeners ────────────────────────
+function doLogin() {
+  var email = document.getElementById('email').value.trim();
+  var pass  = document.getElementById('password').value;
+  if(!email||!pass){ showErr('Completa correo y contraseña'); return; }
+
+  // Verificar que Firebase está listo
+  if(!_auth){
+    showErr('Error: Firebase no inicializado. Recarga la página.');
+    return;
   }
-});
 
-// Toggle password
-document.getElementById('togglePw').addEventListener('click', () => {
-  const pw = document.getElementById('password');
-  pw.type = pw.type === 'password' ? 'text' : 'password';
-});
+  hideErr(); setBusy(true);
 
-// Enter key
-['email','password'].forEach(id => {
-  document.getElementById(id).addEventListener('keydown', e => {
-    if (e.key === 'Enter') login();
+  _auth.signInWithEmailAndPassword(email, pass)
+    .then(function(cred){
+      if(!cred || !cred.user){
+        showErr('Error inesperado. Intenta de nuevo.');
+        setBusy(false);
+        return;
+      }
+      // Login OK → redirigir al dashboard
+      window.location.replace('index.html');
+    })
+    .catch(function(e){
+      console.error('Login error code:', e.code, 'message:', e.message);
+      var msgs = {
+        'auth/invalid-credential':     'Correo o contraseña incorrectos',
+        'auth/user-not-found':         'No existe cuenta con ese correo',
+        'auth/wrong-password':         'Contraseña incorrecta',
+        'auth/invalid-password':       'Contraseña incorrecta',
+        'auth/too-many-requests':      'Demasiados intentos. Espera unos minutos.',
+        'auth/network-request-failed': 'Sin conexión a internet. Intenta de nuevo.',
+        'auth/invalid-email':          'El correo no tiene formato válido',
+        'auth/user-disabled':          'Esta cuenta fue desactivada.',
+        'auth/operation-not-allowed':  'Inicio de sesión no habilitado. Contacta al administrador.',
+        'auth/internal-error':         'Error interno. Intenta de nuevo.',
+      };
+      showErr(msgs[e.code] || 'Error ('+e.code+'): '+e.message);
+      setBusy(false);
+    });
+}
+
+// Enter para login
+['email','password'].forEach(function(id){
+  document.getElementById(id).addEventListener('keydown',function(e){
+    if(e.key==='Enter') doLogin();
   });
 });
 
-function setLoading(btn, on) {
-  btn.classList.toggle('loading', on);
-  btn.disabled = on;
-}
-function showError(id, msg) {
-  const el = document.getElementById(id);
-  el.querySelector ? (el.querySelector('#errorText')||el).textContent = msg : el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 5000);
-}
+// Toggle contraseña
+document.getElementById('togglePw').addEventListener('click',function(){
+  var pw=document.getElementById('password');
+  pw.type=pw.type==='password'?'text':'password';
+  this.textContent=pw.type==='password'?'👁':'🙈';
+});
 
-async function login() {
-  const email = document.getElementById('email').value.trim();
-  const pass  = document.getElementById('password').value;
-  if (!email || !pass) { showError('errorMsg','Completa todos los campos'); return; }
-  const btn = document.getElementById('btnLogin');
-  setLoading(btn, true);
-  try {
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
-    // Verificar que el usuario tiene registro en Firestore
-    const snap = await getDoc(doc(db,'usuarios', cred.user.uid));
-    if (!snap.exists()) {
-      await auth.signOut();
-      showError('errorMsg','Usuario no registrado en el sistema. Contacta al administrador.');
-      setLoading(btn, false); return;
-    }
-    const uData = snap.data();
-    if (uData.activo === false) {
-      await auth.signOut();
-      showError('errorMsg','Tu cuenta está desactivada. Contacta al administrador.');
-      setLoading(btn, false); return;
-    }
-    window.location.href = 'index.html';
-  } catch(e) {
-    const msgs = {
-      'auth/invalid-credential':'Correo o contraseña incorrectos',
-      'auth/user-not-found':'No existe una cuenta con ese correo',
-      'auth/wrong-password':'Contraseña incorrecta',
-      'auth/too-many-requests':'Demasiados intentos. Intenta más tarde',
-      'auth/network-request-failed':'Sin conexión a internet'
-    };
-    showError('errorMsg', msgs[e.code] || 'Error al iniciar sesión: ' + e.message);
-    setLoading(btn, false);
-  }
-}
-
-document.getElementById('btnLogin').addEventListener('click', login);
-
-// Forgot password
-document.getElementById('forgotLink').addEventListener('click', e => {
+// Recuperar contraseña
+document.getElementById('forgotLink').addEventListener('click',function(e){
   e.preventDefault();
-  document.getElementById('resetEmail').value = document.getElementById('email').value;
+  document.getElementById('resetEmail').value=document.getElementById('email').value;
   document.getElementById('resetOverlay').classList.add('open');
 });
-document.getElementById('resetClose').addEventListener('click', () => {
+document.getElementById('resetClose').addEventListener('click',function(){
   document.getElementById('resetOverlay').classList.remove('open');
 });
-
-document.getElementById('btnReset').addEventListener('click', async () => {
-  const email = document.getElementById('resetEmail').value.trim();
-  if (!email) return;
-  const btn = document.getElementById('btnReset');
-  setLoading(btn, true);
-  try {
-    await sendPasswordResetEmail(auth, email);
-    const msg = document.getElementById('resetMsg');
-    msg.innerHTML = '✅ Enlace enviado. Revisa tu correo.';
-    msg.style.display = 'flex';
-    msg.style.color = 'var(--teal)';
-    setTimeout(() => document.getElementById('resetOverlay').classList.remove('open'), 3000);
-  } catch(e) {
-    showError('resetMsg','No se pudo enviar el enlace');
-  }
-  setLoading(btn, false);
+document.getElementById('btnReset').addEventListener('click',function(){
+  var email=document.getElementById('resetEmail').value.trim();
+  if(!email) return;
+  var btn=document.getElementById('btnReset');
+  btn.disabled=true;
+  _auth.sendPasswordResetEmail(email)
+    .then(function(){
+      var m=document.getElementById('resetMsg');
+      m.textContent='✅ Enlace enviado. Revisa tu correo.';
+      m.style.cssText='display:block;color:var(--teal)';
+      setTimeout(function(){ document.getElementById('resetOverlay').classList.remove('open'); },2500);
+    })
+    .catch(function(){
+      var m=document.getElementById('resetMsg');
+      m.textContent='⚠️ No se pudo enviar. Verifica el correo.';
+      m.style.cssText='display:block;color:var(--red)';
+    })
+    .finally(function(){ btn.disabled=false; });
 });
 </script>
 </body>
