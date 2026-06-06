@@ -221,40 +221,42 @@ body {
   transition: border-color .25s;
 }
 
-.user-info {
-  margin-bottom: 10px;
-}
+.user-info { margin-bottom: 10px; }
 
-.user-name {
+/* renderSidebar uses these classes */
+.clinic-name {
   font-size: .82rem;
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color .25s;
 }
-
-.user-email {
-  font-size: .68rem;
+.clinic-info {
+  font-size: .65rem;
   color: var(--text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 1px;
+  margin-top: 2px;
+  margin-bottom: 6px;
+  transition: color .25s;
 }
-
-.user-role-badge {
+.plan-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: .6rem;
   font-weight: 700;
-  background: var(--teal-dim);
-  color: var(--teal);
   border-radius: 20px;
-  padding: 2px 8px;
-  margin-top: 5px;
+  padding: 2px 9px;
 }
+
+/* Also keep old names as alias */
+.user-name { font-size: .82rem; font-weight: 700; color: var(--text); }
+.user-email { font-size: .65rem; color: var(--text-dim); }
+.user-role-badge { font-size: .6rem; font-weight: 700; background: var(--teal-dim); color: var(--teal); border-radius: 20px; padding: 2px 8px; }
 
 .sidebar-footer .btn {
   font-size: .75rem;
@@ -814,7 +816,7 @@ html[data-theme="light"] .hamburger { background: #fff; border-color: rgba(0,0,0
   .main { margin-left: 0; }
   .hamburger { display: flex !important; }
   .sidebar-overlay { display: none; }
-  .sidebar-overlay.active { display: block; }
+  .sidebar-overlay.open { display: block; }
   .topbar { padding: 0 14px 0 64px; height: 54px; }
   .topbar-title { font-size: 1.1rem; }
   .content { padding: 16px; }
