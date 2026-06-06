@@ -29,10 +29,10 @@
 .badge-red{background:rgba(255,92,92,.12);color:#FF5C5C;border:1px solid rgba(255,92,92,.25)}
 /* Perms grid in modal */
 .perms-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.perm-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.78rem;cursor:pointer;transition:background .12s,border-color .12s;user-select:none}
-.perm-item:hover{background:var(--surface);border-color:var(--teal)}
+.perm-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.78rem;cursor:pointer;transition:background .12s,border-color .12s;user-select:none;box-sizing:border-box}
+.perm-item:hover:not(.disabled-perm){background:var(--surface);border-color:var(--teal)}
 .perm-item.checked{background:rgba(0,194,168,.1);border-color:rgba(0,194,168,.4)}
-.perm-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer;flex-shrink:0}
+.perm-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer;flex-shrink:0;pointer-events:none}
 .perm-item.disabled-perm{opacity:.5;cursor:not-allowed}
 .perm-item.disabled-perm:hover{background:var(--surface2);border-color:var(--border)}
 /* Empty state */
@@ -273,8 +273,8 @@ function renderGrid(){
 function buildPermsGrid(selectedPerms, isAdminRol){
   const isCurrentAdmin = SESSION?.user?.rol === 'admin';
   const grid = document.getElementById('permsGrid');
-  const warn  = document.getElementById('adminWarning');
-  const note  = document.getElementById('adminPermsNote');
+  const warn = document.getElementById('adminWarning');
+  const note = document.getElementById('adminPermsNote');
 
   if(isAdminRol){
     warn.style.display='block';
@@ -289,25 +289,34 @@ function buildPermsGrid(selectedPerms, isAdminRol){
   note.style.display = isCurrentAdmin ? 'block' : 'none';
 
   grid.innerHTML = Object.entries(ALL_PAGES).map(([key,lbl])=>{
-    const checked = selectedPerms.includes(key);
-    const disabled = !isCurrentAdmin; // solo admin puede modificar
-    return `<div class="perm-item ${checked?'checked':''} ${disabled?'disabled-perm':''}"
-      id="perm-item-${key}"
-      onclick="${disabled?'':'togglePerm(\"'+key+'\")'}" >
-      <input type="checkbox" id="perm-${key}" ${checked?'checked':''} ${disabled?'disabled':''}
-        onclick="event.stopPropagation();togglePerm('${key}')">
+    const checked  = selectedPerms.includes(key);
+    const disabled = !isCurrentAdmin;
+    return `<label class="perm-item ${checked?'checked':''} ${disabled?'disabled-perm':''}"
+        for="perm-${key}"
+        id="perm-item-${key}"
+        style="${disabled?'cursor:not-allowed':'cursor:pointer'}">
+      <input type="checkbox"
+        id="perm-${key}"
+        ${checked?'checked':''}
+        ${disabled?'disabled':''}
+        onchange="onPermChange('${key}',this)">
       ${lbl}
-    </div>`;
+    </label>`;
   }).join('');
+}
+
+function onPermChange(key, cb){
+  if(SESSION?.user?.rol!=='admin'){ cb.checked = !cb.checked; return; }
+  const item = document.getElementById('perm-item-'+key);
+  if(item) item.classList.toggle('checked', cb.checked);
 }
 
 function togglePerm(key){
   if(SESSION?.user?.rol!=='admin') return;
   const cb  = document.getElementById('perm-'+key);
-  const item= document.getElementById('perm-item-'+key);
-  if(!cb) return;
+  if(!cb||cb.disabled) return;
   cb.checked = !cb.checked;
-  item.classList.toggle('checked', cb.checked);
+  cb.dispatchEvent(new Event('change'));
 }
 
 function getSelectedPerms(){
