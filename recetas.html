@@ -146,6 +146,9 @@
     <div class="topbar-title">💊 Recetas Médicas</div>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm no-print" onclick="history.back()">← Regresar</button>
+      <button class="btn btn-ghost btn-sm no-print" id="btnCargarUltima" onclick="cargarUltimaReceta()" style="display:none">
+        📂 Última receta
+      </button>
       <button class="btn btn-primary no-print" onclick="generarReceta()">👁 Vista previa e imprimir</button>
     </div>
   </div>
@@ -353,6 +356,7 @@
 <!-- PRINT CONTROLS overlay -->
 <div id="printControls" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;display:none;flex-direction:column;gap:8px" class="no-print">
   <button class="btn btn-primary" style="padding:10px 20px" onclick="window.print()">🖨 Imprimir receta</button>
+  <button class="btn btn-ghost" style="padding:8px 20px" id="btnGuardarRx" onclick="guardarRecetaFirebase()">💾 Guardar en historial</button>
   <button class="btn btn-ghost" style="padding:8px 20px" onclick="cerrarPrevia()">✕ Cerrar vista previa</button>
 </div>
 
@@ -467,8 +471,10 @@ function onPacienteChange(){
   // ── Otros datos ────────────────────────────────────────────
   const dirEl = document.getElementById('r-dir-px');
   if(dirEl) dirEl.value = px.direccion||px.dir||'';
-  const alerEl = document.getElementById('r-alergias');
-  if(alerEl) alerEl.value = px.alergias||px.alergiasConocidas||'';
+  // ── Verificar historial y resetear botón guardar ──────────
+  verificarHistorialPx(sel.value);
+  const btnG = document.getElementById('btnGuardarRx');
+  if(btnG){ btnG.disabled=false; btnG.textContent='Guardar en historial'; btnG.style.color=''; }
 }
 function onDoctorChange(){
   const sel = document.getElementById('r-doctor');
@@ -662,6 +668,158 @@ function cerrarPrevia(){
   document.getElementById('printControls').style.display='none';
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+// ══ GUARDAR RECETA EN FIREBASE ════════════════════════════════
+let _rxGuardadaId = null;
+
+async function guardarRecetaFirebase(){
+  const btn = document.getElementById('btnGuardarRx');
+  const pxSel = document.getElementById('r-paciente').value;
+  const px  = ALL_PXLIST.find(p=>p.id===pxSel);
+  if(!px){ showToast('Selecciona un paciente para guardar','error'); return; }
+
+  // Recolectar medicamentos
+  const meds = [];
+  document.querySelectorAll('#medBody tr').forEach(row=>{
+    const n = row.id.replace('med-row-','');
+    const nomSel   = document.getElementById('med-nombre-'+n)?.value||'';
+    const nomLibre = document.getElementById('med-nombre-libre-'+n)?.value||'';
+    const nombre   = (nomSel==='__otro'||!nomSel) ? nomLibre : nomSel;
+    if(!nombre) return;
+    meds.push({
+      nombre,
+      forma:        document.getElementById('med-forma-'+n)?.value||'',
+      dosis:        document.getElementById('med-dosis-'+n)?.value||'',
+      frecuencia:   document.getElementById('med-freq-'+n)?.value||'',
+      duracion:     document.getElementById('med-dur-'+n)?.value||'',
+      presentacion: document.getElementById('med-pres-'+n)?.value||'',
+      indicaciones: document.getElementById('med-ind-'+n)?.value||'',
+    });
+  });
+  if(!meds.length){ showToast('Agrega al menos un medicamento','error'); return; }
+
+  const docSel = document.getElementById('r-doctor').value;
+  const docObj = ALL_DOCTORES.find(d=>(d.id||d.nombre)===docSel)||{};
+
+  const rxData = {
+    expId:        px.id,
+    paciente:     px.nombre||'',
+    fecha:        document.getElementById('r-fecha').value||todayISO(),
+    doctor:       docObj.nombre||docSel||'',
+    doctorCedula: docObj.cedula||docObj.cedulaProf||'',
+    doctorEsp:    docObj.especialidad||'',
+    diagnostico:  document.getElementById('r-diagnostico').value||'',
+    indicaciones: document.getElementById('r-indicaciones').value||'',
+    validez:      document.getElementById('r-validez').value||'',
+    medicamentos: meds,
+    edad:         document.getElementById('r-edad').value||'',
+    peso:         document.getElementById('r-peso').value||'',
+  };
+
+  if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
+  try{
+    const base = db.collection('clinicas').doc(SESSION.clinica.id).collection('rx');
+    if(_rxGuardadaId){
+      await base.doc(_rxGuardadaId).update({...rxData,
+        actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()});
+      showToast('Receta actualizada en el historial','success');
+    } else {
+      const ref = await base.add({...rxData,
+        creadoEn:     firebase.firestore.FieldValue.serverTimestamp(),
+        actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+      _rxGuardadaId = ref.id;
+      document.getElementById('btnCargarUltima').style.display='inline-flex';
+      showToast('Receta guardada en el historial del paciente','success');
+    }
+    if(btn){ btn.textContent='Guardada'; btn.style.color='var(--teal,#00C2A8)'; btn.disabled=false; }
+  }catch(e){
+    showToast('Error al guardar: '+e.message,'error');
+    if(btn){ btn.disabled=false; btn.textContent='Guardar en historial'; }
+  }
+}
+
+// ══ CARGAR ÚLTIMA RECETA DEL PACIENTE ════════════════════════
+async function cargarUltimaReceta(){
+  const pxId = document.getElementById('r-paciente').value;
+  if(!pxId){ showToast('Selecciona un paciente primero','error'); return; }
+  const btn = document.getElementById('btnCargarUltima');
+  if(btn){ btn.disabled=true; btn.textContent='Cargando...'; }
+  try{
+    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+                         .collection('rx')
+                         .where('expId','==',pxId)
+                         .orderBy('creadoEn','desc')
+                         .limit(1).get();
+    if(snap.empty){
+      showToast('Este paciente no tiene recetas previas','error');
+      if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
+      return;
+    }
+    const rx = snap.docs[0].data();
+    _rxGuardadaId = null; // nueva receta basada en anterior
+
+    // Rellenar campos
+    if(rx.diagnostico)  document.getElementById('r-diagnostico').value = rx.diagnostico;
+    if(rx.indicaciones) document.getElementById('r-indicaciones').value= rx.indicaciones;
+    if(rx.peso)         document.getElementById('r-peso').value         = rx.peso;
+    if(rx.validez){
+      const sv=document.getElementById('r-validez');
+      const ov=Array.from(sv.options).find(o=>o.value===rx.validez);
+      if(ov) sv.value=rx.validez;
+    }
+    if(rx.doctor){
+      const sd=document.getElementById('r-doctor');
+      const od=Array.from(sd.options).find(o=>o.text.includes(rx.doctor.split(' ')[0])||o.value===rx.doctor);
+      if(od){ sd.value=od.value; onDoctorChange(); }
+    }
+    // Medicamentos
+    document.getElementById('medBody').innerHTML='';
+    medCount=0;
+    const medsRx = rx.medicamentos||[];
+    if(medsRx.length){
+      medsRx.forEach((med,i)=>{
+        addMed(med.nombre);
+        const n=medCount;
+        setTimeout(()=>{
+          const setVal=(id,v)=>{ const el=document.getElementById(id); if(el&&v) el.value=v; };
+          setVal('med-dosis-'+n, med.dosis);
+          setVal('med-pres-'+n,  med.presentacion);
+          setVal('med-ind-'+n,   med.indicaciones);
+          const setSelect=(id,v)=>{ const s=document.getElementById(id); if(s&&v){ const o=Array.from(s.options).find(o=>o.value===v); if(o) s.value=v; } };
+          setSelect('med-forma-'+n, med.forma);
+          setSelect('med-freq-'+n,  med.frecuencia);
+          setSelect('med-dur-'+n,   med.duracion);
+        }, 60*i);
+      });
+    } else { addMed(); }
+
+    // Fecha = hoy (receta nueva)
+    document.getElementById('r-fecha').value = todayISO();
+    const rxFecha = rx.fecha ? new Date(rx.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}) : 'anterior';
+    showToast('Receta del '+rxFecha+' cargada. Modifica y guarda como nueva','success');
+    if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
+  }catch(e){
+    showToast('Error al cargar: '+e.message,'error');
+    if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
+  }
+}
+
+// ══ VERIFICAR SI EL PACIENTE TIENE HISTORIAL ═════════════════
+async function verificarHistorialPx(pxId){
+  _rxGuardadaId = null;
+  const btn = document.getElementById('btnCargarUltima');
+  if(!btn) return;
+  if(!pxId){ btn.style.display='none'; return; }
+  try{
+    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+                         .collection('rx')
+                         .where('expId','==',pxId)
+                         .limit(1).get();
+    btn.style.display = snap.empty ? 'none' : 'inline-flex';
+  }catch(e){ btn.style.display='none'; }
+}
+
+
 function limpiarReceta(){
   ['r-paciente','r-doctor','r-edad','r-peso','r-dir-px','r-alergias','r-diagnostico','r-indicaciones'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
@@ -674,6 +832,12 @@ function limpiarReceta(){
   medCount=0;
   addMed();
   cerrarPrevia();
+  // Resetear estado de guardado
+  _rxGuardadaId = null;
+  const btnG = document.getElementById('btnGuardarRx');
+  if(btnG){ btnG.disabled=false; btnG.textContent='Guardar en historial'; btnG.style.color=''; }
+  const btnC = document.getElementById('btnCargarUltima');
+  if(btnC) btnC.style.display='none';
 }
 </script>
 </body>
