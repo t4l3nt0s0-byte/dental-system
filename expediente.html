@@ -139,6 +139,7 @@
               <button class="btn btn-ghost btn-sm" id="btnCotizar">📝 Generar cotización</button>
               <button class="btn btn-ghost btn-sm" id="btnWA">💬 WhatsApp</button>
               <button class="btn btn-ghost btn-sm" id="btnOdo">🦷 Ver odontograma</button>
+              <button class="btn btn-ghost btn-sm" id="btnReceta" style="color:var(--teal);border-color:rgba(0,194,168,.35)">💊 Receta médica</button>
             </div>
           </div>
         </div>
@@ -154,6 +155,7 @@
             <button class="tab" onclick="showTab('odontograma')">🦷 Odontograma</button>
             <button class="tab" onclick="showTab('rx')">📷 RX / Imágenes</button>
             <button class="tab" onclick="showTab('notas')">📝 Notas clínicas</button>
+            <button class="tab" id="tabBtnRecetas" onclick="showTab('recetas')">💊 Recetas</button>
           </div>
 
           <!-- TAB: RESUMEN -->
@@ -240,6 +242,15 @@
               <button onclick="openModalNota()">+ Nueva nota</button>
             </div>
             <div id="notasList"></div>
+          </div>
+
+          <!-- TAB: RECETAS MÉDICAS -->
+          <div class="tab-panel" id="tab-recetas">
+            <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+              <span>💊 Recetas médicas</span>
+              <button class="btn btn-primary btn-sm" id="btnNuevaReceta">+ Nueva receta</button>
+            </div>
+            <div id="recetasList"></div>
           </div>
 
         </div>
@@ -421,13 +432,22 @@ function renderPerfil(px) {
   document.getElementById('pAvatar').textContent = initials;
   document.getElementById('pNombre').textContent = px.nombre||'Sin nombre';
   document.getElementById('pExp').textContent = px.expediente||PX_ID;
+  // Peso
+  const pesoStr = px.peso ? px.peso+' kg' : '—';
+  // Tel familiar
+  const telFamStr = px.telFamiliar||px.telefonoFamiliar||'—';
+  const nomFamStr = px.nombreFamiliar||px.familiar||'';
+  const telFamLabel = nomFamStr ? '📞 Tel. '+nomFamStr.split(' ')[0] : '📞 Tel. familiar';
+
   const rows = [
-    ['👤 Género', px.genero||'—'],
-    ['🎂 Edad', edad ? edad+' años' : '—'],
-    ['📱 Teléfono', px.tel||'—'],
-    ['✉️ Correo', px.email||'—'],
-    ['🩸 Sangre', px.sangre||'—'],
-    ['📅 Alta', px.alta||'—'],
+    ['👤 Género',         px.genero||'—'],
+    ['🎂 Edad',           edad ? edad+' años' : '—'],
+    ['⚖️ Peso',           pesoStr],
+    ['📱 Teléfono',       px.tel||'—'],
+    [telFamLabel,         telFamStr],
+    ['✉️ Correo',         px.email||'—'],
+    ['🩸 Sangre',         px.sangre||'—'],
+    ['📅 Alta',           px.alta||'—'],
   ];
   let html = rows.map(([l,v])=>`<div class="perfil-row"><span class="perfil-label">${l}</span><span class="perfil-val">${v}</span></div>`).join('');
   if (px.alergias && px.alergias !== 'Ninguna') {
@@ -446,11 +466,75 @@ function renderBotones(px) {
   document.getElementById('btnCotizar').onclick = ()=>window.location.href=`cotizacion.html`;
   document.getElementById('btnOdo').onclick = ()=>window.location.href=`odontograma.html?px=${PX_ID}`;
   document.getElementById('linkOdoCompleto').href = `odontograma.html?px=${PX_ID}`;
+  // Receta: abre recetas.html con paciente prellenado
+  const recetaUrl = `recetas.html?pxId=${PX_ID}&paciente=${encodeURIComponent(px.nombre||'')}`;
+  document.getElementById('btnReceta').onclick = ()=>window.location.href=recetaUrl;
+  document.getElementById('btnNuevaReceta').onclick = ()=>window.location.href=recetaUrl;
   if (px.tel) {
     document.getElementById('btnWA').onclick = ()=>whatsapp(px.tel, `Hola ${px.nombre?.split(' ')[0]||''}, le contactamos de Hersantych Dental.`);
   } else {
     document.getElementById('btnWA').disabled = true;
     document.getElementById('btnWA').style.opacity = '.4';
+  }
+}
+
+// ── RENDER RECETAS DEL PACIENTE ───────────────────────────────
+async function renderRecetas(){
+  const el = document.getElementById('recetasList');
+  if(!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:.8rem">Cargando recetas...</div>';
+  try{
+    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+                         .collection('rx')
+                         .where('expId','==',PX_ID)
+                         .get();
+    if(snap.empty){
+      el.innerHTML=`<div class="rx-empty">💊 Sin recetas registradas<br><small style="opacity:.6">Al emitir una receta desde esta página quedará guardada aquí</small></div>`;
+      return;
+    }
+    // Ordenar en cliente — más reciente primero
+    const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    docs.sort((a,b)=>{
+      const ta=a.creadoEn?.toDate?.()?.getTime()||new Date(a.fecha||'2000-01-01').getTime();
+      const tb=b.creadoEn?.toDate?.()?.getTime()||new Date(b.fecha||'2000-01-01').getTime();
+      return tb-ta;
+    });
+    el.innerHTML = docs.map((rx,i)=>{
+      const fechaStr = rx.fecha ? new Date(rx.fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : '—';
+      const meds = (rx.medicamentos||[]);
+      const medNames = meds.slice(0,3).map(m=>m.nombre||'').filter(Boolean).join(', ');
+      const masStr = meds.length>3 ? ` +${meds.length-3} más` : '';
+      return `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px${i===0?';border-color:rgba(0,194,168,.35)':''}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              ${i===0?'<span style="font-size:.58rem;font-weight:800;letter-spacing:.1em;background:rgba(0,194,168,.15);color:var(--teal);border-radius:4px;padding:1px 7px">ÚLTIMA</span>':''}
+              <span style="font-size:.75rem;font-weight:700;color:var(--text)">📅 ${fechaStr}</span>
+              ${rx.doctor?`<span style="font-size:.72rem;color:var(--text-muted)">· ${rx.doctor.split(' ').slice(0,3).join(' ')}</span>`:''}
+            </div>
+            ${rx.diagnostico?`<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">🩺 ${rx.diagnostico}</div>`:''}
+            ${medNames?`<div style="font-size:.72rem;color:var(--teal)">💊 ${medNames}${masStr}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem"
+              onclick="window.location.href='recetas.html?pxId=${PX_ID}&paciente=${encodeURIComponent(rx.paciente||'')}' ">
+              + Nueva receta
+            </button>
+          </div>
+        </div>
+        ${meds.length?`
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px">
+          ${meds.map(m=>`
+          <div style="display:flex;align-items:baseline;gap:8px;font-size:.72rem">
+            <span style="font-weight:700;color:var(--text);min-width:120px">${m.nombre||'—'}</span>
+            <span style="color:var(--text-muted)">${[m.forma,m.dosis,m.frecuencia,m.duracion].filter(Boolean).join(' · ')}</span>
+          </div>`).join('')}
+        </div>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML=`<div class="rx-empty" style="color:var(--red)">Error al cargar recetas: ${e.message}</div>`;
   }
 }
 
@@ -614,6 +698,8 @@ function renderNotas(notas) {
 window.showTab = function(name) {
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',t.getAttribute('onclick').includes("'"+name+"'")));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  // Cargar recetas al abrir su tab (lazy load)
+  if(name==='recetas') renderRecetas();
 };
 
 // ── RX CRUD ──────────────────────────────────────────────────
