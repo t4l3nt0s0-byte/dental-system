@@ -380,7 +380,6 @@ async function saveUser(){
   try{
     if(editId){
       // ── EDITAR usuario existente ─────────────────────────────
-      // El admin edita directamente con el db principal
       await db.collection('usuarios').doc(editId).update({
         nombre, rol, activo, permisos,
         actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
@@ -395,20 +394,21 @@ async function saveUser(){
         return;
       }
 
-      // 1. Crear cuenta en Firebase Auth usando app secundaria
-      //    (evita cerrar sesión del admin actual)
-      const appName   = 'secondary_'+Date.now();
-      const secondApp = firebase.initializeApp(firebase.app().options, appName);
+      // Usar la config que ya existe en shared.js (app 'dental')
+      // No usar firebase.app() porque busca '[DEFAULT]' que no existe
+      const appName   = 'usr_tmp_'+Date.now();
+      const mainApp   = firebase.app('dental'); // la app principal nombrada
+      const secondApp = firebase.initializeApp(mainApp.options, appName);
       const secondAuth= secondApp.auth();
       const secondDb  = secondApp.firestore();
 
-      let newUid = null;
       try{
-        const cred = await secondAuth.createUserWithEmailAndPassword(email, pass);
-        newUid = cred.user.uid;
+        // 1. Crear cuenta Auth con la app secundaria (no cierra sesión del admin)
+        const cred  = await secondAuth.createUserWithEmailAndPassword(email, pass);
+        const newUid = cred.user.uid;
 
-        // 2. Escribir doc de usuario con secondDb
-        //    (request.auth = nuevo usuario → request.auth.uid == uid → regla cumplida)
+        // 2. Escribir doc del usuario con secondDb
+        //    (request.auth.uid == newUid → regla cumplida)
         await secondDb.collection('usuarios').doc(newUid).set({
           nombre, email, rol, activo, permisos,
           clinicaId: SESSION.clinica.id,
@@ -417,9 +417,9 @@ async function saveUser(){
         showToast('Usuario creado correctamente','success');
 
       } finally {
-        // 3. Limpiar siempre: cerrar sesión del nuevo user y destruir app secundaria
+        // 3. Siempre limpiar la app secundaria
         try{ await secondAuth.signOut(); }catch(_){}
-        try{ await secondApp.delete(); }catch(_){}
+        try{ await secondApp.delete();   }catch(_){}
       }
     }
 
@@ -430,9 +430,9 @@ async function saveUser(){
     console.error('saveUser error:', e);
     const msgs = {
       'auth/email-already-in-use': 'Ese correo ya está en uso',
-      'auth/weak-password':        'La contraseña es muy débil (mínimo 6 caracteres)',
-      'auth/invalid-email':        'El correo no es válido',
-      'permission-denied':         'Sin permisos — verifica las reglas de Firestore',
+      'auth/weak-password':        'Contraseña muy débil (mínimo 6 caracteres)',
+      'auth/invalid-email':        'El correo electrónico no es válido',
+      'permission-denied':         'Sin permisos — actualiza las reglas en Firebase Console',
     };
     showToast(msgs[e.code] || msgs[e.message] || 'Error: '+e.message, 'error');
   }
