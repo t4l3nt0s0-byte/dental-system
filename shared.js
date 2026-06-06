@@ -304,6 +304,7 @@ async function initSession(requiredPage) {
 
               if (typeof applyTema === 'function') applyTema(clinicaData.tema, clinicaData.colorPrimario);
               if (typeof renderSidebar === 'function') renderSidebar();
+              if (typeof setFavicon === 'function') setFavicon();
               if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
 
               resolve(SESSION);
@@ -323,6 +324,32 @@ async function initSession(requiredPage) {
 
 
 
+
+// ── FAVICON DIENTE ──────────────────────────────────────────
+function setFavicon() {
+  // Remove existing favicons
+  document.querySelectorAll('link[rel*="icon"]').forEach(l=>l.remove());
+  const link = document.createElement('link');
+  link.rel  = 'icon';
+  link.type = 'image/svg+xml';
+  link.href = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwNjBEMTQiLz4KICA8IS0tIE11ZWxhIGVzdGlsaXphZGEgLS0+CiAgPHBhdGggZD0iTTIwIDE4IEMyMCAxNCAyNCAxMiAyOCAxMiBDMzAgMTIgMzEgMTMgMzIgMTQgQzMzIDEzIDM0IDEyIDM2IDEyIEM0MCAxMiA0NCAxNCA0NCAxOCBDNDQgMjIgNDIgMjQgNDEgMjYgQzQwIDI5IDQwIDMyIDM5IDM2IEMzOCA0MCAzNyA0NCAzNSA0NiBDMzQgNDggMzMgNDggMzIgNDcgQzMxIDQ4IDMwIDQ4IDI5IDQ2IEMyNyA0NCAyNiA0MCAyNSAzNiBDMjQgMzIgMjQgMjkgMjMgMjYgQzIyIDI0IDIwIDIyIDIwIDE4WiIgZmlsbD0iIzAwQzJBOCIvPgogIDwhLS0gSGlnaGxpZ2h0IHN1cGVyaW9yIC0tPgogIDxwYXRoIGQ9Ik0yNyAxNCBDMjkgMTMgMzEgMTMgMzIgMTQgQzMxIDE1IDI5IDE1IDI3IDE0WiIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjMpIi8+CiAgPCEtLSBMw61uZWEgY2VudHJhbCBzdXRpbCAtLT4KICA8bGluZSB4MT0iMzIiIHkxPSIxNiIgeDI9IjMyIiB5Mj0iMzgiIHN0cm9rZT0icmdiYSgwLDAsMCwwLjE1KSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=';
+  document.head.appendChild(link);
+  // Fallback para Safari (png 32x32 canvas)
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width=32; canvas.height=32;
+    const ctx=canvas.getContext('2d');
+    const img=new Image();
+    img.onload=()=>{
+      ctx.drawImage(img,0,0,32,32);
+      const png=document.createElement('link');
+      png.rel='icon'; png.type='image/png'; png.sizes='32x32';
+      png.href=canvas.toDataURL('image/png');
+      document.head.appendChild(png);
+    };
+    img.src=link.href;
+  }catch(e){}
+}
 
 function renderSidebar() {
   if (!SESSION) return;
