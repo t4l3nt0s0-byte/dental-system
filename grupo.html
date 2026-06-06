@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DentalOS · Dashboard del Grupo</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.grp-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.grp-kpi{border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:transform .15s}
+.grp-kpi:hover{transform:translateY(-2px)}
+.grp-kpi-icon{font-size:1.5rem;flex-shrink:0}
+.grp-kpi-val{font-family:var(--font-mono);font-size:1.6rem;font-weight:800;line-height:1}
+.grp-kpi-lbl{font-size:.6rem;font-weight:600;opacity:.72;margin-top:3px}
+.suc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:18px}
+.suc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:box-shadow .15s}
+.suc-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.15)}
+.suc-card-head{padding:14px 16px 10px;border-bottom:1px solid var(--border)}
+.suc-card-name{font-size:.95rem;font-weight:700;color:var(--text)}
+.suc-card-loc{font-size:.72rem;color:var(--text-muted);margin-top:2px}
+.suc-card-body{padding:12px 16px}
+.suc-stat-row{display:flex;align-items:center;justify-content:space-between;font-size:.78rem;padding:4px 0;border-bottom:1px solid var(--border)}
+.suc-stat-row:last-child{border-bottom:none}
+.suc-stat-lbl{color:var(--text-muted)}
+.suc-stat-val{font-family:var(--font-mono);font-weight:700;color:var(--text)}
+.suc-card-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.badge-plan{font-size:.58rem;font-weight:700;border-radius:20px;padding:2px 8px}
+.tab{background:none;border:none;padding:8px 14px;cursor:pointer;font-size:.78rem;color:var(--text-muted);border-bottom:2px solid transparent;transition:all .15s}
+.tab.active{color:var(--teal);border-bottom-color:var(--teal);font-weight:700}
+.tab-content{display:none}.tab-content.active{display:block}
+.ranking-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ranking-row:last-child{border-bottom:none}
+.ranking-num{font-family:var(--font-mono);font-size:.75rem;font-weight:800;color:var(--teal);min-width:20px}
+.ranking-bar-wrap{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.ranking-bar{height:100%;background:var(--teal);border-radius:3px;transition:width .5s}
+.ds-table{width:100%;border-collapse:collapse}
+.ds-table thead th{padding:8px 12px;font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border);text-align:left}
+.ds-table tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+.ds-table tbody tr:last-child{border-bottom:none}
+.ds-table tbody tr:hover{background:var(--surface2)}
+.ds-table td{padding:10px 12px;font-size:.8rem;vertical-align:middle}
+.selector-suc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:.8rem;outline:none;cursor:pointer}
+.selector-suc:focus{border-color:var(--teal)}
+@media(max-width:900px){.grp-kpi-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grp-kpi-grid{grid-template-columns:1fr 1fr};.suc-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🏢 Dashboard del Grupo</div>
+    <div class="topbar-actions">
+      <select class="selector-suc" id="selectorSuc" onchange="onSucursalChange(this.value)">
+        <option value="">Todas las sucursales</option>
+      </select>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- KPIs consolidados -->
+    <div class="grp-kpi-grid" id="kpiGrid">
+      <div class="grp-kpi" style="background:rgba(74,158,255,.12);border:1.5px solid rgba(74,158,255,.25)">
+        <div class="grp-kpi-icon">🏥</div>
+        <div><div class="grp-kpi-val" style="color:#4A9EFF" id="kSucursales">—</div><div class="grp-kpi-lbl" style="color:#4A9EFF">Sucursales activas</div></div>
+      </div>
+      <div class="grp-kpi" style="background:rgba(0,194,168,.12);border:1.5px solid rgba(0,194,168,.25)">
+        <div class="grp-kpi-icon">📅</div>
+        <div><div class="grp-kpi-val" style="color:var(--teal)" id="kCitasHoy">—</div><div class="grp-kpi-lbl" style="color:var(--teal)">Citas hoy (grupo)</div></div>
+      </div>
+      <div class="grp-kpi" style="background:rgba(52,211,153,.12);border:1.5px solid rgba(52,211,153,.25)">
+        <div class="grp-kpi-icon">💰</div>
+        <div><div class="grp-kpi-val" style="color:#34D399" id="kIngresosHoy">—</div><div class="grp-kpi-lbl" style="color:#34D399">Ingresos hoy</div></div>
+      </div>
+      <div class="grp-kpi" style="background:rgba(244,185,66,.12);border:1.5px solid rgba(244,185,66,.25)">
+        <div class="grp-kpi-icon">👤</div>
+        <div><div class="grp-kpi-val" style="color:#F4B942" id="kPacientes">—</div><div class="grp-kpi-lbl" style="color:#F4B942">Pacientes totales</div></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px">
+      <button class="tab active" onclick="showGTab('sucursales')">🏥 Sucursales</button>
+      <button class="tab" onclick="showGTab('ranking')">📊 Ranking</button>
+      <button class="tab" onclick="showGTab('doctores')">👨‍⚕️ Doctores</button>
+      <button class="tab" onclick="showGTab('alertas')">🔔 Alertas</button>
+    </div>
+
+    <!-- Tab: Sucursales -->
+    <div class="tab-content active" id="gtab-sucursales">
+      <div class="suc-grid" id="sucGrid">
+        <div style="text-align:center;padding:40px;color:var(--text-dim);grid-column:1/-1">⏳ Cargando sucursales...</div>
+      </div>
+    </div>
+
+    <!-- Tab: Ranking -->
+    <div class="tab-content" id="gtab-ranking">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px">📊 Ranking por ingresos del mes</div>
+        <div id="rankingList" style="color:var(--text-dim);font-size:.8rem;text-align:center;padding:20px">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Tab: Doctores -->
+    <div class="tab-content" id="gtab-doctores">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <table class="ds-table">
+          <thead><tr>
+            <th>Doctor</th>
+            <th>Sucursal</th>
+            <th>Citas hoy</th>
+            <th>Estado</th>
+          </tr></thead>
+          <tbody id="doctoresTable">
+            <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Alertas -->
+    <div class="tab-content" id="gtab-alertas">
+      <div id="alertasList" style="display:flex;flex-direction:column;gap:8px">
+        <div style="text-align:center;padding:40px;color:var(--text-dim)">Cargando alertas...</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'grupo';
+
+let ALL_CLINICAS = [], ALL_DATA = {};
+const TODAY = new Date().toISOString().split('T')[0];
+
+// ── INIT ──────────────────────────────────────────────────────
+initSession('any').then(async session => {
+  if (!session) return;
+  const rol = session.user.rol;
+  if (rol !== 'owner' && rol !== 'director' && rol !== 'admin') {
+    window.location.replace('index.html'); return;
+  }
+  await loadAllData();
+});
+
+// ── LOAD DATA ─────────────────────────────────────────────────
+async function loadAllData(){
+  try {
+    // 1. Obtener clínicas del grupo
+    const orgId = SESSION.user.orgId || SESSION.clinica.id;
+    let snap;
+    try {
+      snap = await db.collection('clinicas').where('orgId','==',orgId).get();
+    } catch(e) {
+      // Fallback: si solo hay una clínica (sin orgId aún)
+      snap = { docs: [{ id: SESSION.clinica.id, data: ()=>SESSION.clinica }] };
+    }
+    ALL_CLINICAS = snap.docs ? snap.docs.map(d=>({id:d.id,...d.data()})) : [];
+    if (!ALL_CLINICAS.length) {
+      ALL_CLINICAS = [Object.assign({id:SESSION.clinica.id},SESSION.clinica)];
+    }
+
+    // Populate selector
+    const sel = document.getElementById('selectorSuc');
+    ALL_CLINICAS.forEach(c=>{
+      const opt=document.createElement('option');
+      opt.value=c.id; opt.textContent=c.nombre||c.id;
+      sel.appendChild(opt);
+    });
+
+    // 2. Cargar datos de cada clínica en paralelo
+    await Promise.all(ALL_CLINICAS.map(c=>loadClinicaData(c)));
+
+    // 3. Renderizar todo
+    renderKPIs();
+    renderSucursales();
+    renderRanking();
+    renderDoctores();
+    renderAlertas();
+
+  } catch(e) {
+    console.error('loadAllData:', e);
+    showToast('Error cargando datos: '+e.message,'error');
+  }
+}
+
+async function loadClinicaData(clinica) {
+  const id = clinica.id;
+  try {
+    const base = db.collection('clinicas').doc(id);
+    const [citasSnap, abonosSnap, pxSnap, docSnap] = await Promise.all([
+      base.collection('citas').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
+      base.collection('abonos').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
+      base.collection('pacientes').get().catch(()=>({docs:[]})),
+      base.collection('doctores').get().catch(()=>({docs:[]})),
+    ]);
+    const ingresosHoy = abonosSnap.docs.reduce((s,d)=>s+(d.data().monto||0),0);
+    const citasHoy    = citasSnap.docs.length;
+    const completadas = citasSnap.docs.filter(d=>d.data().estado==='Completado').length;
+    const enConsulta  = citasSnap.docs.filter(d=>d.data().estado==='En tratamiento').length;
+    const pacientes   = pxSnap.docs.length;
+    const doctores    = docSnap.docs.map(d=>({id:d.id,...d.data()}));
+    ALL_DATA[id] = { ingresosHoy, citasHoy, completadas, enConsulta, pacientes, doctores, clinica };
+  } catch(e) {
+    ALL_DATA[id] = { ingresosHoy:0, citasHoy:0, completadas:0, enConsulta:0, pacientes:0, doctores:[], clinica };
+  }
+}
+
+// ── RENDER KPIs ───────────────────────────────────────────────
+function renderKPIs() {
+  const totSuc   = ALL_CLINICAS.length;
+  const totCitas = Object.values(ALL_DATA).reduce((s,d)=>s+d.citasHoy,0);
+  const totIng   = Object.values(ALL_DATA).reduce((s,d)=>s+d.ingresosHoy,0);
+  const totPx    = Object.values(ALL_DATA).reduce((s,d)=>s+d.pacientes,0);
+  document.getElementById('kSucursales').textContent  = totSuc;
+  document.getElementById('kCitasHoy').textContent    = totCitas;
+  document.getElementById('kIngresosHoy').textContent = fmtMXN(totIng);
+  document.getElementById('kPacientes').textContent   = totPx;
+}
+
+// ── RENDER SUCURSALES ─────────────────────────────────────────
+function renderSucursales(filtroId='') {
+  const grid   = document.getElementById('sucGrid');
+  const list   = filtroId ? ALL_CLINICAS.filter(c=>c.id===filtroId) : ALL_CLINICAS;
+  const planColors = {'trial':'#9CA3AF','basico':'#4A9EFF','profesional':'#00C2A8','premium':'#F4B942','multi-3':'#a078ff','multi-10':'#FF8C00','enterprise':'#E24B4A'};
+  if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-dim)">Sin sucursales</div>'; return; }
+  grid.innerHTML = list.map(c=>{
+    const d = ALL_DATA[c.id]||{};
+    const plan = c.plan||'basico';
+    const planNombre = PLANES[plan]?.nombre||plan;
+    const planColor  = planColors[plan]||'#4A9EFF';
+    const isCurrent  = c.id === SESSION.clinica.id;
+    return `<div class="suc-card" style="${isCurrent?'border-color:var(--teal)':''}">
+      <div class="suc-card-head">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="suc-card-name">${c.nombre||'Sucursal'}</div>
+            <div class="suc-card-loc">📍 ${c.ciudad||'—'} ${c.direccion?'· '+c.direccion:''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="badge-plan" style="background:${planColor}22;color:${planColor};border:1px solid ${planColor}44">${planNombre}</span>
+            ${isCurrent?'<span style="font-size:.58rem;color:var(--teal);font-weight:700">● Activa</span>':''}
+          </div>
+        </div>
+      </div>
+      <div class="suc-card-body">
+        <div class="suc-stat-row"><span class="suc-stat-lbl">📅 Citas hoy</span><span class="suc-stat-val">${d.citasHoy||0}</span></div>
+        <div class="suc-stat-row"><span class="suc-stat-lbl">🩺 En consulta</span><span class="suc-stat-val">${d.enConsulta||0}</span></div>
+        <div class="suc-stat-row"><span class="suc-stat-lbl">✅ Completadas</span><span class="suc-stat-val">${d.completadas||0}</span></div>
+        <div class="suc-stat-row"><span class="suc-stat-lbl">💰 Ingresos hoy</span><span class="suc-stat-val">${fmtMXN(d.ingresosHoy||0)}</span></div>
+        <div class="suc-stat-row"><span class="suc-stat-lbl">👤 Pacientes</span><span class="suc-stat-val">${d.pacientes||0}</span></div>
+        <div class="suc-stat-row"><span class="suc-stat-lbl">👨‍⚕️ Doctores</span><span class="suc-stat-val">${(d.doctores||[]).length}</span></div>
+      </div>
+      <div class="suc-card-foot">
+        ${!isCurrent?`<button class="btn btn-primary btn-sm" onclick="switchSucursal('${c.id}')">→ Ir a esta sucursal</button>`:'<span style="font-size:.72rem;color:var(--teal);padding:4px 0">✓ Sucursal actual</span>'}
+        <a href="metricas.html" class="btn btn-ghost btn-sm" style="font-size:.7rem" onclick="switchSucursal('${c.id}');return false">📈 Métricas</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER RANKING ────────────────────────────────────────────
+function renderRanking() {
+  const el = document.getElementById('rankingList');
+  const sorted = [...ALL_CLINICAS].sort((a,b)=>(ALL_DATA[b.id]?.ingresosHoy||0)-(ALL_DATA[a.id]?.ingresosHoy||0));
+  const max    = Math.max(1,...sorted.map(c=>ALL_DATA[c.id]?.ingresosHoy||0));
+  el.innerHTML = sorted.map((c,i)=>{
+    const d = ALL_DATA[c.id]||{};
+    const pct = Math.round(((d.ingresosHoy||0)/max)*100);
+    const medals=['🥇','🥈','🥉'];
+    return `<div class="ranking-row">
+      <span class="ranking-num">${medals[i]||('#'+(i+1))}</span>
+      <span style="font-size:.82rem;font-weight:600;min-width:140px;color:var(--text)">${c.nombre||c.id}</span>
+      <div class="ranking-bar-wrap"><div class="ranking-bar" style="width:${pct}%"></div></div>
+      <span style="font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--teal);min-width:80px;text-align:right">${fmtMXN(d.ingresosHoy||0)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER DOCTORES ───────────────────────────────────────────
+function renderDoctores() {
+  const tbody = document.getElementById('doctoresTable');
+  const rows  = [];
+  ALL_CLINICAS.forEach(c=>{
+    const d = ALL_DATA[c.id]||{};
+    (d.doctores||[]).forEach(doc=>{
+      rows.push({clinica:c.nombre||c.id,clinicaId:c.id,doc});
+    });
+  });
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px">Sin doctores registrados</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r=>{
+    const ini=(r.doc.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('');
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div style="width:28px;height:28px;border-radius:50%;background:${r.doc.color||'var(--teal)'};display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#fff;flex-shrink:0">${ini}</div>
+        <div><div style="font-size:.82rem;font-weight:600">${r.doc.nombre||'—'}</div><div style="font-size:.65rem;color:var(--text-dim)">${r.doc.especialidad||'Dentista'}</div></div>
+      </div></td>
+      <td style="font-size:.78rem">${r.clinica}</td>
+      <td style="text-align:center;font-family:var(--font-mono);font-size:.8rem">—</td>
+      <td><span style="font-size:.68rem;font-weight:700;background:rgba(52,211,153,.12);color:#34D399;border-radius:4px;padding:2px 7px">✅ Activo</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER ALERTAS ────────────────────────────────────────────
+function renderAlertas() {
+  const el     = document.getElementById('alertasList');
+  const alerts = [];
+  ALL_CLINICAS.forEach(c=>{
+    const d = ALL_DATA[c.id]||{};
+    if((d.ingresosHoy||0)===0 && (d.citasHoy||0)>0)
+      alerts.push({tipo:'warning',msg:`${c.nombre}: tiene ${d.citasHoy} citas hoy sin ingresos registrados`,clinica:c.id});
+    if((d.doctores||[]).length===0)
+      alerts.push({tipo:'error',msg:`${c.nombre}: sin doctores registrados`,clinica:c.id});
+    if((d.pacientes||0)<5)
+      alerts.push({tipo:'info',msg:`${c.nombre}: solo ${d.pacientes} paciente(s) — sucursal recién iniciada`,clinica:c.id});
+  });
+  if(!alerts.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;font-size:.85rem;color:var(--text-dim)">✅ Sin alertas · Todo el grupo opera normalmente</div>';
+    return;
+  }
+  const colores={warning:'rgba(244,185,66,.12)',error:'rgba(255,92,92,.12)',info:'rgba(74,158,255,.12)'};
+  const textCol={warning:'#F4B942',error:'#FF5C5C',info:'#4A9EFF'};
+  const icons  ={warning:'⚠️',error:'🔴',info:'ℹ️'};
+  el.innerHTML = alerts.map(a=>`
+    <div style="background:${colores[a.tipo]};border:1px solid ${textCol[a.tipo]}44;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.1rem">${icons[a.tipo]}</span>
+      <span style="font-size:.8rem;color:var(--text);flex:1">${a.msg}</span>
+      <button class="btn btn-ghost btn-sm" style="font-size:.68rem" onclick="switchSucursal('${a.clinica}')">Ir →</button>
+    </div>`).join('');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function showGTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.textContent.toLowerCase().includes(name.split('-')[0])));
+  document.querySelectorAll('.tab-content').forEach(p=>p.classList.toggle('active', p.id==='gtab-'+name));
+}
+function onSucursalChange(id) {
+  renderSucursales(id);
+}
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Hersantych Dental · Crear cuenta</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -363,7 +363,8 @@ async function registrar() {
     // 3. Crear usuario
     await dentalDB.collection('usuarios').doc(uid).set({
       nombre: nombre, email: email, rol: 'admin',
-      clinicaId: cId, activo: true,
+      clinicaId: cId, orgId: cId,  // orgId = clinicaId para cuenta nueva
+      activo: true,
       creadoEn: firebase.firestore.FieldValue.serverTimestamp()
     });
 

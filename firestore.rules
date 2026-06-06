@@ -2,39 +2,70 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helpers ───────────────────────────────────────────────
+    // ── Helpers ────────────────────────────────────────────────
+    function authed() {
+      return request.auth != null;
+    }
+    function myData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+    function myRol() {
+      return myData().rol;
+    }
+    function myOrgId() {
+      return myData().orgId;
+    }
+    function myClinicaId() {
+      return myData().clinicaActiva != null ? myData().clinicaActiva : myData().clinicaId;
+    }
+
+    // Pertenece a esta clínica (por clinicaId o por orgId siendo owner/director)
     function belongsToClinica(clinicaId) {
-      return request.auth != null &&
-        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.clinicaId == clinicaId;
+      return authed() && (
+        myClinicaId() == clinicaId ||
+        (myRol() == 'owner'    && myOrgId() == get(/databases/$(database)/documents/clinicas/$(clinicaId)).data.orgId) ||
+        (myRol() == 'director' && clinicaId in myData().sucursales)
+      );
     }
-    function isAdmin() {
-      return request.auth != null &&
-        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
-    }
+
+    // Es admin o superior de esta clínica
     function isAdminOf(clinicaId) {
-      return belongsToClinica(clinicaId) && isAdmin();
+      return authed() && (
+        myRol() == 'owner'    ||
+        myRol() == 'director' ||
+        (myRol() == 'admin' && myClinicaId() == clinicaId)
+      );
     }
 
-    // ── Usuarios ──────────────────────────────────────────────
-    // Crear: propio uid ó admin autenticado (para que admin pueda crear usuarios)
+    // Es owner de la organización
+    function isOwnerOfOrg(orgId) {
+      return authed() && myRol() == 'owner' && myOrgId() == orgId;
+    }
+
+    // ── Organizaciones ──────────────────────────────────────────
+    match /organizaciones/{orgId} {
+      allow read:   if authed() && myOrgId() == orgId;
+      allow create: if authed();
+      allow update: if isOwnerOfOrg(orgId);
+      allow delete: if isOwnerOfOrg(orgId);
+    }
+
+    // ── Usuarios ───────────────────────────────────────────────
     match /usuarios/{uid} {
-      allow read:   if request.auth != null;
-      allow create: if request.auth != null &&
-                       (request.auth.uid == uid || isAdmin());
-      allow update: if request.auth != null &&
-                       (request.auth.uid == uid || isAdmin());
-      allow delete: if isAdmin();
+      allow read:   if authed();
+      allow create: if authed() && (request.auth.uid == uid || myRol() == 'admin' || myRol() == 'owner');
+      allow update: if authed() && (request.auth.uid == uid || myRol() == 'admin' || myRol() == 'owner' || myRol() == 'director');
+      allow delete: if authed() && (myRol() == 'admin' || myRol() == 'owner');
     }
 
-    // ── Clínicas ──────────────────────────────────────────────
-    // Crear clínica: solo el admin recién creado puede crear la suya
+    // ── Clínicas ───────────────────────────────────────────────
     match /clinicas/{clinicaId} {
       allow read:   if belongsToClinica(clinicaId);
-      allow create: if request.auth != null;  // alta inicial de registro
+      allow create: if authed();
       allow update: if belongsToClinica(clinicaId);
-      allow delete: if isAdminOf(clinicaId);
+      allow delete: if isAdminOf(clinicaId) || isOwnerOfOrg(resource.data.orgId);
 
-      // Todas las subcolecciones: pacientes, citas, tratamientos, etc.
+      // Sub-colecciones (pacientes, citas, etc.) — igual que antes
       match /{collection}/{docId} {
         allow read, write: if belongsToClinica(clinicaId);
       }
@@ -46,13 +77,13 @@ service cloud.firestore {
       }
     }
 
-    // ── Globales ──────────────────────────────────────────────
+    // ── Globales ───────────────────────────────────────────────
     match /_calificaciones_globales/{docId} {
-      allow create: if request.auth != null;
+      allow create: if authed();
       allow read:   if false;
     }
     match /_mensajes_soporte/{docId} {
-      allow create: if request.auth != null;
+      allow create: if authed();
       allow read:   if false;
     }
   }

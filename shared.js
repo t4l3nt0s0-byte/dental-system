@@ -47,16 +47,36 @@ const PLANES = {
   },
   premium: {
     nombre:'Premium', color:'#F4B942', maxPacientes:Infinity, maxUsuarios:Infinity,
-    maxDoctores:Infinity, maxRecepcion:Infinity,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','multisucursal','kpi-avanzado','expediente','recetas'],
+    maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:1,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas'],
+  },
+  // ── Planes multi-sucursal ─────────────────────────────────
+  'multi-3': {
+    nombre:'Multi 3', color:'#a078ff', maxPacientes:Infinity, maxUsuarios:Infinity,
+    maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:3,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','multisucursal','grupo'],
+  },
+  'multi-10': {
+    nombre:'Multi 10', color:'#FF8C00', maxPacientes:Infinity, maxUsuarios:Infinity,
+    maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:10,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','multisucursal','grupo'],
+  },
+  enterprise: {
+    nombre:'Enterprise', color:'#E24B4A', maxPacientes:Infinity, maxUsuarios:Infinity,
+    maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:Infinity,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','multisucursal','grupo'],
   }
 };
 
 const ROLES = {
-  admin:     { label:'Administrador', permisos:['all'] },
-  doctor:    { label:'Doctor',        permisos:['agenda','pacientes','tratamientos','odontograma'] },
-  recepcion: { label:'Recepción',     permisos:['agenda','pacientes','cotizacion','abonos'] },
-  asistente: { label:'Asistente',     permisos:['agenda','pacientes'] },
+  // ── Roles multi-sucursal (acceso cruzado entre clínicas) ──
+  owner:     { label:'Propietario',      permisos:['all'], multiClinica:true },
+  director:  { label:'Director regional',permisos:['all'], multiClinica:true },
+  // ── Roles de sucursal (acceso a una sola clínica) ─────────
+  admin:     { label:'Administrador',    permisos:['all'] },
+  doctor:    { label:'Doctor',           permisos:['agenda','pacientes','tratamientos','odontograma'] },
+  recepcion: { label:'Recepción',        permisos:['agenda','pacientes','cotizacion','abonos'] },
+  asistente: { label:'Asistente',        permisos:['agenda','pacientes'] },
 };
 
 // ── SESSION ───────────────────────────────────────────────────
@@ -273,8 +293,13 @@ async function initSession(requiredPage) {
             resolve(null); return;
           }
 
-          var clinicaId = userData.clinicaId;
+          // ── Multi-sucursal: owner/director usan clinicaActiva o la primera ──
+          var rol = userData.rol || 'recepcion';
+          var isMultiRol = (rol === 'owner' || rol === 'director');
+          var clinicaId = userData.clinicaActiva || userData.clinicaId;
           if (!clinicaId) { resolve(null); return; }
+          // Guardar orgId en SESSION para consultas del grupo
+          var orgId = userData.orgId || clinicaId;
 
           db.collection('clinicas').doc(clinicaId).get()
             .then(function(clinicaSnap) {
@@ -315,7 +340,17 @@ async function initSession(requiredPage) {
               }
 
               // ✅ Todo OK — establecer sesión
-              SESSION = Object.assign({ user: Object.assign({}, userData, { uid: user.uid }) }, { clinica: clinicaData });
+              SESSION = Object.assign(
+                { user: Object.assign({}, userData, {
+                    uid:      user.uid,
+                    orgId:    orgId,
+                    isOwner:  rol === 'owner',
+                    isDirector: rol === 'director',
+                    sucursales: userData.sucursales || [],
+                  })
+                },
+                { clinica: clinicaData }
+              );
               window.SESSION = SESSION;
 
               if (typeof applyTema === 'function') applyTema(clinicaData.tema, clinicaData.colorPrimario);
@@ -393,19 +428,36 @@ const PAGE_PERM_MAP = {
   'usuarios':       'usuarios',
   'configuracion':  'configuracion',
   'planes':         'planes',         // solo admin
+  'grupo':          'multisucursal',   // solo owner/director
+  'sucursales':     'multisucursal',   // gestión de sucursales
 };
 
 // ¿Tiene el usuario permiso para una página?
 function userCanAccess(page) {
   if (!SESSION) return false;
-  if (SESSION.user.rol === 'admin') return true;  // admin: acceso total
+  var rol = SESSION.user.rol;
 
-  // Páginas exclusivas del administrador — nunca aparecen para otros roles
-  var ADMIN_ONLY_PAGES = ['planes', 'configuracion', 'usuarios', 'importar-datos'];
-  if (ADMIN_ONLY_PAGES.indexOf(page) !== -1) return false;
+  // Owner y director: acceso total + páginas del grupo
+  if (rol === 'owner') return true;
+
+  // Admin de sucursal: acceso total excepto grupo/sucursales (son del owner)
+  if (rol === 'admin') {
+    var OWNER_ONLY = ['grupo','sucursales'];
+    return OWNER_ONLY.indexOf(page) === -1;
+  }
+
+  // Director: acceso total a su grupo de sucursales pero no a configuración global
+  if (rol === 'director') {
+    var DIR_BLOCKED = ['planes','configuracion','usuarios','importar-datos'];
+    return DIR_BLOCKED.indexOf(page) === -1;
+  }
+
+  // Roles de sucursal (doctor, recepcion, asistente): verificar permisos asignados
+  var ADMIN_ONLY = ['planes','configuracion','usuarios','importar-datos','grupo','sucursales'];
+  if (ADMIN_ONLY.indexOf(page) !== -1) return false;
 
   var perm = PAGE_PERM_MAP[page];
-  if (perm === null) return true;                  // página pública del sistema (index)
+  if (perm === null) return true;
   var perms = SESSION.user._permsEfectivos || [];
   return perms.indexOf(perm) !== -1;
 }
@@ -466,6 +518,8 @@ function renderSidebar() {
     ${navItem('ofertas','🎁','Ofertas & Promos','ofertas')}
     ${navItem('metricas','📈','Métricas','metricas')}
     ${navItem('reportes','📊','Reportes','reportes')}
+    ${SESSION.user.isOwner || SESSION.user.isDirector ? `<div class="nav-section">Grupo</div>
+    ${navItem('grupo','🏢','Dashboard del grupo','multisucursal')}` : ''}
     <div class="nav-section">Sistema</div>
     ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
     ${navItem('expediente','📋','Expediente Completo','expediente')}
@@ -528,6 +582,27 @@ function renderSidebar() {
     if (window.innerWidth > 900) closeSidebar();
   });
 }
+
+// ── Cambiar sucursal activa (owner/director) ──────────────────
+window.switchSucursal = async function(clinicaId) {
+  if (!SESSION || !SESSION.user.uid) return;
+  try {
+    await db.collection('usuarios').doc(SESSION.user.uid)
+      .update({ clinicaActiva: clinicaId });
+    showToast('Cambiando a sucursal...','info');
+    setTimeout(()=>window.location.href='index.html', 600);
+  } catch(e) { showToast('Error al cambiar sucursal: '+e.message,'error'); }
+};
+
+// ── Leer todas las clínicas del org (para owner/director) ──────
+window.getOrgClinics = async function() {
+  var orgId = SESSION && SESSION.user && SESSION.user.orgId;
+  if (!orgId) return [];
+  try {
+    var snap = await db.collection('clinicas').where('orgId','==',orgId).get();
+    return snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+  } catch(e) { return []; }
+};
 
 async function logout() {
   _loggingOut = true; // Marcar antes de signOut para evitar redirect loop
