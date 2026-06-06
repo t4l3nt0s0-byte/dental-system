@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Hersantych Dental · Recetas Médicas</title>
+<title>DentalOS · Recetas Médicas</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -31,39 +31,9 @@
 
 /* ── RECETA IMPRIMIBLE ───────────────────────────────── */
 @media print{
-  @page{
-    size: A4 portrait;
-    margin: 0;
-  }
-  html,body{
-    width:210mm;
-    height:297mm;
-    margin:0;
-    padding:0;
-    overflow:hidden;
-  }
-  body *{visibility:hidden!important}
-  #recetaPrint,#recetaPrint *{visibility:visible!important}
-  #recetaPrint{
-    position:fixed!important;
-    top:0!important;left:0!important;
-    width:210mm!important;
-    height:297mm!important;
-    margin:0!important;padding:0!important;
-    overflow:hidden!important;
-    box-shadow:none!important;
-    border:none!important;
-    z-index:99999!important;
-  }
-  .rp-wrap{
-    width:210mm!important;
-    height:297mm!important;
-    min-height:unset!important;
-    overflow:hidden!important;
-    box-shadow:none!important;
-    page-break-after:avoid!important;
-    page-break-inside:avoid!important;
-  }
+  body *{visibility:hidden}
+  #recetaPrint,#recetaPrint *{visibility:visible}
+  #recetaPrint{position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;box-shadow:none!important;border:none!important}
   .no-print{display:none!important}
 }
 #recetaPrint{display:none}
@@ -71,67 +41,67 @@
 
 .rp-wrap{
   background:#fff;color:#111;
-  width:210mm;height:297mm;
+  width:210mm;min-height:297mm;
   margin:0 auto;padding:0;
   font-family:'DM Sans',Arial,sans-serif;
-  font-size:10pt;line-height:1.4;
+  font-size:11pt;line-height:1.5;
   box-shadow:0 4px 40px rgba(0,0,0,.15);
+  border-radius:0;
   position:relative;overflow:hidden;
-  display:flex;flex-direction:column;
 }
 /* Borde decorativo izquierdo */
 .rp-accent{position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(180deg,#00C2A8,#007a6e)}
 
 /* Header */
-.rp-header{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 32px 14px 40px;border-bottom:2px solid #00C2A8;gap:20px;flex-shrink:0}
+.rp-header{display:flex;align-items:flex-start;justify-content:space-between;padding:28px 36px 20px 44px;border-bottom:2px solid #00C2A8;gap:20px}
 .rp-logo-area{display:flex;align-items:center;gap:14px}
 .rp-logo-img{width:64px;height:64px;object-fit:contain;border-radius:8px}
 .rp-logo-tooth{font-size:3rem;filter:drop-shadow(0 2px 4px rgba(0,194,168,.3))}
-.rp-clinic-name{font-size:15pt;font-weight:800;color:#00796b;margin-bottom:2px;line-height:1.1}
+.rp-clinic-name{font-size:18pt;font-weight:800;color:#00796b;margin-bottom:2px;line-height:1.1}
 .rp-clinic-slogan{font-size:8.5pt;color:#607d8b;font-style:italic;margin-bottom:4px}
 .rp-clinic-contact{font-size:8pt;color:#546e7a;line-height:1.6}
 .rp-right{text-align:right}
-.rp-rx{font-family:'Instrument Serif',Georgia,serif;font-size:40pt;color:#00C2A8;font-style:italic;line-height:1;margin-bottom:4px}
+.rp-rx{font-family:'Instrument Serif',Georgia,serif;font-size:48pt;color:#00C2A8;font-style:italic;line-height:1;margin-bottom:4px}
 .rp-folio{font-size:7.5pt;color:#90a4ae}
 .rp-date{font-size:9pt;color:#546e7a;margin-top:4px}
 
 /* Doctor info strip */
-.rp-doctor{background:linear-gradient(90deg,#e0f7f5,#f5f5f5);padding:8px 32px 8px 40px;border-bottom:1px solid #ccc;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.rp-doc-name{font-size:11pt;font-weight:700;color:#004d40}
+.rp-doctor{background:linear-gradient(90deg,#e0f7f5,#f5f5f5);padding:10px 36px 10px 44px;border-bottom:1px solid #ccc;display:flex;align-items:center;justify-content:space-between}
+.rp-doc-name{font-size:12pt;font-weight:700;color:#004d40}
 .rp-doc-info{font-size:8.5pt;color:#546e7a}
 .rp-doc-cedula{font-size:8pt;font-weight:600;color:#00796b;background:#e0f2f1;border-radius:4px;padding:2px 8px}
 
 /* Paciente */
-.rp-patient{padding:10px 32px 8px 40px;border-bottom:1px solid #e0e0e0;flex-shrink:0}
-.rp-patient-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.rp-patient{padding:16px 36px 12px 44px;border-bottom:1px solid #e0e0e0}
+.rp-patient-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .rp-field{border-bottom:1px solid #cfd8dc;padding-bottom:2px}
 .rp-field-label{font-size:6.5pt;text-transform:uppercase;letter-spacing:.06em;color:#90a4ae;font-weight:700}
 .rp-field-value{font-size:9.5pt;color:#212121;font-weight:600;min-height:16px}
 
 /* Medicamentos */
-.rp-meds{padding:10px 32px 8px 40px;flex:1;overflow:hidden}
+.rp-meds{padding:16px 36px 12px 44px}
 .rp-meds-title{font-size:9pt;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#00796b;margin-bottom:10px;border-bottom:1px solid #00C2A8;padding-bottom:4px}
-.rp-med-item{margin-bottom:8px;padding-left:12px;border-left:3px solid #00C2A8;page-break-inside:avoid}
+.rp-med-item{margin-bottom:12px;padding-left:16px;border-left:3px solid #00C2A8;page-break-inside:avoid}
 .rp-med-num{font-size:8pt;font-weight:800;color:#00C2A8;text-transform:uppercase;margin-bottom:2px}
-.rp-med-name{font-size:11pt;font-weight:700;color:#1a237e;margin-bottom:1px}
+.rp-med-name{font-size:12pt;font-weight:700;color:#1a237e;margin-bottom:1px}
 .rp-med-forma{font-size:9pt;color:#546e7a;font-style:italic;margin-bottom:4px}
 .rp-med-instruccion{font-size:10pt;color:#212121;margin-bottom:2px}
 .rp-med-duracion{font-size:8.5pt;color:#546e7a}
 
 /* Indicaciones generales */
-.rp-indicaciones{padding:8px 32px 8px 40px;background:#f9fbe7;border-top:1px dashed #c8e6c9;border-bottom:1px dashed #c8e6c9}
-.rp-ind-title{font-size:7.5pt;font-weight:800;color:#558b2f;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-.rp-ind-text{font-size:8.5pt;color:#33691e;line-height:1.4}
+.rp-indicaciones{padding:10px 36px 12px 44px;background:#f9fbe7;border-top:1px dashed #c8e6c9;border-bottom:1px dashed #c8e6c9}
+.rp-ind-title{font-size:8pt;font-weight:800;color:#558b2f;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.rp-ind-text{font-size:9pt;color:#33691e;line-height:1.5}
 
 /* Firma */
-.rp-firma{padding:12px 32px 16px 40px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0}
+.rp-firma{padding:20px 36px 28px 44px;display:flex;justify-content:space-between;align-items:flex-end}
 .rp-firma-box{text-align:center;min-width:180px}
-.rp-firma-line{border-bottom:1.5px solid #546e7a;margin-bottom:4px;height:40px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;color:#b0bec5;font-style:italic;font-size:8pt}
+.rp-firma-line{border-bottom:1.5px solid #546e7a;margin-bottom:4px;height:50px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;color:#b0bec5;font-style:italic;font-size:8pt}
 .rp-firma-label{font-size:7.5pt;color:#546e7a;text-transform:uppercase;letter-spacing:.06em}
-.rp-sello-box{width:70px;height:70px;border:1.5px dashed #b0bec5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#b0bec5;text-align:center;line-height:1.3}
+.rp-sello-box{width:90px;height:90px;border:1.5px dashed #b0bec5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#b0bec5;text-align:center;line-height:1.3}
 
 /* Footer */
-.rp-footer{background:#e0f7f5;padding:6px 40px;font-size:7pt;color:#546e7a;text-align:center;border-top:1px solid #b2dfdb}
+.rp-footer{background:#e0f7f5;padding:8px 44px;font-size:7.5pt;color:#546e7a;text-align:center;border-top:1px solid #b2dfdb}
 
 /* Validez banner */
 .rp-validez{background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:6px 12px;font-size:8pt;color:#f57f17;font-weight:600;display:inline-flex;align-items:center;gap:6px}
@@ -280,7 +250,7 @@
       <div class="rp-logo-area">
         <div id="rp-logo-container"></div>
         <div>
-          <div class="rp-clinic-name" id="rp-clinicName">Hersantych Dental</div>
+          <div class="rp-clinic-name" id="rp-clinicName">DentalOS</div>
           <div class="rp-clinic-slogan" id="rp-clinicSlogan">Sistema de salud dental</div>
           <div class="rp-clinic-contact" id="rp-clinicContact"></div>
         </div>
@@ -343,7 +313,7 @@
 
     <!-- FOOTER -->
     <div class="rp-footer" id="rp-footer">
-      <span id="rp-footerClinica">Hersantych Dental</span> &nbsp;|&nbsp;
+      <span id="rp-footerClinica">DentalOS</span> &nbsp;|&nbsp;
       <span id="rp-footerDir"></span> &nbsp;|&nbsp;
       <span id="rp-footerTel"></span>
     </div>
@@ -437,24 +407,20 @@ function onPacienteChange(){
   const sel = document.getElementById('r-paciente');
   const px  = ALL_PXLIST.find(p=>p.id===sel.value);
   if(!px) return;
-  // Calcular edad desde fnac (campo guardado en pacientes.html como 'fnac')
+  // Calcular edad
   let edadStr = '—';
-  const fnacRaw = px.fnac||px.fechaNac||px.nacimiento||'';
-  if(fnacRaw){
+  if(px.fechaNac||px.nacimiento){
     try{
-      const fn  = new Date(fnacRaw+'T12:00:00');
-      const hoy = new Date();
-      let edad  = hoy.getFullYear()-fn.getFullYear();
+      const fn=new Date(px.fechaNac||px.nacimiento);
+      const hoy=new Date();
+      let edad=hoy.getFullYear()-fn.getFullYear();
       if(hoy.getMonth()<fn.getMonth()||(hoy.getMonth()===fn.getMonth()&&hoy.getDate()<fn.getDate())) edad--;
-      if(edad>=0 && edad<130) edadStr = edad+' años';
+      edadStr=edad+' años';
     }catch(e){}
   }
-  document.getElementById('r-edad').value     = edadStr;
-  document.getElementById('r-dir-px').value   = px.direccion||px.dir||'';
-  document.getElementById('r-alergias').value = px.alergias||px.alergiasConocidas||'';
-  // Peso guardado como número
-  const pesoEl = document.getElementById('r-peso');
-  if(pesoEl && px.peso) pesoEl.value = px.peso;
+  document.getElementById('r-edad').value    = edadStr;
+  document.getElementById('r-dir-px').value  = px.direccion||px.dir||'';
+  document.getElementById('r-alergias').value= px.alergias||px.alergiasConocidas||'';
 }
 function onDoctorChange(){
   const sel = document.getElementById('r-doctor');
@@ -545,7 +511,7 @@ function generarReceta(){
   const folio = 'RX-'+Date.now().toString(36).toUpperCase().slice(-6);
 
   // ── Clinica info ──
-  document.getElementById('rp-clinicName').textContent    = CLINICA.nombre||'Hersantych Dental';
+  document.getElementById('rp-clinicName').textContent    = CLINICA.nombre||'DentalOS';
   document.getElementById('rp-clinicSlogan').textContent  = CLINICA.eslogan||'Sistema integral dental';
   document.getElementById('rp-clinicContact').innerHTML   =
     [CLINICA.telefono?'📞 '+CLINICA.telefono:'', CLINICA.emailClinica?'✉ '+CLINICA.emailClinica:'', CLINICA.direccion||''].filter(Boolean).join('<br>');
@@ -618,7 +584,7 @@ function generarReceta(){
   document.getElementById('rp-validez').textContent='⚕ '+document.getElementById('r-validez').value;
 
   // ── Footer ──
-  document.getElementById('rp-footerClinica').textContent=CLINICA.nombre||'Hersantych Dental';
+  document.getElementById('rp-footerClinica').textContent=CLINICA.nombre||'DentalOS';
   document.getElementById('rp-footerDir').textContent=CLINICA.direccion||CLINICA.ciudad||'';
   document.getElementById('rp-footerTel').textContent=CLINICA.telefono||'';
 

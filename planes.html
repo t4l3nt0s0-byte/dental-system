@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Planes & Precios</title>
+<title>Hersantych · Planes de suscripción</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -81,7 +81,7 @@
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">💎 Planes & Precios</div>
+    <div class="topbar-title">💎 Planes de suscripción</div>
     <div class="topbar-actions">
       <a href="index.html" class="btn btn-ghost btn-sm">← Dashboard</a>
     </div>
@@ -94,7 +94,7 @@
         <div class="trial-banner-icon">⏳</div>
         <div class="trial-banner-text">
           <div class="trial-banner-title">Estás en período de prueba gratuita</div>
-          <div class="trial-banner-sub" id="trialSub">Elige un plan para continuar usando Hersantych Dental después del período de prueba.</div>
+          <div class="trial-banner-sub" id="trialSub">Elige un plan para continuar usando DentalOS después del período de prueba.</div>
         </div>
         <div class="trial-days" id="trialDays"></div>
       </div>
@@ -238,7 +238,7 @@ const COMPARATIVA = [
 const FAQS = [
   {q:'¿Puedo cambiar de plan en cualquier momento?', a:'Sí. Puedes subir o bajar de plan cuando quieras. El cambio aplica inmediatamente y tu información nunca se pierde.'},
   {q:'¿Se pierde mi información si cancelo?', a:'No. Tus datos permanecen en el sistema por 30 días después de cancelar. Puedes exportarlos en cualquier momento desde la sección de Reportes.'},
-  {q:'¿Funciona en celular?', a:'Sí. El sistema está optimizado para desktop, tablet y celular. Solo necesitas un navegador web, sin instalar nada.'},
+  {q:'¿Funciona en celular?', a:'Sí. DentalOS está optimizado para desktop, tablet y celular. Solo necesitas un navegador web, sin instalar nada.'},
   {q:'¿Cuántos pacientes puedo registrar en el plan Básico?', a:'El plan Básico permite hasta 50 expedientes activos. Para consultorios más grandes, el plan Profesional no tiene límite.'},
   {q:'¿Los datos de mis pacientes están seguros?', a:'Sí. Usamos Firebase de Google con cifrado de datos, reglas de seguridad estrictas y respaldo automático en la nube.'},
   {q:'¿Cómo funciona el período de prueba?', a:'Tienes 7 días gratis con todas las funciones del plan que seleccionaste. No pedimos tarjeta de crédito. Al terminar el trial puedes contratar el plan o perderás acceso.'},
@@ -330,18 +330,18 @@ window.contratarPlan = function(planKey, planNombre, precio) {
   showToast(`Plan ${planNombre} seleccionado. Pagos en línea próximamente disponibles.`, 'info');
 
   // Por ahora: abrir WhatsApp para coordinar el pago manualmente
-  const msg = `Hola! Me interesa contratar el *Plan ${planNombre}* de Hersantych Dental por $${precio.toLocaleString('es-MX')} MXN/mes.\n\nMi consultorio está en el sistema. ¿Cómo procedo con el pago?`;
+  const msg = `Hola! Me interesa contratar el *Plan ${planNombre}* de Hersantych por $${precio.toLocaleString('es-MX')} MXN/mes.\n\nMi consultorio está en el sistema. ¿Cómo procedo con el pago?`;
   setTimeout(() => {
     if (confirm(`¿Deseas contactarnos por WhatsApp para activar el Plan ${planNombre}?`)) {
       // Cambia este número por el tuyo
-      window.open(`https://wa.me/521XXXXXXXXXX?text=${encodeURIComponent(msg)}`, '_blank');
+      window.open(`https://wa.me/525546940382?text=${encodeURIComponent(msg)}`, '_blank');
     }
   }, 500);
 };
 
 window.whatsappContacto = function() {
-  const msg = `Hola! Necesito información sobre planes personalizados de Hersantych Dental para mi clínica dental.`;
-  window.open(`https://wa.me/521XXXXXXXXXX?text=${encodeURIComponent(msg)}`, '_blank');
+  const msg = `Hola! Necesito información sobre planes personalizados de DentalOS para mi clínica dental.`;
+  window.open(`https://wa.me/525546940382?text=${encodeURIComponent(msg)}`, '_blank');
 };
 </script>
 </body>

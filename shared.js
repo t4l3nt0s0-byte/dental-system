@@ -3,9 +3,9 @@
 
 // ── Firebase CDN (loaded from HTML) ──────────────────────────
 // All pages must include these script tags before shared.js:
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 const FIREBASE_CONFIG = {
   apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
@@ -16,39 +16,24 @@ const FIREBASE_CONFIG = {
   appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
 };
 
-// ── Firebase init ─────────────────────────────────────────────
-// Usa app nombrada 'dental' para no conflictuar con otras instancias
-var _dentalApp;
-try {
-  _dentalApp = firebase.app('dental');
-} catch(e) {
-  _dentalApp = firebase.initializeApp(FIREBASE_CONFIG, 'dental');
-}
-const db   = _dentalApp.firestore();
-const auth = _dentalApp.auth();
+// Initialize Firebase (compat mode — no import needed)
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const db   = firebase.firestore();
+const auth = firebase.auth();
 
 // ── PLAN DEFINITIONS ─────────────────────────────────────────
 const PLANES = {
-  trial: {
-    nombre:'Trial', color:'#9CA3AF', maxPacientes:5, maxUsuarios:1,
-    maxDoctores:0, maxRecepcion:0,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','recetas'],
-    diasPrueba:7,
-  },
   basico: {
-    nombre:'Básico', color:'#4A9EFF', maxPacientes:50, maxUsuarios:3,
-    maxDoctores:1, maxRecepcion:1,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','recetas'],
+    nombre:'Básico', color:'#4A9EFF', maxPacientes:50, maxUsuarios:1,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda'],
   },
   profesional: {
-    nombre:'Profesional', color:'#00C2A8', maxPacientes:Infinity, maxUsuarios:4,
-    maxDoctores:2, maxRecepcion:1,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','recetas'],
+    nombre:'Profesional', color:'#00C2A8', maxPacientes:Infinity, maxUsuarios:5,
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios'],
   },
   premium: {
     nombre:'Premium', color:'#F4B942', maxPacientes:Infinity, maxUsuarios:Infinity,
-    maxDoctores:Infinity, maxRecepcion:Infinity,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','multisucursal','kpi-avanzado','expediente','recetas'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','multisucursal','kpi-avanzado','expediente'],
   }
 };
 
@@ -60,8 +45,7 @@ const ROLES = {
 };
 
 // ── SESSION ───────────────────────────────────────────────────
-let SESSION = null;
-let _loggingOut = false; // Flag para evitar redirect loop durante logout // { user, clinica }
+let SESSION = null; // { user, clinica }
 
 // Plan TRIAL — funciones permitidas en prueba
 const TRIAL_FEATURES = ['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','recibo','estado-cuenta'];
@@ -129,200 +113,68 @@ function showTrialBannerIfNeeded() {
   const trialEnd = clinica.trialEnd?.toDate ? clinica.trialEnd.toDate() : null;
   if (!trialEnd) return;
   const dias = Math.ceil((trialEnd - new Date()) / 86400000);
-
-  // Eliminar banner previo si existe
-  const prev = document.getElementById('_trial_banner');
-  if (prev) prev.remove();
-
-  const banner = document.createElement('div');
-  banner.id = '_trial_banner';
-
-  // SIEMPRE arriba — position fixed top:0
-  // z-index 9999 para que esté sobre todo incluyendo sidebar y topbar
-  Object.assign(banner.style, {
-    position:   'fixed',
-    top:        '0',
-    left:       '0',
-    right:      '0',
-    bottom:     'auto',
-    zIndex:     '9999',
-    background: 'linear-gradient(90deg,#F59E0B,#F97316)',
-    color:      '#1a0a00',
-    padding:    '9px 20px',
-    display:    'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap:        '12px',
-    fontFamily: 'DM Sans,sans-serif',
-    fontSize:   '.82rem',
-    fontWeight: '700',
-    boxShadow:  '0 2px 12px rgba(245,158,11,.4)',
-    lineHeight: '1',
-  });
-
-  const msg = dias > 0
-    ? `⏳ Período de prueba · <strong>${dias} día${dias !== 1 ? 's' : ''} restante${dias !== 1 ? 's' : ''}</strong> · Activa un plan para continuar`
-    : `⚠️ <strong>Período de prueba vencido</strong> · Activa un plan para seguir usando el sistema`;
-
-  banner.innerHTML = `
-    <span>${msg}</span>
-    <a href="planes.html" style="
-      background:#1a0a00;color:#F59E0B;
-      padding:5px 14px;border-radius:8px;
-      font-size:.78rem;font-weight:800;
-      text-decoration:none;white-space:nowrap;
-      flex-shrink:0;
-    ">💎 Ver planes →</a>`;
-
-  document.body.prepend(banner); // prepend = primer hijo del body
-
-  // Empujar sidebar y topbar hacia abajo exactamente la altura del banner
-  const bannerH = 38;
-  document.body.classList.add('trial-banner-active');
-
-  // Aplicar estilos directamente como fallback adicional
-  const sidebar = document.querySelector('.sidebar');
-  if (sidebar) sidebar.style.top = bannerH + 'px';
-  const hamburger = document.getElementById('hamburger');
-  if (hamburger) hamburger.style.top = (bannerH + 8) + 'px';
-
-  // Asegurar que el main no empiece tapado (en caso de que sea margin)
-  const main = document.querySelector('.main');
-  if (main) {
-    main.style.paddingTop   = '0';
-    main.style.paddingBottom = '0';
+  let banner = document.getElementById('_trial_banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = '_trial_banner';
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:300;background:linear-gradient(135deg,rgba(244,185,66,.97),rgba(255,154,60,.97));color:#060D14;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:\'DM Sans\',sans-serif;font-size:.82rem;font-weight:600;box-shadow:0 -4px 20px rgba(244,185,66,.3);';
+    document.body.appendChild(banner);
+    const main = document.querySelector('.main');
+    if (main) main.style.paddingBottom = '52px';
   }
-
+  const txt = dias > 0
+    ? `⏳ Período de prueba · <strong>${dias} día${dias!==1?'s':''} restante${dias!==1?'s':''}</strong> · Activa un plan para continuar`
+    : `⚠️ <strong>Tu período de prueba terminó.</strong> Activa un plan para seguir usando el sistema.`;
+  banner.innerHTML = `<div>${txt}</div><a href="planes.html" style="background:#060D14;color:#F4B942;padding:6px 16px;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none;flex-shrink:0;white-space:nowrap">💎 Ver planes →</a>`;
 }
 
-// ── applyTema ──────────────────────────────────────────────────
-// Cambia tema con data-theme en <html> — el CSS hace el resto
-// Instantáneo: un solo setAttribute, sin loops JS
-function applyTema(tema, colorPrimario) {
-  var t = tema || localStorage.getItem('dental_tema') || 'dark';
-  var c = colorPrimario || localStorage.getItem('dental_color') || '';
-
-  // Guardar preferencia
-  localStorage.setItem('dental_tema', t);
-  if (c) localStorage.setItem('dental_color', c);
-
-  // ① Cambiar tema — INSTANTÁNEO (el CSS hace todo)
-  document.documentElement.setAttribute('data-theme', t);
-
-  // ② Color de acento personalizado
-  if (c && /^#[0-9A-Fa-f]{6}$/.test(c)) {
-    var r = parseInt(c.slice(1,3),16);
-    var g = parseInt(c.slice(3,5),16);
-    var b = parseInt(c.slice(5,7),16);
-    document.documentElement.style.setProperty('--teal',      c);
-    document.documentElement.style.setProperty('--teal-dim',  'rgba('+r+','+g+','+b+',.12)');
-    document.documentElement.style.setProperty('--teal-glow', 'rgba('+r+','+g+','+b+',.25)');
-  }
-}
-window.applyTema = applyTema;
-
-// Aplicar tema ANTES de que el navegador pinte nada (evita FOUC)
-(function(){
-  var t = localStorage.getItem('dental_tema') || 'dark';
-  var c = localStorage.getItem('dental_color') || '';
-  document.documentElement.setAttribute('data-theme', t);
-  if (c && /^#[0-9A-Fa-f]{6}$/.test(c)) {
-    var r = parseInt(c.slice(1,3),16);
-    var g = parseInt(c.slice(3,5),16);
-    var b = parseInt(c.slice(5,7),16);
-    document.documentElement.style.setProperty('--teal',      c);
-    document.documentElement.style.setProperty('--teal-dim',  'rgba('+r+','+g+','+b+',.12)');
-    document.documentElement.style.setProperty('--teal-glow', 'rgba('+r+','+g+','+b+',.25)');
-  }
-})();
-
-
-
-// ── initSession ─────────────────────────────────────────────────
-async function initSession(requiredPage) {
-  var href = window.location.href;
-  var isPublic = ['login','registro','landing'].some(function(p){
-    return href.indexOf(p) !== -1;
-  });
-
-  return new Promise(function(resolve) {
-    var done = false;
-    var unsubscribe = auth.onAuthStateChanged(function(user) {
-      if (done) return;
-      done = true;
-      unsubscribe();
-
-      // Sin sesión activa
-      if (!user) {
-        if (!isPublic && !_loggingOut) {
-          window.location.replace('login.html');
-        }
-        resolve(null);
-        return;
-      }
-
-      // Con sesión — cargar datos
-      db.collection('usuarios').doc(user.uid).get()
-        .then(function(userSnap) {
-          // Sin datos de usuario: sesión de Auth sin registro Firestore
-          if (!userSnap.exists) { resolve(null); return; }
-
-          var userData = userSnap.data();
-          if (userData.activo === false) {
-            auth.signOut().catch(function(){});
-            resolve(null); return;
+async function initSession(requiredFeature) {
+  return new Promise((resolve) => {
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) { window.location.href = 'login.html'; resolve(null); return; }
+      try {
+        const uSnap = await db.collection('usuarios').doc(user.uid).get();
+        if (!uSnap.exists) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
+        const uData = uSnap.data();
+        if (uData.activo === false) { auth.signOut(); window.location.href = 'login.html'; resolve(null); return; }
+        const cSnap = await db.collection('clinicas').doc(uData.clinicaId).get();
+        SESSION = { user: { uid: user.uid, email: user.email, ...uData }, clinica: { id: uData.clinicaId, ...cSnap.data() } };
+        // ── TRIAL: verificar expiración ────────────────────
+        const cData = cSnap.data() || {};
+        if (cData.plan === 'trial' && cData.trialEnd) {
+          const trialEndDate = cData.trialEnd.toDate ? cData.trialEnd.toDate() : new Date(cData.trialEnd);
+          const diasRestantes = Math.ceil((trialEndDate - new Date()) / 86400000);
+          if (diasRestantes <= 0) {
+            const allowed = ['planes','configuracion'];
+            const curPage = window.CURRENT_PAGE || '';
+            if (!allowed.includes(curPage)) {
+              window.location.href = 'planes.html?expired=1';
+              resolve(null); return;
+            }
           }
-
-          var clinicaId = userData.clinicaId;
-          if (!clinicaId) { resolve(null); return; }
-
-          db.collection('clinicas').doc(clinicaId).get()
-            .then(function(clinicaSnap) {
-              if (!clinicaSnap.exists) { resolve(null); return; }
-
-              var clinicaData = Object.assign({ id: clinicaId }, clinicaSnap.data());
-
-              // Verificar permiso de página según rol
-              var ROLES_PERM = {
-                admin:    'any',
-                doctor:   ['agenda','pacientes','tratamientos','odontograma','recetas'],
-                recepcion:['agenda','pacientes','tratamientos','abonos','cotizacion',
-                           'catalogo','corte-caja','busqueda'],
-              };
-              var rol = userData.rol || 'recepcion';
-              var perms = ROLES_PERM[rol];
-              if (requiredPage && requiredPage !== 'any' && perms !== 'any') {
-                if (perms.indexOf(requiredPage) === -1) {
-                  window.location.replace('index.html');
-                  resolve(null); return;
-                }
-              }
-
-              // ✅ Todo OK — establecer sesión
-              SESSION = Object.assign({ user: Object.assign({}, userData, { uid: user.uid }) }, { clinica: clinicaData });
-              window.SESSION = SESSION;
-
-              if (typeof applyTema === 'function') applyTema(clinicaData.tema, clinicaData.colorPrimario);
-              if (typeof renderSidebar === 'function') renderSidebar();
-              if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
-
-              resolve(SESSION);
-            })
-            .catch(function(e) {
-              console.warn('initSession clinica:', e.message);
-              resolve(null);
-            });
-        })
-        .catch(function(e) {
-          console.warn('initSession usuario:', e.message);
-          resolve(null);
-        });
+        }
+        // ── PLAN FEATURE GUARD ─────────────────────────────
+        if (requiredFeature && requiredFeature !== 'any') {
+          const isAdmin = uData.rol === 'admin';
+          if (!isAdmin) {
+            const planKey = cSnap.data()?.plan || 'basico';
+            const feats = planKey === 'trial'
+              ? TRIAL_FEATURES
+              : (PLANES[planKey] || PLANES.basico).features;
+            if (!feats.includes(requiredFeature)) {
+              window.location.href = `upgrade.html?feat=${requiredFeature}`;
+              resolve(null); return;
+            }
+          }
+        }
+        // Render sidebar
+        renderSidebar();
+        showTrialBannerIfNeeded();
+        resolve(SESSION);
+      } catch(e) { console.error('Session error:', e); resolve(null); }
     });
   });
 }
-
-
-
 
 function renderSidebar() {
   if (!SESSION) return;
@@ -352,7 +204,7 @@ function renderSidebar() {
         ? `<img src="${clinica.logoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:#fff;padding:3px;flex-shrink:0">`
         : '<div class="logo-icon">🦷</div>'}
       <div style="min-width:0">
-        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'Hersantych Dental'}</div>
+        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'DentalOS'}</div>
         <div class="logo-sub">${clinica.eslogan || 'Sistema integral'}</div>
       </div>
     </div>
@@ -439,13 +291,8 @@ function renderSidebar() {
 }
 
 async function logout() {
-  _loggingOut = true; // Marcar antes de signOut para evitar redirect loop
-  try {
-    await auth.signOut();
-  } catch(e) {
-    console.warn('signOut:', e.message);
-  }
-  window.location.replace('login.html');
+  await auth.signOut();
+  window.location.href = 'login.html';
 }
 
 // ── FIRESTORE HELPERS ────────────────────────────────────────
@@ -601,7 +448,6 @@ window.ROLES   = ROLES;
 window.db      = db;
 window.auth    = auth;
 window.initSession = initSession;
-window.logout  = logout;
 window.logout  = logout;
 window.clinicaCol = clinicaCol;
 window.clinicaDoc = clinicaDoc;

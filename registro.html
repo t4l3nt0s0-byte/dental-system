@@ -1,278 +1,237 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Hersantych Dental · Crear cuenta</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Registro gratuito</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --teal:#00C2A8;--teal2:#00a08a;--teal-dim:rgba(0,194,168,.1);
-  --blue:#4A9EFF;--gold:#F4B942;
-  --dark:#060D14;--dark2:#0a1628;--dark3:#0f1e35;
-  --surface:rgba(255,255,255,.04);--border:rgba(255,255,255,.1);
-  --text:#E8F0F8;--muted:rgba(232,240,248,.55);
-}
-body{
-  min-height:100vh;background:var(--dark);color:var(--text);
-  font-family:'DM Sans',sans-serif;
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;
-  background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,194,168,.12),transparent);
-}
-
-.card{
-  width:100%;max-width:480px;
-  background:var(--dark2);
-  border:1px solid var(--border);
-  border-radius:20px;
-  padding:40px 36px;
-  box-shadow:0 24px 64px rgba(0,0,0,.5);
-}
-
-/* Logo */
-.logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;justify-content:center}
-.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--teal),var(--teal2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
-.logo-text{font-family:'Instrument Serif',serif;font-size:1.4rem;font-style:italic}
-.logo-text span{color:var(--teal)}
-
-h1{font-size:1.5rem;font-weight:700;text-align:center;margin-bottom:6px}
-.subtitle{font-size:.85rem;color:var(--muted);text-align:center;margin-bottom:28px}
-
-/* Form */
-.field{margin-bottom:16px}
-.label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.03em}
-.input{
-  width:100%;padding:11px 14px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--border);
-  border-radius:10px;
-  color:var(--text);font-size:.9rem;
-  font-family:'DM Sans',sans-serif;
-  outline:none;transition:border-color .2s;
-}
-.input:focus{border-color:var(--teal);background:rgba(0,194,168,.05)}
-.input::placeholder{color:rgba(232,240,248,.25)}
-select.input{cursor:pointer}
-
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* Plan selector */
-.plan-title{font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.03em}
-.plans{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
-.plan{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 14px;border-radius:10px;
-  border:1.5px solid var(--border);
-  cursor:pointer;transition:all .15s;
-  background:transparent;
-}
-.plan:hover{border-color:rgba(0,194,168,.3);background:var(--teal-dim)}
-.plan.sel{border-color:var(--teal);background:rgba(0,194,168,.08)}
-.plan-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center}
-.plan.sel .plan-radio{border-color:var(--teal);background:var(--teal)}
-.plan.sel .plan-radio::after{content:'';width:6px;height:6px;border-radius:50%;background:#060D14}
-.plan-info{flex:1}
-.plan-name{font-size:.88rem;font-weight:700}
-.plan-desc{font-size:.68rem;color:var(--muted);margin-top:1px}
-.plan-price{font-size:.85rem;font-weight:800;font-family:monospace}
-
-/* Free note */
-.free-note{
-  background:rgba(0,194,168,.08);border:1px solid rgba(0,194,168,.2);
-  border-radius:8px;padding:9px 14px;
-  font-size:.75rem;color:var(--teal);
-  display:flex;align-items:center;gap:7px;
-  margin-bottom:20px;
-}
-
-/* Error */
-.err{
-  background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.3);
-  border-radius:8px;padding:10px 14px;
-  font-size:.82rem;color:#FF5C5C;
-  margin-bottom:16px;display:none;
-}
-.err.show{display:block}
-
-/* Button */
-.btn{
-  width:100%;padding:14px;
-  background:linear-gradient(135deg,var(--teal),var(--teal2));
-  color:#060D14;font-weight:800;font-size:1rem;
-  border:none;border-radius:12px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  transition:all .2s;box-shadow:0 4px 16px rgba(0,194,168,.3);
-  font-family:'DM Sans',sans-serif;
-}
-.btn:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(0,194,168,.45)}
-.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-
-.spin{
-  width:18px;height:18px;border:2px solid rgba(6,13,20,.3);
-  border-top-color:#060D14;border-radius:50%;
-  animation:spin .7s linear infinite;display:none;
-}
-.btn.loading .spin{display:block}
-.btn.loading .btn-txt{display:none}
+:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--teal-glow:rgba(0,194,168,.25);--gold:#F4B942;--red:#FF5C5C;--blue:#4A9EFF;--text:#E8F0F8;--text-muted:rgba(232,240,248,.50);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -5%,rgba(0,194,168,.1),transparent);pointer-events:none}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");pointer-events:none}
+.page-wrap{width:100%;max-width:980px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;position:relative;z-index:1}
+/* LEFT — Info */
+.info-side{padding:20px 0}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.brand-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--teal),#008F7A);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 6px 20px var(--teal-glow)}
+.brand-name{font-family:var(--font-display);font-size:1.4rem;color:var(--text)}.brand-name span{color:var(--teal)}
+.info-title{font-family:var(--font-display);font-size:2.2rem;font-style:italic;line-height:1.2;margin-bottom:14px;color:var(--text)}
+.info-title span{color:var(--teal)}
+.info-sub{font-size:.9rem;color:var(--text-muted);line-height:1.6;margin-bottom:28px}
+.features{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.feat-item{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--text-muted)}
+.feat-icon{width:28px;height:28px;border-radius:6px;background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.trial-badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(244,185,66,.15),rgba(244,185,66,.05));border:1px solid rgba(244,185,66,.3);border-radius:10px;padding:10px 16px;font-size:.8rem;color:var(--gold)}
+/* RIGHT — Form */
+.form-card{background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.form-title{font-family:var(--font-display);font-size:1.3rem;font-style:italic;margin-bottom:4px;color:var(--text)}
+.form-sub{font-size:.75rem;color:var(--text-muted);margin-bottom:24px}
+.step-dots{display:flex;gap:6px;margin-bottom:20px}
+.step-dot{height:4px;border-radius:2px;background:var(--border);transition:all .3s}
+.step-dot.active{background:var(--teal);width:24px}
+.step-dot.done{background:var(--teal)}
+.step-dot{width:8px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--font-body);font-size:.88rem;outline:none;transition:all .2s}
+.form-input:focus,.form-select:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-dim)}
+.form-input::placeholder{color:var(--text-dim)}
+.form-select option{background:var(--surface2)}
+.input-wrap{position:relative}
+.input-wrap .form-input{padding-right:44px}
+.toggle-pw{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.9rem;transition:color .15s}
+.toggle-pw:hover{color:var(--text-muted)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-submit{width:100%;padding:13px;background:var(--teal);color:#060D14;border:none;border-radius:10px;font-family:var(--font-body);font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.btn-submit:hover{background:#00d4b8;transform:translateY(-1px);box-shadow:0 6px 20px var(--teal-glow)}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-back{width:100%;padding:10px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;font-family:var(--font-body);font-size:.82rem;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-back:hover{color:var(--text);border-color:var(--border2)}
+.error-box{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.2);border-radius:8px;padding:10px 14px;font-size:.78rem;color:#FF5C5C;margin-top:10px;display:none}
+.error-box.show{display:block}
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;font-size:.72rem;color:var(--text-dim)}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.login-link{text-align:center;font-size:.78rem;color:var(--text-muted);margin-top:14px}
+.login-link a{color:var(--teal);text-decoration:none}
+.login-link a:hover{text-decoration:underline}
+.terms{font-size:.68rem;color:var(--text-dim);text-align:center;margin-top:12px;line-height:1.5}
+.terms a{color:var(--text-muted)}
+/* SUCCESS */
+.success-wrap{text-align:center;padding:20px 0;display:none}
+.success-icon{font-size:3.5rem;margin-bottom:16px}
+.success-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic;margin-bottom:8px}
+.success-sub{font-size:.82rem;color:var(--text-muted);margin-bottom:24px;line-height:1.6}
+/* PLAN SELECTOR */
+.plan-cards-mini{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
+.plan-mini{border:2px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px}
+.plan-mini:hover{border-color:var(--border2)}
+.plan-mini.selected{border-color:var(--teal);background:var(--teal-dim)}
+.plan-mini-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .15s}
+.plan-mini.selected .plan-mini-dot{border-color:var(--teal);background:var(--teal)}
+.plan-mini-info{flex:1}
+.plan-mini-name{font-size:.82rem;font-weight:700;color:var(--text)}
+.plan-mini-desc{font-size:.68rem;color:var(--text-muted)}
+.plan-mini-price{font-family:var(--font-mono);font-size:.82rem;font-weight:700}
+/* Steps */
+.step-panel{display:none}.step-panel.active{display:block}
+.spinner{width:18px;height:18px;border:2px solid rgba(6,13,20,.3);border-top-color:#060D14;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.btn-submit.loading .spinner{display:block}.btn-submit.loading .btn-text{display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-.login-link{text-align:center;margin-top:20px;font-size:.82rem;color:var(--muted)}
-.login-link a{color:var(--teal);text-decoration:none;font-weight:600}
-
-/* Success */
-.success{display:none;text-align:center;padding:20px 0}
-.success-icon{font-size:3rem;margin-bottom:12px}
-.success-title{font-size:1.3rem;font-weight:700;margin-bottom:8px}
-.success-sub{font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:20px}
-.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--teal);width:0%;transition:width 3s linear;border-radius:2px}
-
-@media(max-width:480px){
-  .card{padding:28px 20px}
-  .row{grid-template-columns:1fr}
-}
+@media(max-width:780px){.page-wrap{grid-template-columns:1fr}.info-side{display:none}.form-card{padding:28px 22px}}
+@media(max-width:400px){.form-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
-<div class="card">
-
-  <!-- Logo -->
-  <div class="logo">
-    <div class="logo-icon">🦷</div>
-    <div class="logo-text">Dental<span>OS</span></div>
-  </div>
-
-  <!-- Form (oculto en success) -->
-  <div id="formWrap">
-    <h1>Crea tu cuenta gratis</h1>
-    <p class="subtitle">7 días con todas las funciones · Sin tarjeta de crédito</p>
-
-    <!-- Datos del consultorio -->
-    <div class="field">
-      <label class="label">NOMBRE DEL CONSULTORIO *</label>
-      <input class="input" id="f-clinica" placeholder="Ej: Consultorio Dental García" autocomplete="organization">
+<div class="page-wrap">
+  <!-- LEFT INFO -->
+  <div class="info-side">
+    <div class="brand">
+      <div class="brand-icon">🦷</div>
+      <div class="brand-name">Dental<span>OS</span></div>
     </div>
-
-    <div class="row">
-      <div class="field">
-        <label class="label">CIUDAD</label>
-        <input class="input" id="f-ciudad" placeholder="Ciudad de México">
-      </div>
-      <div class="field">
-        <label class="label">TELÉFONO</label>
-        <input class="input" id="f-tel" type="tel" placeholder="55 0000 0000">
-      </div>
+    <div class="info-title">El sistema dental<br>más <span>completo</span><br>de México</div>
+    <div class="info-sub">Administra tu consultorio desde cualquier dispositivo. Sin instalaciones, sin complicaciones.</div>
+    <div class="features">
+      <div class="feat-item"><div class="feat-icon">📅</div> Agenda y citas interactivas</div>
+      <div class="feat-item"><div class="feat-icon">👤</div> Expedientes digitales de pacientes</div>
+      <div class="feat-item"><div class="feat-icon">🦷</div> Odontograma interactivo FDI</div>
+      <div class="feat-item"><div class="feat-icon">💰</div> Control de pagos con IVA 16%</div>
+      <div class="feat-item"><div class="feat-icon">📝</div> Cotizaciones y recibos imprimibles</div>
+      <div class="feat-item"><div class="feat-icon">💬</div> Recordatorios automáticos por WhatsApp</div>
+      <div class="feat-item"><div class="feat-icon">📈</div> Métricas y reportes en tiempo real</div>
+      <div class="feat-item"><div class="feat-icon">📥</div> Importa pacientes desde Excel</div>
     </div>
-
-    <!-- Separador -->
-    <div style="height:1px;background:var(--border);margin:8px 0 20px"></div>
-
-    <!-- Datos de acceso -->
-    <div class="field">
-      <label class="label">TU NOMBRE COMPLETO *</label>
-      <input class="input" id="f-nombre" placeholder="Dr. Nombre Apellido" autocomplete="name">
-    </div>
-    <div class="field">
-      <label class="label">CORREO ELECTRÓNICO *</label>
-      <input class="input" id="f-email" type="email" placeholder="doctor@tuconsultorio.com" autocomplete="email">
-    </div>
-    <div class="row">
-      <div class="field">
-        <label class="label">CONTRASEÑA *</label>
-        <input class="input" id="f-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
-      </div>
-      <div class="field">
-        <label class="label">CONFIRMAR CONTRASEÑA *</label>
-        <input class="input" id="f-pass2" type="password" placeholder="Repite tu contraseña" autocomplete="new-password">
-      </div>
-    </div>
-
-    <!-- Separador -->
-    <div style="height:1px;background:var(--border);margin:8px 0 20px"></div>
-
-    <!-- Selección de plan -->
-    <div class="plan-title">ELIGE TU PLAN (activo después del período gratuito)</div>
-    <div class="plans">
-      <div class="plan sel" id="plan-basico" onclick="selPlan('basico')">
-        <div class="plan-radio"></div>
-        <div class="plan-info">
-          <div class="plan-name">🔵 Plan Básico</div>
-          <div class="plan-desc">50 pacientes · 1 admin · 1 doctor</div>
-        </div>
-        <div class="plan-price" style="color:#4A9EFF">$299/mes</div>
-      </div>
-      <div class="plan" id="plan-profesional" onclick="selPlan('profesional')">
-        <div class="plan-radio"></div>
-        <div class="plan-info">
-          <div class="plan-name">🟢 Plan Profesional</div>
-          <div class="plan-desc">Ilimitado · 1 admin · 2 doctores · Métricas</div>
-        </div>
-        <div class="plan-price" style="color:#00C2A8">$599/mes</div>
-      </div>
-      <div class="plan" id="plan-premium" onclick="selPlan('premium')">
-        <div class="plan-radio"></div>
-        <div class="plan-info">
-          <div class="plan-name">🟡 Plan Premium</div>
-          <div class="plan-desc">Ilimitado · Usuarios ilimitados · KPI avanzados</div>
-        </div>
-        <div class="plan-price" style="color:#F4B942">$1,199/mes</div>
-      </div>
-    </div>
-
-    <!-- Nota gratis -->
-    <div class="free-note">
-      ✅ 7 días gratis con todas las funciones — no se cobra nada hasta que decidas continuar
-    </div>
-
-    <!-- Error -->
-    <div class="err" id="errBox"></div>
-
-    <!-- Botón -->
-    <button class="btn" id="btnReg" onclick="registrar()">
-      <span class="btn-txt">🚀 Crear cuenta gratis</span>
-      <div class="spin"></div>
-    </button>
-
-    <div class="login-link">
-      ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
+    <div class="trial-badge">
+      🎁 <strong>7 días gratis</strong> — Sin tarjeta de crédito · Cancela cuando quieras
     </div>
   </div>
 
-  <!-- Success -->
-  <div class="success" id="successWrap">
-    <div class="success-icon">🎉</div>
-    <div class="success-title">¡Bienvenido a Hersantych Dental!</div>
-    <div class="success-sub">
-      Tu cuenta fue creada exitosamente.<br>
-      Tienes <strong style="color:var(--teal)">7 días de prueba gratuita</strong>.<br><br>
-      Redirigiendo al sistema...
-    </div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill"></div>
+  <!-- RIGHT FORM -->
+  <div>
+    <div class="form-card">
+      <!-- STEP DOTS -->
+      <div class="step-dots">
+        <div class="step-dot active" id="dot0"></div>
+        <div class="step-dot" id="dot1"></div>
+        <div class="step-dot" id="dot2"></div>
+      </div>
+
+      <!-- STEP 0: Datos de la clínica -->
+      <div class="step-panel active" id="s0">
+        <div class="form-title">Crea tu cuenta gratuita</div>
+        <div class="form-sub">Primero cuéntanos sobre tu consultorio</div>
+        <div class="form-group"><label class="form-label">Nombre del consultorio *</label><input class="form-input" id="f-clinica" placeholder="Ej: Consultorio Dental García"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" id="f-ciudad" placeholder="Ciudad de México"></div>
+          <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-tel" placeholder="55 0000 0000" type="tel"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">¿Cuántos dentistas trabajan contigo?</label>
+          <select class="form-select" id="f-dentistas">
+            <option value="1">Solo yo (1 dentista)</option>
+            <option value="2">2 dentistas</option>
+            <option value="3-5">3 a 5 dentistas</option>
+            <option value="6+">Más de 5 dentistas</option>
+          </select>
+        </div>
+        <button class="btn-submit" onclick="goStep(1)"><span class="btn-text">Continuar →</span></button>
+      </div>
+
+      <!-- STEP 1: Plan -->
+      <div class="step-panel" id="s1">
+        <div class="form-title">Elige tu plan de prueba</div>
+        <div class="form-sub">7 días gratis con todas las funciones del plan seleccionado</div>
+        <div class="plan-cards-mini" id="planCards">
+          <div class="plan-mini selected" data-plan="basico" onclick="selectPlan('basico')">
+            <div class="plan-mini-dot"></div>
+            <div class="plan-mini-info">
+              <div class="plan-mini-name">🔵 Plan Básico</div>
+              <div class="plan-mini-desc">1 usuario · 50 pacientes · Funciones esenciales</div>
+            </div>
+            <div class="plan-mini-price" style="color:#4A9EFF">$299/mes</div>
+          </div>
+          <div class="plan-mini" data-plan="profesional" onclick="selectPlan('profesional')">
+            <div class="plan-mini-dot"></div>
+            <div class="plan-mini-info">
+              <div class="plan-mini-name">🟢 Plan Profesional</div>
+              <div class="plan-mini-desc">5 usuarios · Ilimitado · Métricas + Odontograma</div>
+            </div>
+            <div class="plan-mini-price" style="color:#00C2A8">$599/mes</div>
+          </div>
+          <div class="plan-mini" data-plan="premium" onclick="selectPlan('premium')">
+            <div class="plan-mini-dot"></div>
+            <div class="plan-mini-info">
+              <div class="plan-mini-name">🟡 Plan Premium</div>
+              <div class="plan-mini-desc">Ilimitado · Multi-sucursal · KPI avanzados</div>
+            </div>
+            <div class="plan-mini-price" style="color:#F4B942">$1,199/mes</div>
+          </div>
+        </div>
+        <div style="background:var(--teal-dim);border:1px solid rgba(0,194,168,.2);border-radius:8px;padding:10px 12px;font-size:.72rem;color:var(--teal);margin-top:10px;margin-bottom:4px">
+          ✅ Prueba gratis 7 días · No se cobra hasta que elijas continuar
+        </div>
+        <button class="btn-submit" onclick="goStep(2)" style="margin-top:10px"><span class="btn-text">Continuar →</span></button>
+        <button class="btn-back" onclick="goStep(0)">← Atrás</button>
+      </div>
+
+      <!-- STEP 2: Cuenta -->
+      <div class="step-panel" id="s2">
+        <div class="form-title">Crea tu acceso</div>
+        <div class="form-sub">Con estos datos entrarás al sistema cada vez</div>
+        <div class="form-group"><label class="form-label">Tu nombre completo *</label><input class="form-input" id="f-nombre" placeholder="Dr. Nombre Apellido"></div>
+        <div class="form-group"><label class="form-label">Correo electrónico *</label><input type="email" class="form-input" id="f-email" placeholder="doctor@miconsultorio.com"></div>
+        <div class="form-group"><label class="form-label">Contraseña *</label>
+          <div class="input-wrap">
+            <input type="password" class="form-input" id="f-pass" placeholder="Mínimo 6 caracteres">
+            <button class="toggle-pw" type="button" id="togglePw">👁</button>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Confirmar contraseña *</label><input type="password" class="form-input" id="f-pass2" placeholder="Repite tu contraseña"></div>
+        <div class="error-box" id="errBox"></div>
+        <div class="terms">Al registrarte aceptas los <a href="#">Términos de uso</a> y la <a href="#">Política de privacidad</a> de DentalOS.</div>
+        <button class="btn-submit" id="btnRegistrar" onclick="registrar()">
+          <span class="btn-text">🚀 Crear cuenta gratis</span>
+          <div class="spinner"></div>
+        </button>
+        <button class="btn-back" onclick="goStep(1)">← Atrás</button>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="success-wrap" id="successWrap">
+        <div class="success-icon">🎉</div>
+        <div class="success-title">¡Bienvenido a DentalOS!</div>
+        <div class="success-sub">Tu cuenta ha sido creada. Tienes <strong style="color:var(--teal)">7 días de prueba gratuita</strong> con todas las funciones del plan seleccionado.<br><br>Redirigiendo al sistema...</div>
+        <div style="width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:16px">
+          <div id="redirectBar" style="height:100%;background:var(--teal);width:0%;transition:width 3s linear;border-radius:2px"></div>
+        </div>
+      </div>
+
+      <div class="login-link">¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a></div>
     </div>
   </div>
-
 </div>
 
-<!-- Firebase -->
+<!-- Firebase SAAS (registro público) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Firebase DENTAL (sistema principal) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 
 <script>
-// ── Firebase configs ──────────────────────────────────────
-var SAAS_CFG = {
+// ── Firebase SAAS — registro público ─────────────────────
+const SAAS_CONFIG = {
   apiKey:"AIzaSyB1UNZg74oW0DyZEVd3NRnGJ323bV-gj5c",
   authDomain:"dental-saas-f689c.firebaseapp.com",
   projectId:"dental-saas-f689c",
   storageBucket:"dental-saas-f689c.firebasestorage.app",
-  messagingSenderId:"961684286875",
-  appId:"1:961684286875:web:da0f52fc9ae1e85df52eb2"
+  messagingSenderId:"621079090341",
+  appId:"1:621079090341:web:fea0ec621433143c03694c"
 };
-var DENTAL_CFG = {
+
+// ── Firebase DENTAL — sistema principal ──────────────────
+const DENTAL_CONFIG = {
   apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
   authDomain:"dental-add.firebaseapp.com",
   projectId:"dental-add",
@@ -281,150 +240,134 @@ var DENTAL_CFG = {
   appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
 };
 
-// Init apps (sin duplicar)
-function initApp(cfg, name) {
-  try { return firebase.app(name); }
-  catch(e) { return firebase.initializeApp(cfg, name); }
-}
-var saasApp   = initApp(SAAS_CFG,   'saas');
-var dentalApp = initApp(DENTAL_CFG, 'dental');
-var saasDB    = saasApp.firestore();
-var dentalAuth= dentalApp.auth();
-var dentalDB  = dentalApp.firestore();
+const saasApp   = firebase.initializeApp(SAAS_CONFIG,  'saas');
+const dentalApp = firebase.initializeApp(DENTAL_CONFIG,'dental');
+const saasAuth  = saasApp.auth();
+const saasDB    = saasApp.firestore();
+const dentalAuth = dentalApp.auth();
+const dentalDB   = dentalApp.firestore();
+
+let selectedPlan = 'basico';
+let currentStep  = 0;
+
+// ── Toggle password ───────────────────────────────────────
+document.getElementById('togglePw').addEventListener('click', () => {
+  const pw = document.getElementById('f-pass');
+  pw.type = pw.type === 'password' ? 'text' : 'password';
+});
 
 // ── Plan selector ─────────────────────────────────────────
-var planSel = 'basico';
-function selPlan(p) {
-  planSel = p;
-  ['basico','profesional','premium'].forEach(function(id) {
-    document.getElementById('plan-'+id).classList.toggle('sel', id===p);
-  });
-}
+window.selectPlan = function(plan) {
+  selectedPlan = plan;
+  document.querySelectorAll('.plan-mini').forEach(c => c.classList.toggle('selected', c.dataset.plan === plan));
+};
 
-// Pre-seleccionar desde URL si viene de landing
-var urlPlan = new URLSearchParams(window.location.search).get('plan');
-if(urlPlan && ['basico','profesional','premium'].indexOf(urlPlan) >= 0) {
-  selPlan(urlPlan);
-}
-
-// ── Helpers ───────────────────────────────────────────────
-function err(msg) {
-  var b = document.getElementById('errBox');
-  b.textContent = msg; b.className = 'err show';
-  b.scrollIntoView({behavior:'smooth', block:'center'});
-}
-function clearErr() {
-  document.getElementById('errBox').className = 'err';
-}
-function val(id) {
-  return document.getElementById(id).value.trim();
-}
-
-// ── Registrar ─────────────────────────────────────────────
-async function registrar() {
-  clearErr();
-
-  var clinica = val('f-clinica');
-  var nombre  = val('f-nombre');
-  var email   = val('f-email');
-  var pass    = document.getElementById('f-pass').value;
-  var pass2   = document.getElementById('f-pass2').value;
-  var ciudad  = val('f-ciudad');
-  var tel     = val('f-tel');
-
+// ── Step navigation ───────────────────────────────────────
+window.goStep = function(n) {
   // Validaciones
-  if(!clinica)       { err('⚠️ El nombre del consultorio es obligatorio'); return; }
-  if(!nombre)        { err('⚠️ Tu nombre es obligatorio'); return; }
-  if(!email)         { err('⚠️ El correo es obligatorio'); return; }
-  if(!pass)          { err('⚠️ La contraseña es obligatoria'); return; }
-  if(pass.length<6)  { err('⚠️ La contraseña debe tener mínimo 6 caracteres'); return; }
-  if(pass !== pass2) { err('⚠️ Las contraseñas no coinciden'); return; }
+  if (n === 1) {
+    const clinica = document.getElementById('f-clinica').value.trim();
+    if (!clinica) { alert('El nombre del consultorio es obligatorio'); return; }
+  }
+  document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  currentStep = n;
+  for(let i=0;i<3;i++){
+    const d=document.getElementById('dot'+i);
+    d.classList.toggle('active',i===n);
+    d.classList.toggle('done',i<n);
+    d.style.width = i===n ? '24px' : i<n ? '8px' : '8px';
+    d.style.background = i<=n ? 'var(--teal)' : 'var(--border)';
+  }
+};
 
-  var btn = document.getElementById('btnReg');
-  btn.disabled = true;
-  btn.classList.add('loading');
+// ── REGISTRO ──────────────────────────────────────────────
+window.registrar = async function() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const email  = document.getElementById('f-email').value.trim();
+  const pass   = document.getElementById('f-pass').value;
+  const pass2  = document.getElementById('f-pass2').value;
+  const errBox = document.getElementById('errBox');
+  errBox.classList.remove('show');
+
+  if (!nombre || !email || !pass) { errBox.textContent='Completa todos los campos'; errBox.classList.add('show'); return; }
+  if (pass !== pass2) { errBox.textContent='Las contraseñas no coinciden'; errBox.classList.add('show'); return; }
+  if (pass.length < 6) { errBox.textContent='La contraseña debe tener al menos 6 caracteres'; errBox.classList.add('show'); return; }
+
+  const btn = document.getElementById('btnRegistrar');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  const clinica    = document.getElementById('f-clinica').value.trim();
+  const ciudad     = document.getElementById('f-ciudad').value.trim();
+  const tel        = document.getElementById('f-tel').value.trim();
+  const dentistas  = document.getElementById('f-dentistas').value;
+  const trialEnd   = new Date(Date.now() + 7*24*60*60*1000); // 7 días
 
   try {
-    // 1. Crear usuario en dental-add
-    var cred = await dentalAuth.createUserWithEmailAndPassword(email, pass);
-    var uid  = cred.user.uid;
-    var cId  = 'clinica_' + uid;
-    var trialEnd = new Date(Date.now() + 7*24*60*60*1000);
+    // 1. Crear usuario en Firebase DENTAL (sistema principal)
+    const dentalCred = await dentalAuth.createUserWithEmailAndPassword(email, pass);
+    const uid = dentalCred.user.uid;
+    const clinicaId = 'clinica_' + uid;
 
-    // 2. Crear clínica
-    await dentalDB.collection('clinicas').doc(cId).set({
-      nombre: clinica, ciudad: ciudad, telefono: tel,
-      plan: 'trial', planDeseado: planSel,
+    // 2. Crear clínica en Firebase DENTAL
+    await dentalDB.collection('clinicas').doc(clinicaId).set({
+      nombre: clinica, ciudad, telefono: tel,
+      plan: 'trial',
+      planSeleccionado: selectedPlan, // plan que quiere cuando pague
       trialEnd: firebase.firestore.Timestamp.fromDate(trialEnd),
-      adminUid: uid, activo: true, tema: 'dark',
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+      adminUid: uid, activo: true,
+      tema: 'dark', // tema por defecto
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // 3. Crear usuario
+    // 3. Crear usuario en Firebase DENTAL
     await dentalDB.collection('usuarios').doc(uid).set({
-      nombre: nombre, email: email, rol: 'admin',
-      clinicaId: cId, activo: true,
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+      nombre, email, rol: 'admin',
+      clinicaId, activo: true,
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // 4. Log en SAAS (no bloquea)
-    saasDB.collection('solicitudes').add({
-      uid: uid, clinica: clinica, nombre: nombre, email: email,
-      tel: tel, ciudad: ciudad, planDeseado: planSel,
-      trialEnd: trialEnd.toISOString(), estado: 'trial',
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp()
-    }).catch(function(e){ console.warn('SAAS:', e.message); });
+    // 4. Registrar solicitud en Firebase SAAS (para tu panel maestro)
+    await saasDB.collection('solicitudes').add({
+      uid, clinica, nombre, email, tel, ciudad, dentistas,
+      planDeseado: selectedPlan,
+      trialEnd: trialEnd.toISOString(),
+      estado: 'trial',
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    });
 
-    // 5. Catálogo inicial
-    var items = [
-      ['Consulta','Valoración y diagnóstico',400,300,500],
-      ['Limpieza','Profilaxis dental',700,500,900],
-      ['Endodoncia','Tratamiento de conducto',9500,7000,12000],
-      ['Resina','Restauración composite',2500,1500,3500],
-      ['Corona','Corona de porcelana',13000,8000,18000],
-      ['Extraccion','Extracción simple',900,600,1200],
-      ['Blanqueamiento','Con lámpara LED',3750,2500,5000],
+    // 5. Crear catálogo inicial
+    const catalogoInicial = [
+      {tratamiento:'Consulta',desc:'Valoración y diagnóstico',min:300,max:500,sugerido:400,vigente:true},
+      {tratamiento:'Limpieza',desc:'Profilaxis dental + fluoruro',min:500,max:900,sugerido:700,vigente:true},
+      {tratamiento:'Endodoncia',desc:'Tratamiento de conducto',min:7000,max:12000,sugerido:9500,vigente:true},
+      {tratamiento:'Resina',desc:'Restauración de composite',min:1500,max:3500,sugerido:2500,vigente:true},
+      {tratamiento:'Corona',desc:'Corona de porcelana/zirconia',min:8000,max:18000,sugerido:13000,vigente:true},
+      {tratamiento:'Extracción Simple',desc:'Sin complicaciones',min:600,max:1200,sugerido:900,vigente:true},
+      {tratamiento:'Blanqueamiento',desc:'Con lámpara LED',min:2500,max:5000,sugerido:3750,vigente:true},
     ];
-    var batch = dentalDB.batch();
-    items.forEach(function(i) {
-      var ref = dentalDB.collection('clinicas').doc(cId).collection('catalogo')
-                        .doc(i[0].toLowerCase());
-      batch.set(ref, {
-        tratamiento: i[0], desc: i[1],
-        sugerido: i[2], min: i[3], max: i[4],
-        vigente: true,
-        creadoEn: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    });
-    await batch.commit();
+    for (const item of catalogoInicial) {
+      await dentalDB.collection('clinicas').doc(clinicaId).collection('catalogo')
+        .doc(item.tratamiento.replace(/\s+/g,'-').toLowerCase())
+        .set({...item, creadoEn: firebase.firestore.FieldValue.serverTimestamp()});
+    }
 
-    // 6. Mostrar éxito
-    document.getElementById('formWrap').style.display = 'none';
-    document.getElementById('successWrap').style.display = 'block';
-    setTimeout(function(){
-      document.getElementById('progressFill').style.width = '100%';
-    }, 100);
-    setTimeout(function(){ window.location.href = 'index.html'; }, 3200);
+    // 6. Mostrar éxito y redirigir
+    document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('successWrap').style.display='block';
+    document.getElementById('redirectBar').style.width='100%';
+    setTimeout(() => { window.location.href = 'index.html'; }, 3200);
 
   } catch(e) {
-    console.error(e);
-    var msgs = {
-      'auth/email-already-in-use': '⚠️ Este correo ya tiene cuenta. Ve a iniciar sesión.',
-      'auth/weak-password':        '⚠️ Contraseña muy débil. Usa mínimo 6 caracteres.',
-      'auth/invalid-email':        '⚠️ El correo no es válido.',
-      'auth/network-request-failed':'⚠️ Sin conexión a internet. Intenta de nuevo.',
-      'auth/too-many-requests':    '⚠️ Demasiados intentos. Espera unos minutos.',
+    const msgs = {
+      'auth/email-already-in-use':'Este correo ya está registrado. ¿Ya tienes cuenta?',
+      'auth/weak-password':'La contraseña es demasiado débil',
+      'auth/invalid-email':'Correo electrónico inválido',
     };
-    err(msgs[e.code] || '⚠️ Error: ' + e.message);
-    btn.disabled = false;
-    btn.classList.remove('loading');
+    errBox.textContent = msgs[e.code] || 'Error: ' + e.message;
+    errBox.classList.add('show');
+    btn.classList.remove('loading'); btn.disabled = false;
   }
-}
-
-// Enter para registrar
-document.addEventListener('keydown', function(e) {
-  if(e.key === 'Enter') registrar();
-});
+};
 </script>
 </body>
 </html>
