@@ -282,17 +282,33 @@ async function initSession(requiredPage) {
 
               var clinicaData = Object.assign({ id: clinicaId }, clinicaSnap.data());
 
-              // Verificar permiso de página según rol
-              var ROLES_PERM = {
-                admin:    'any',
-                doctor:   ['agenda','pacientes','tratamientos','odontograma','recetas'],
-                recepcion:['agenda','pacientes','tratamientos','abonos','cotizacion',
-                           'catalogo','corte-caja','busqueda'],
+              // ── Control de acceso por permisos individuales ──────
+              // Prioridad: 1) userData.permisos (personalizado por admin)
+              //            2) ROL_DEFAULT (fallback si no tiene permisos guardados)
+              var ROL_DEFAULT_PERMS = {
+                admin:     null, // null = acceso total
+                doctor:    ['agenda','pacientes','tratamientos','odontograma',
+                            'expediente','recetas','inventario'],
+                recepcion: ['agenda','pacientes','cotizacion','abonos','catalogo',
+                            'recordatorios','expediente','recibo','busqueda',
+                            'corte-caja','estado-cuenta'],
+                asistente: ['agenda','pacientes','busqueda'],
               };
               var rol = userData.rol || 'recepcion';
-              var perms = ROLES_PERM[rol];
-              if (requiredPage && requiredPage !== 'any' && perms !== 'any') {
-                if (perms.indexOf(requiredPage) === -1) {
+              var isAdminRole = rol === 'admin';
+
+              // Permisos efectivos: los del doc (admin los configura) o defaults del rol
+              var userPermisos = userData.permisos || ROL_DEFAULT_PERMS[rol] || [];
+              // Admin siempre tiene acceso total, ignorar lista
+              var permsEfectivos = isAdminRole ? null : userPermisos;
+
+              // Guardar en SESSION para uso en sidebar y otros checks
+              userData._permsEfectivos = permsEfectivos;
+
+              // Verificar acceso a la página requerida
+              if (requiredPage && requiredPage !== 'any' && !isAdminRole) {
+                var allowed = permsEfectivos && permsEfectivos.indexOf(requiredPage) !== -1;
+                if (!allowed) {
                   window.location.replace('index.html');
                   resolve(null); return;
                 }
@@ -351,25 +367,68 @@ function setFavicon() {
   }catch(e){}
 }
 
+// ── MAPA COMPLETO: página → clave de permiso ────────────────
+// Escalable: agregar páginas nuevas aquí y en usuarios.html ALL_PAGES
+const PAGE_PERM_MAP = {
+  'index':          null,           // dashboard: todos acceden siempre
+  'agenda':         'agenda',
+  'pacientes':      'pacientes',
+  'expediente':     'expediente',
+  'tratamientos':   'tratamientos',
+  'abonos':         'abonos',
+  'catalogo':       'catalogo',
+  'cotizacion':     'cotizacion',
+  'corte-caja':     'corte-caja',
+  'recetas':        'recetas',
+  'odontograma':    'odontograma',
+  'inventario':     'inventario',
+  'recordatorios':  'recordatorios',
+  'metricas':       'metricas',
+  'reportes':       'reportes',
+  'ofertas':        'ofertas',
+  'recibo':         'recibo',
+  'estado-cuenta':  'estado-cuenta',
+  'busqueda':       'busqueda',
+  'importar-datos': 'importar',
+  'usuarios':       'usuarios',
+  'configuracion':  'configuracion',
+  'planes':         null,            // siempre visible
+};
+
+// ¿Tiene el usuario permiso para una página?
+function userCanAccess(page) {
+  if (!SESSION) return false;
+  if (SESSION.user.rol === 'admin') return true;
+  const perm = PAGE_PERM_MAP[page];
+  if (perm === null) return true;                      // página pública del sistema
+  const perms = SESSION.user._permsEfectivos || [];
+  return perms.includes(perm);
+}
+window.userCanAccess = userCanAccess;
+
 function renderSidebar() {
   if (!SESSION) return;
   const { clinica, user } = SESSION;
-  // Siempre leer el plan fresco de SESSION.clinica.plan
   const planKey = clinica.plan || 'basico';
-  const plan = PLANES[planKey] || PLANES.basico;
-  const feats = plan.features;
+  const plan    = PLANES[planKey] || PLANES.basico;
+  const feats   = plan.features;
   const isAdmin = user.rol === 'admin';
 
   function navItem(page, icon, label, feat) {
-    // Admin siempre tiene acceso a todo sin importar el plan
-    // Para otros roles: verificar que la feature esté en el plan
-    const locked = feat && feat !== 'any' && !feats.includes(feat) && !isAdmin;
+    // 1. Sin permiso → no aparece en el sidebar
+    if (!userCanAccess(page)) return '';
+
+    // 2. Plan no incluye la feature → mostrar bloqueado (solo si tiene permiso de rol)
+    const planLocked = feat && feat !== 'any' && !feats.includes(feat) && !isAdmin;
     const active = window.CURRENT_PAGE === page ? 'active' : '';
-    const cls = locked ? 'nav-item locked' : `nav-item ${active}`;
-    const href = locked ? '#' : `${page}.html`;
-    const planNecesario = ['metricas','odontograma','inventario','reportes','usuarios','ofertas'].includes(feat) ? 'Profesional' : 'Premium';
-    const onclick = locked ? `event.preventDefault();showToast('Requiere plan ${planNecesario}','info')` : '';
-    return `<a href="${href}" class="${cls}" data-page="${page}" ${onclick ? `onclick="${onclick}"` : ''}>${icon} ${label}</a>`;
+    const cls    = planLocked ? 'nav-item locked' : `nav-item ${active}`;
+    const href   = planLocked ? '#' : `${page}.html`;
+    const planNecesario = ['metricas','odontograma','inventario','reportes',
+                           'usuarios','ofertas'].includes(feat) ? 'Profesional' : 'Premium';
+    const onclick = planLocked
+      ? `event.preventDefault();showToast('Requiere plan ${planNecesario}','info')`
+      : '';
+    return `<a href="${href}" class="${cls}" data-page="${page}" ${onclick?`onclick="${onclick}"`:''}>${icon} ${label}</a>`;
   }
 
   const html = `
