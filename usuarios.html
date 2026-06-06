@@ -240,7 +240,7 @@ async function loadUsers(){
 // ── RENDER GRID ───────────────────────────────────────────────
 function renderGrid(){
   const grid = document.getElementById('userGrid');
-  const isAdmin = SESSION?.user?.rol === 'admin';
+  const isAdmin = SESSION?.user?.rol === 'admin' || SESSION?.user?.rol === 'owner';
   const myUid   = SESSION?.user?.uid;
 
   if(!allUsers.length){
@@ -310,7 +310,8 @@ function renderGrid(){
 
 // ── PERMS GRID (modal) ────────────────────────────────────────
 function buildPermsGrid(selectedPerms, isAdminRol){
-  const isCurrentAdmin = SESSION?.user?.rol === 'admin';
+  // Owner y admin pueden gestionar permisos de otras cuentas
+  const isCurrentAdmin = SESSION?.user?.rol === 'admin' || SESSION?.user?.rol === 'owner';
   const grid = document.getElementById('permsGrid');
   const warn = document.getElementById('adminWarning');
   const note = document.getElementById('adminPermsNote');
@@ -345,7 +346,7 @@ function buildPermsGrid(selectedPerms, isAdminRol){
 }
 
 function onPermChange(key, cb){
-  if(SESSION?.user?.rol!=='admin'){ cb.checked = !cb.checked; return; }
+  const r=SESSION?.user?.rol; if(r!=='admin'&&r!=='owner'){ cb.checked = !cb.checked; return; }
   const item = document.getElementById('perm-item-'+key);
   if(item) item.classList.toggle('checked', cb.checked);
 }
@@ -483,7 +484,8 @@ async function saveUser(){
 
 // ── ELIMINAR USUARIO ──────────────────────────────────────────
 async function deleteUser(id){
-  if(SESSION?.user?.rol!=='admin'){ showToast('Solo el administrador puede eliminar usuarios','error'); return; }
+  const callerRol = SESSION?.user?.rol;
+  if(callerRol!=='admin'&&callerRol!=='owner'){ showToast('Solo el administrador o propietario puede eliminar usuarios','error'); return; }
   const u = allUsers.find(x=>x.id===id);
   const ok = await confirmDialog(`¿Eliminar al usuario ${u?.nombre||''}?\nSe eliminará su acceso al sistema. Esta acción no se puede deshacer.`);
   if(!ok) return;

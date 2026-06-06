@@ -48,7 +48,7 @@ const PLANES = {
   premium: {
     nombre:'Premium', color:'#F4B942', maxPacientes:Infinity, maxUsuarios:Infinity,
     maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:1,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','multisucursal','grupo'],
   },
   // ── Planes multi-sucursal ─────────────────────────────────
   'multi-3': {
@@ -475,7 +475,7 @@ function renderSidebar() {
     if (!userCanAccess(page)) return '';
 
     // 2. Plan no incluye la feature → mostrar bloqueado (solo si tiene permiso de rol)
-    const planLocked = feat && feat !== 'any' && !feats.includes(feat) && !isAdmin;
+    const planLocked = feat && feat !== 'any' && !feats.includes(feat) && !isAdmin && rol !== 'owner' && rol !== 'director';
     const active = window.CURRENT_PAGE === page ? 'active' : '';
     const cls    = planLocked ? 'nav-item locked' : `nav-item ${active}`;
     const href   = planLocked ? '#' : `${page}.html`;
