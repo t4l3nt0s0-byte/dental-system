@@ -201,15 +201,13 @@ function showTrialBannerIfNeeded() {
 function applyTema(tema, colorPrimario) {
   var t = tema || localStorage.getItem('dental_tema') || 'dark';
   var c = colorPrimario || localStorage.getItem('dental_color') || '';
-
-  // Guardar preferencia
   localStorage.setItem('dental_tema', t);
   if (c) localStorage.setItem('dental_color', c);
 
-  // ① Cambiar tema — INSTANTÁNEO (el CSS hace todo)
+  // ── Cambio INSTANTÁNEO: un solo atributo, CSS hace todo ──
   document.documentElement.setAttribute('data-theme', t);
 
-  // ② Color de acento personalizado
+  // ── Color de acento personalizado ──
   if (c && /^#[0-9A-Fa-f]{6}$/.test(c)) {
     var r = parseInt(c.slice(1,3),16);
     var g = parseInt(c.slice(3,5),16);

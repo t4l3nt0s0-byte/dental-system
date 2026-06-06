@@ -838,3 +838,86 @@ html[data-theme="light"] .hamburger { background: #fff; border-color: rgba(0,0,0
   .dmc-val { font-size: 1.3rem; }
   .dash-grid { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHT THEME — Component overrides
+   These fix elements that have hardcoded dark colors
+   All appended safely — no existing rules modified
+══════════════════════════════════════════════════════════════ */
+
+/* Smooth transition when switching themes */
+body, .sidebar, .topbar, .main, .content,
+.dash-card, .ds-table-wrap, .modal,
+.form-input, .form-select, .form-textarea, .btn-ghost {
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+
+/* Nav items in light mode */
+html[data-theme="light"] .nav-item { color: rgba(17,24,39,.62); }
+html[data-theme="light"] .nav-item:hover { background: rgba(0,0,0,.04); color: #111827; }
+html[data-theme="light"] .nav-item.active { background: rgba(0,194,168,.1); color: var(--teal); }
+html[data-theme="light"] .nav-section { color: rgba(17,24,39,.35); }
+
+/* Sidebar footer */
+html[data-theme="light"] .clinic-name { color: #111827; }
+html[data-theme="light"] .clinic-info { color: rgba(17,24,39,.5); }
+html[data-theme="light"] .sidebar-footer button { color: rgba(17,24,39,.5); }
+
+/* Topbar */
+html[data-theme="light"] .topbar { box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+html[data-theme="light"] .topbar-title { color: #111827; }
+html[data-theme="light"] .btn-ghost { color: #374151; border-color: rgba(0,0,0,.14); }
+html[data-theme="light"] .btn-ghost:hover { background: #f0f4f8; color: #111827; }
+
+/* Text */
+html[data-theme="light"] .greeting-title { color: #111827; }
+html[data-theme="light"] .greeting-sub { color: rgba(17,24,39,.5); }
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3 { color: #111827; }
+
+/* Tables */
+html[data-theme="light"] .ds-table td { color: #111827; }
+html[data-theme="light"] .ds-table thead th { color: rgba(17,24,39,.5); }
+html[data-theme="light"] .ds-table tbody tr:hover { background: #f8fafc; }
+html[data-theme="light"] .ds-table-head { background: #f8fafc; }
+
+/* Forms */
+html[data-theme="light"] select,
+html[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="light"] textarea {
+  background: #ffffff;
+  color: #111827;
+  border-color: rgba(0,0,0,.12);
+}
+html[data-theme="light"] .form-input::placeholder,
+html[data-theme="light"] .form-textarea::placeholder { color: rgba(17,24,39,.3); }
+
+/* Cards */
+html[data-theme="light"] .tt-nombre,
+html[data-theme="light"] .ct-nombre { color: #111827; }
+html[data-theme="light"] .tt-trat,
+html[data-theme="light"] .ct-trat { color: rgba(17,24,39,.5); }
+html[data-theme="light"] .cita-px { color: #111827; }
+html[data-theme="light"] .cita-trat { color: rgba(17,24,39,.5); }
+html[data-theme="light"] .empty-mini { color: rgba(17,24,39,.4); }
+html[data-theme="light"] .doc-name { color: #111827; }
+html[data-theme="light"] .doc-esp { color: rgba(17,24,39,.45); }
+
+/* Select in tables */
+html[data-theme="light"] .tt-select {
+  background: #ffffff;
+  color: #111827;
+  border-color: rgba(0,0,0,.12);
+}
+
+/* Modal */
+html[data-theme="light"] .modal-overlay { background: rgba(0,0,0,.4); }
+html[data-theme="light"] .modal-title { color: #111827; }
+
+/* Hamburger */
+html[data-theme="light"] .hamburger {
+  background: #ffffff;
+  color: #374151;
+  border-color: rgba(0,0,0,.12);
+}
