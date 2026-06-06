@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Panel Clínico</title>
+<title>Hersantych Dental · Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -227,7 +227,7 @@
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">📊 Panel Clínico</div>
+    <div class="topbar-title">📊 Dashboard Clínico</div>
     <div class="topbar-actions" style="gap:12px">
       <div style="display:flex;align-items:center;gap:12px">
         <div style="display:flex;align-items:center;gap:5px;font-size:.78rem;font-family:var(--font-mono)">
@@ -337,7 +337,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="btnCancelarFinCita">Cancelar</button>
-      <button class="btn btn-primary" id="btnConfirmFinCita">✅ Confirmar</button>
+      <button class="btn btn-primary" id="btnConfirmFinCita" onclick="confirmarFinCita()">✅ Confirmar</button>
     </div>
   </div>
 </div>
@@ -466,7 +466,7 @@ function renderDashboard(clinica,user){
   <!-- GREETING -->
   <div class="greeting">
     <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
-    <div class="greeting-sub">${clinica.nombre||'DentalOS'}</div>
+    <div class="greeting-sub">${clinica.nombre||'Hersantych Dental'}</div>
   </div>
 
   <!-- MÉTRICAS DEL DÍA -->
@@ -575,7 +575,10 @@ function renderEstadoDoctores(){
   if(!el||!ALL_DOCTORES.length) return;
   const hA=getHoraMin(), ch=getCitasHoy();
 
-  // Estado por doctor
+  // Usar getCitasEnCurso() para detectar citas activas — es la fuente de verdad
+  // Esto cubre tanto estado='En tratamiento' como citas detectadas por hora
+  const citasActivas = getCitasEnCurso();
+
   const CFG={
     consulta:  {col:'#FF8C00',bg:'rgba(255,140,0,.08)', border:'rgba(255,140,0,.25)',  lbl:'En consulta',  icon:'🩺', canToggle:false},
     disponible:{col:'#34D399',bg:'rgba(52,211,153,.07)',border:'rgba(52,211,153,.22)', lbl:'Disponible',   icon:'✅', canToggle:false},
@@ -585,13 +588,15 @@ function renderEstadoDoctores(){
   };
 
   const rows=ALL_DOCTORES.map(doc=>{
-    const act=ch.find(c=>c.doctor===doc.nombre&&c.estado==='En tratamiento');
+    // Buscar cita activa usando la misma lógica que renderEnConsulta
+    const act = citasActivas.find(c=>c.doctor===doc.nombre);
+
     const ult=[...ch].filter(c=>c.doctor===doc.nombre&&c.estado==='Completado')
                .sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0];
     const pausa=ult?.pausaDoctor||'';
 
     let tipo='disponible';
-    if(act)            tipo='consulta';
+    if(act)                   tipo='consulta';
     else if(pausa==='baño')   tipo='pausa';
     else if(pausa==='comida') tipo='comida';
     else if(pausa==='salida') tipo='salida';
@@ -644,10 +649,25 @@ function renderEstadoDoctores(){
       <td>${pacienteTd}</td>
       <td>${tiempoTd}</td>
       <td style="text-align:right">
-        ${act?`<button class="btn btn-ghost btn-sm" style="font-size:.68rem"
-            onclick="abrirFinalizarConsulta('${act.id}','${(act.paciente||'').replace(/'/g,"\\'")}','${(act.tratamiento||'').replace(/'/g,"\\'")}',0,${(durEst(act.tratamiento)||30)+(act.tiempoExtra||0)})">
-            ✅ Finalizar
-          </button>`:''}
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+          ${act?`
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem"
+              onclick="abrirFinalizarConsulta('${act.id}','${(act.paciente||'').replace(/'/g,"\\'")}','${(act.tratamiento||'').replace(/'/g,"\\'")}',0,${(durEst(act.tratamiento)||30)+(act.tiempoExtra||0)})">
+              ✅ Finalizar
+            </button>
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:var(--blue);border-color:rgba(74,158,255,.3)"
+              onclick="abrirExpedienteDoctor('${(act.paciente||'').replace(/'/g,"\\'")}','${act.expId||''}')">
+              📋 Expediente
+            </button>
+            <button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:var(--teal);border-color:rgba(0,194,168,.3)"
+              onclick="abrirRecetaDoctor('${doc.nombre}','${act.paciente||''}','${act.id||''}')">
+              💊 Receta
+            </button>`
+          :`<button class="btn btn-ghost btn-sm" style="font-size:.68rem;color:var(--teal);border-color:rgba(0,194,168,.3)"
+              onclick="abrirRecetaDoctor('${doc.nombre}','','')">
+              💊 Receta
+            </button>`}
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -660,7 +680,7 @@ function renderEstadoDoctores(){
         <span style="background:rgba(74,158,255,.14);color:var(--blue);font-size:.58rem;font-weight:700;border-radius:20px;padding:1px 8px">${ALL_DOCTORES.length}</span>
       </div>
       <span style="font-size:.65rem;color:var(--text-dim)">
-        ${ALL_DOCTORES.filter(d=>{const a=ch.find(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');return !a&&!(([...ch].filter(c=>c.doctor===d.nombre&&c.estado==='Completado').sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0])?.pausaDoctor);}).length} disponible${ALL_DOCTORES.filter(d=>{const a=ch.find(c=>c.doctor===d.nombre&&c.estado==='En tratamiento');return !a&&!(([...ch].filter(c=>c.doctor===d.nombre&&c.estado==='Completado').sort((a,b)=>(b.finalizadoEn||'').localeCompare(a.finalizadoEn||''))[0])?.pausaDoctor);}).length!==1?'s':''}
+        ${ALL_DOCTORES.filter(d=>!citasActivas.find(c=>c.doctor===d.nombre)).length} disponible${ALL_DOCTORES.filter(d=>!citasActivas.find(c=>c.doctor===d.nombre)).length!==1?'s':''}
       </span>
     </div>
     <table class="ds-table">
@@ -678,7 +698,30 @@ function renderEstadoDoctores(){
   </div>`;
 }
 
-// ── TOGGLE DISPONIBLE ─────────────────────────────────────
+// ── ABRIR EXPEDIENTE DESDE PANEL DE DOCTORES ─────────────
+window.abrirExpedienteDoctor = function(pacienteNombre, expIdDirecto){
+  // Primero usar id directo, sino buscar por nombre
+  const pxId = expIdDirecto || (ALL_PACIENTES.find(p=>p.nombre===pacienteNombre)?.id||'');
+  if(pxId){
+    window.location.href='expediente.html?px='+pxId;
+  } else {
+    showToast('Sin expediente registrado para este paciente','error');
+  }
+};
+
+// ── ABRIR RECETA DESDE PANEL DE DOCTORES ─────────────────
+window.abrirRecetaDoctor = function(doctorNombre, pacienteNombre, citaId){
+  const params = new URLSearchParams();
+  if(doctorNombre) params.set('doctor',   doctorNombre);
+  if(pacienteNombre) params.set('paciente', pacienteNombre);
+  if(citaId)       params.set('cita',     citaId);
+  // Buscar id del paciente para prellenar expediente
+  const px = ALL_PACIENTES.find(p=>p.nombre===pacienteNombre);
+  if(px?.id) params.set('pxId', px.id);
+  window.location.href = 'recetas.html?' + params.toString();
+};
+
+
 window.toggleDoctorDisponible = async function(doctorNombre, citaId){
   try{
     // Limpiar pausa en la última cita completada del doctor
@@ -794,7 +837,7 @@ function buildConsultaCard(c){
     }</td>
     <td style="text-align:right">
       <div class="ct-actions">
-        ${c.expId?`<a href="expediente.html?px=${c.expId}" class="btn btn-ghost btn-sm" style="font-size:.67rem">📋 Expediente</a>`:''}
+
         <button class="btn btn-sm btn-fin" style="font-size:.72rem;font-weight:800;white-space:nowrap" onclick="abrirFinalizarConsulta('${c.id}','${(c.paciente||'').replace(/'/g,"\\'")}','${(c.tratamiento||'').replace(/'/g,"\\'")}',${trans},${dur})">✅ Finalizar consulta</button>
       </div>
     </td>
@@ -1418,7 +1461,8 @@ function initModalEvents(){
   const btnConfirm  = document.getElementById('btnConfirmFinCita');
   if(btnCerrar)   btnCerrar.onclick   = ()=>closeModal('modalFinCita');
   if(btnCancelar) btnCancelar.onclick = ()=>closeModal('modalFinCita');
-  if(btnConfirm)  btnConfirm.onclick  = confirmarFinCita;
+  // Usar wrapper para que confirmarFinCita se resuelva en tiempo de ejecución
+  if(btnConfirm)  btnConfirm.onclick  = ()=>confirmarFinCita();
 
   // Opciones de estado — usar onclick para evitar listeners acumulados
   document.querySelectorAll('.opt-estado').forEach(el=>{
@@ -1608,18 +1652,7 @@ function resetPausa(){
   });
 }
 
-// Botones del modal
-document.addEventListener('DOMContentLoaded',function(){
-  const btnC=document.getElementById('btnCerrarFinCita');
-  const btnX=document.getElementById('btnCancelarFinCita');
-  const btnOk=document.getElementById('btnConfirmFinCita');
-  if(btnC) btnC.onclick=()=>closeModal('modalFinCita');
-  if(btnX) btnX.onclick=()=>closeModal('modalFinCita');
-  if(btnOk) btnOk.onclick=confirmarFinCita;
-  resetPausa();
-});
-
-// Abrir receta médica desde el modal de finalizar consulta
+// Botones del modal — asignados en // Abrir receta médica desde el modal de finalizar consulta
 window.abrirRecetaDesdeModal = function(){
   const cita = ALL_CITAS.find(c=>c.id===citaActualId);
   if(!cita) return;
@@ -1635,6 +1668,7 @@ window.abrirRecetaDesdeModal = function(){
 };
 
 async function confirmarFinCita(){
+  const estado   = _estadoSeleccionado;
   const pausa    = _pausaSeleccionada||'';
   const notas    = (document.getElementById('finCitaNotas')||{}).value||'';
   const extraMin = estado==='Extendido'?parseInt((document.getElementById('tiempoExtraMin')||{}).value||30):0;
