@@ -293,13 +293,12 @@ async function initSession(requiredPage) {
             resolve(null); return;
           }
 
-          // ── Multi-sucursal: owner/director usan clinicaActiva o la primera ──
+          // ── Multi-sucursal: owner/director usan clinicaActiva o su clinicaId base ──
           var rol = userData.rol || 'recepcion';
-          var isMultiRol = (rol === 'owner' || rol === 'director');
           var clinicaId = userData.clinicaActiva || userData.clinicaId;
           if (!clinicaId) { resolve(null); return; }
-          // Guardar orgId en SESSION para consultas del grupo
-          var orgId = userData.orgId || clinicaId;
+          // orgId: si no está seteado, usar clinicaId como raíz de la organización
+          var orgId = userData.orgId || userData.clinicaId || clinicaId;
 
           db.collection('clinicas').doc(clinicaId).get()
             .then(function(clinicaSnap) {

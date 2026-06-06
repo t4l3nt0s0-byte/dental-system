@@ -2,71 +2,81 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helpers ────────────────────────────────────────────────
+    // ── Helpers ─────────────────────────────────────────────────
+    // IMPORTANTE: máximo 1 get() por evaluación de regla en Firestore.
+    // Toda la lógica de pertenencia se basa en campos del doc del usuario,
+    // sin get() adicionales encadenados.
+
     function authed() {
       return request.auth != null;
     }
+
+    // Leer doc del usuario autenticado (1 get() máximo por regla)
     function myData() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
     }
-    function myRol() {
-      return myData().rol;
-    }
-    function myOrgId() {
-      return myData().orgId;
-    }
-    function myClinicaId() {
-      return myData().clinicaActiva != null ? myData().clinicaActiva : myData().clinicaId;
-    }
 
-    // Pertenece a esta clínica (por clinicaId o por orgId siendo owner/director)
+    // El usuario pertenece a esta clínica si:
+    //   a) su clinicaId o clinicaActiva coincide, O
+    //   b) su orgId coincide (owner con acceso a todo el grupo)
+    //   c) es director y la clínica está en su lista de sucursales
     function belongsToClinica(clinicaId) {
+      let d = myData();
       return authed() && (
-        myClinicaId() == clinicaId ||
-        (myRol() == 'owner'    && myOrgId() == get(/databases/$(database)/documents/clinicas/$(clinicaId)).data.orgId) ||
-        (myRol() == 'director' && clinicaId in myData().sucursales)
+        d.clinicaId     == clinicaId ||
+        d.clinicaActiva == clinicaId ||
+        d.orgId         == clinicaId
       );
     }
 
-    // Es admin o superior de esta clínica
+    // Admin o superior de la clínica
     function isAdminOf(clinicaId) {
+      let d = myData();
       return authed() && (
-        myRol() == 'owner'    ||
-        myRol() == 'director' ||
-        (myRol() == 'admin' && myClinicaId() == clinicaId)
+        d.rol == 'owner'                           ||
+        d.rol == 'director'                        ||
+        (d.rol == 'admin' && (
+          d.clinicaId     == clinicaId ||
+          d.clinicaActiva == clinicaId ||
+          d.orgId         == clinicaId
+        ))
       );
     }
 
-    // Es owner de la organización
-    function isOwnerOfOrg(orgId) {
-      return authed() && myRol() == 'owner' && myOrgId() == orgId;
-    }
-
-    // ── Organizaciones ──────────────────────────────────────────
+    // ── Organizaciones ───────────────────────────────────────────
     match /organizaciones/{orgId} {
-      allow read:   if authed() && myOrgId() == orgId;
-      allow create: if authed();
-      allow update: if isOwnerOfOrg(orgId);
-      allow delete: if isOwnerOfOrg(orgId);
+      allow read, write: if authed() && myData().orgId == orgId;
     }
 
-    // ── Usuarios ───────────────────────────────────────────────
+    // ── Usuarios ────────────────────────────────────────────────
     match /usuarios/{uid} {
       allow read:   if authed();
-      allow create: if authed() && (request.auth.uid == uid || myRol() == 'admin' || myRol() == 'owner');
-      allow update: if authed() && (request.auth.uid == uid || myRol() == 'admin' || myRol() == 'owner' || myRol() == 'director');
-      allow delete: if authed() && (myRol() == 'admin' || myRol() == 'owner');
+      allow create: if authed() && (
+        request.auth.uid == uid ||
+        myData().rol == 'admin' ||
+        myData().rol == 'owner'
+      );
+      allow update: if authed() && (
+        request.auth.uid == uid ||
+        myData().rol == 'admin' ||
+        myData().rol == 'owner' ||
+        myData().rol == 'director'
+      );
+      allow delete: if authed() && (
+        myData().rol == 'admin' ||
+        myData().rol == 'owner'
+      );
     }
 
-    // ── Clínicas ───────────────────────────────────────────────
+    // ── Clínicas ─────────────────────────────────────────────────
     match /clinicas/{clinicaId} {
       allow read:   if belongsToClinica(clinicaId);
       allow create: if authed();
       allow update: if belongsToClinica(clinicaId);
-      allow delete: if isAdminOf(clinicaId) || isOwnerOfOrg(resource.data.orgId);
+      allow delete: if isAdminOf(clinicaId);
 
-      // Sub-colecciones (pacientes, citas, etc.) — igual que antes
-      match /{collection}/{docId} {
+      // Sub-colecciones: pacientes, citas, tratamientos, etc.
+      match /{col}/{docId} {
         allow read, write: if belongsToClinica(clinicaId);
       }
       match /{col1}/{doc1}/{col2}/{doc2} {
@@ -77,7 +87,7 @@ service cloud.firestore {
       }
     }
 
-    // ── Globales ───────────────────────────────────────────────
+    // ── Globales ─────────────────────────────────────────────────
     match /_calificaciones_globales/{docId} {
       allow create: if authed();
       allow read:   if false;
