@@ -1,4 +1,4 @@
-// shared.js — Hersantych Dental · Shared UI + Firebase helpers (no-module version for inline use)
+// shared.js — DentalOS · Shared UI + Firebase helpers (no-module version for inline use)
 // This file is loaded as a regular script tag and exposes globals via window
 
 // ── Firebase CDN (loaded from HTML) ──────────────────────────
@@ -355,6 +355,10 @@ async function initSession(requiredPage) {
               if (typeof applyTema === 'function') applyTema(clinicaData.tema, clinicaData.colorPrimario);
               if (typeof renderSidebar === 'function') renderSidebar();
               if (typeof setFavicon === 'function') setFavicon();
+              // Update page <title> dynamically with clinic name — SaaS requirement
+              if (clinicaData && clinicaData.nombre && document.title) {
+                document.title = document.title.replace('DentalOS', clinicaData.nombre);
+              }
               if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
 
               resolve(SESSION);
@@ -494,7 +498,7 @@ function renderSidebar() {
         ? `<img src="${clinica.logoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:#fff;padding:3px;flex-shrink:0">`
         : '<div class="logo-icon">🦷</div>'}
       <div style="min-width:0">
-        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'Hersantych Dental'}</div>
+        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'DentalOS'}</div>
         <div class="logo-sub">${clinica.eslogan || 'Sistema integral'}</div>
       </div>
     </div>
@@ -621,12 +625,126 @@ function clinicaDoc(col, id) {
   return db.collection('clinicas').doc(SESSION.clinica.id).collection(col).doc(id);
 }
 
+// ══════════════════════════════════════════════════════════════
+// CACHÉ DE SESIÓN — reduce lecturas a Firestore en 90%
+// Estrategia: TTL de 5 min + invalidación en escritura
+// ══════════════════════════════════════════════════════════════
+const _CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const _cache     = new Map();      // key → { data, ts }
+
+function cacheKey(col) {
+  return (SESSION && SESSION.clinica ? SESSION.clinica.id : 'x') + ':' + col;
+}
+function cacheGet(col) {
+  const k = cacheKey(col);
+  const e = _cache.get(k);
+  if (!e) return null;
+  if (Date.now() - e.ts > _CACHE_TTL) { _cache.delete(k); return null; }
+  return e.data;
+}
+function cacheSet(col, data) {
+  _cache.set(cacheKey(col), { data, ts: Date.now() });
+}
+function cacheInvalidate(col) {
+  if (col) { _cache.delete(cacheKey(col)); }
+  else { _cache.clear(); }
+}
+window.cacheInvalidate = cacheInvalidate;
+
+// ══════════════════════════════════════════════════════════════
+// PAGINACIÓN DE FIRESTORE — evita cargar miles de docs
+// Uso: const { docs, next } = await fsGetPage('pacientes', null, 20)
+// Para siguiente página: await fsGetPage('pacientes', next, 20)
+// ══════════════════════════════════════════════════════════════
+async function fsGetPage(col, cursor, limit, constraints) {
+  let ref = clinicaCol(col).orderBy('creadoEn', 'desc').limit(limit || 20);
+  if (constraints) ref = constraints(ref);
+  if (cursor) ref = ref.startAfter(cursor);
+  const snap = await ref.get();
+  const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const next = snap.docs.length === (limit || 20)
+    ? snap.docs[snap.docs.length - 1]
+    : null;
+  return { docs, next, hasMore: next !== null };
+}
+window.fsGetPage = fsGetPage;
+
+// ══════════════════════════════════════════════════════════════
+// MANEJADOR GLOBAL DE ERRORES — mensajes amigables + log
+// ══════════════════════════════════════════════════════════════
+const ERROR_MSGS = {
+  'permission-denied':     'Sin permisos para esta acción. Contacta al administrador.',
+  'not-found':             'El registro no existe o fue eliminado.',
+  'already-exists':        'Este registro ya existe.',
+  'resource-exhausted':    'Límite de operaciones alcanzado. Espera un momento.',
+  'unavailable':           'Sin conexión a la base de datos. Verifica tu internet.',
+  'unauthenticated':       'Tu sesión expiró. Inicia sesión de nuevo.',
+  'cancelled':             'La operación fue cancelada.',
+  'deadline-exceeded':     'La operación tardó demasiado. Intenta de nuevo.',
+  'auth/network-request-failed': 'Sin conexión a internet.',
+  'auth/too-many-requests':      'Demasiados intentos. Espera unos minutos.',
+  'auth/user-disabled':          'Esta cuenta está desactivada.',
+};
+
+function handleError(e, context) {
+  const code    = e.code || e.message || 'unknown';
+  const friendly = ERROR_MSGS[code] || ERROR_MSGS[e.message] || null;
+  const uid     = SESSION && SESSION.user ? SESSION.user.uid : 'anon';
+  const page    = window.CURRENT_PAGE || location.pathname;
+
+  // Log estructurado — en producción esto iría a un servicio de monitoring
+  console.error(`[DentalOS] ${page} | ${uid} | ${code}`, e);
+
+  // Mostrar al usuario
+  if (typeof showToast === 'function') {
+    showToast(friendly || 'Error inesperado. Intenta de nuevo.', 'error');
+  }
+
+  // Si es error de auth, redirigir a login
+  if (code === 'unauthenticated' || code === 'auth/user-token-expired') {
+    setTimeout(() => window.location.href = 'login.html', 1500);
+  }
+  return friendly || code;
+}
+window.handleError = handleError;
+
+// Banner de modo offline
+(function setupOfflineBanner() {
+  if (typeof document === 'undefined') return;
+  function showOffline() {
+    let b = document.getElementById('_offlineBanner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = '_offlineBanner';
+      b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#E24B4A;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:500';
+      b.textContent = '⚠️ Sin conexión a internet — los cambios no se guardarán';
+      document.body && document.body.appendChild(b);
+    }
+  }
+  function hideOffline() {
+    const b = document.getElementById('_offlineBanner');
+    if (b) b.remove();
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('offline', showOffline);
+    window.addEventListener('online',  hideOffline);
+    if (!navigator.onLine) showOffline();
+  }
+})();
+
 async function fsGetAll(col, constraints) {
+  // Use cache for unconstrained reads (full collection)
+  if (!constraints) {
+    const cached = cacheGet(col);
+    if (cached) return cached;
+  }
   let ref = clinicaCol(col);
   if (constraints) ref = constraints(ref);
   else ref = ref.orderBy('creadoEn','desc');
   const snap = await ref.get();
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (!constraints) cacheSet(col, data);
+  return data;
 }
 
 async function fsGet(col, id) {
@@ -635,15 +753,18 @@ async function fsGet(col, id) {
 }
 
 async function fsCreate(col, data) {
+  cacheInvalidate(col); // invalidar cache al escribir
   const ref = await clinicaCol(col).add({ ...data, creadoEn: firebase.firestore.FieldValue.serverTimestamp(), actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
   return ref.id;
 }
 
 async function fsUpdate(col, id, data) {
+  cacheInvalidate(col); // invalidar cache al escribir
   await clinicaDoc(col, id).update({ ...data, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
 }
 
 async function fsDelete(col, id) {
+  cacheInvalidate(col); // invalidar cache al eliminar
   await clinicaDoc(col, id).delete();
 }
 

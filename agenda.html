@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Agenda</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Agenda</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -196,10 +196,28 @@ initSession('any').then(async session => {
 });
 
 async function loadCitas() {
-  allCitas = await fsGetAll('citas');
+  // Cargar citas del mes actual + próximo mes (no toda la colección)
+  // Esto reduce lecturas de Firestore de miles a ~200 docs
+  try {
+    const now    = new Date();
+    const from   = new Date(now.getFullYear(), now.getMonth()-1, 1)
+                   .toISOString().split('T')[0];
+    const to     = new Date(now.getFullYear(), now.getMonth()+2, 0)
+                   .toISOString().split('T')[0];
+    const snap   = await clinicaCol('citas')
+      .where('fecha','>=',from)
+      .where('fecha','<=',to)
+      .orderBy('fecha','asc')
+      .get();
+    allCitas = snap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) {
+    // Fallback si no hay índice compuesto
+    allCitas = await fsGetAll('citas');
+  }
 }
 async function loadPacientes() {
-  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+  // Cargar con caché — agenda solo necesita nombres para el selector
+  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc').limit(500));
   const sel = document.getElementById('f-paciente');
   sel.innerHTML = '<option value="">Seleccionar paciente...</option><option value="_nuevo">+ Paciente sin expediente</option>' +
     allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
@@ -266,12 +284,12 @@ function renderDay(iso) {
         <div class="cita-chips">
           <span class="badge ${estadoClass[c.estado]||'badge-blue'}">${c.estado||'Agendado'}</span>
           ${c.rx==='Sí'?'<span class="badge badge-purple">📷 RX</span>':''}
-          ${c.tel?`<span class="badge badge-blue" style="cursor:pointer" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te recordamos tu cita el ${iso} a las ${c.hora} en Hersantych Dental. ¿Confirmas tu asistencia?')">💬 ${c.tel}</span>`:''}
+          ${c.tel?`<span class="badge badge-blue" style="cursor:pointer" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te recordamos tu cita el ${iso} a las ${c.hora} en DentalOS. ¿Confirmas tu asistencia?')">💬 ${c.tel}</span>`:''}
         </div>
       </div>
       <div class="cita-actions">
         <button class="btn btn-ghost btn-sm btn-icon" onclick="editCita('${c.id}')" title="Editar">✏️</button>
-        ${c.tel?`<button class="btn btn-ghost btn-sm btn-icon" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te confirmamos tu cita mañana a las ${c.hora} en Hersantych Dental. ¡Te esperamos!')" title="WhatsApp">💬</button>`:''}
+        ${c.tel?`<button class="btn btn-ghost btn-sm btn-icon" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te confirmamos tu cita mañana a las ${c.hora} en DentalOS. ¡Te esperamos!')" title="WhatsApp">💬</button>`:''}
         <button class="btn btn-ghost btn-sm btn-icon" style="color:var(--red)" onclick="deleteCita('${c.id}')" title="Eliminar">🗑️</button>
       </div>
     </div>`).join('');
@@ -304,7 +322,7 @@ function updateWAPreview() {
   let nombre = '';
   if (expId && expId !== '_nuevo') { const px=allPacientes.find(p=>p.id===expId); nombre=px?.nombre?.split(' ')[0]||''; }
   else nombre = document.getElementById('f-nombre-libre')?.value?.split(' ')[0]||'Paciente';
-  const msg = `Hola ${nombre}, te confirmamos tu cita el ${fecha} a las ${hora}${trat?' para '+trat:''} en Hersantych Dental. ¿Confirmas tu asistencia?`;
+  const msg = `Hola ${nombre}, te confirmamos tu cita el ${fecha} a las ${hora}${trat?' para '+trat:''} en DentalOS. ¿Confirmas tu asistencia?`;
   document.getElementById('whatsappPreview').textContent = tel ? '💬 ' + msg : '';
   const btnWA = document.getElementById('btnWaSend');
   btnWA.style.display = tel ? 'inline-flex' : 'none';
@@ -384,7 +402,7 @@ async function saveCita() {
     renderCalendar();
     renderDay(fecha);
     renderMonthStats();
-  } catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'agenda'); }
   btn.disabled=false; btn.textContent='💾 Guardar cita';
 }
 
@@ -397,7 +415,7 @@ async function deleteCita(id) {
     renderCalendar();
     renderDay(selectedDate);
     renderMonthStats();
-  } catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'agenda'); }
 }
 </script>
 </body>

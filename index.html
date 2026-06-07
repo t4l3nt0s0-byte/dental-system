@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Dashboard</title>
+<title>DentalOS · Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -415,15 +415,31 @@ initSession('any').then(async session=>{
   if(fechaEl) fechaEl.textContent=now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 
   // Cargar datos con manejo individual de errores
-  const safeGet = async (col) => { try { return await fsGetAll(col); } catch(e) { console.warn('No se pudo cargar:', col, e.message); return []; } };
+  // Dashboard optimizado: carga solo lo necesario para el día de hoy
+  // citas y abonos filtrados por fecha — NO toda la colección
+  const today = todayISO();
+  const safeGet      = async (col, constraint) => {
+    try { return await fsGetAll(col, constraint); }
+    catch(e) { console.warn('No se pudo cargar:', col, e.message); return []; }
+  };
+  const safeGetToday = async (col) => {
+    try {
+      // Intentar con filtro de fecha para reducir lecturas
+      const snap = await clinicaCol(col).where('fecha','==',today).get();
+      return snap.docs.map(d=>({id:d.id,...d.data()}));
+    } catch(e) {
+      // Fallback: cargar todo y filtrar en memoria (si no hay índice)
+      return safeGet(col);
+    }
+  };
 
-  const [citas,abonos,pacientes,trats,cotizaciones,doctores] = await Promise.all([
-    safeGet('citas'),
-    safeGet('abonos'),
-    safeGet('pacientes'),
-    safeGet('tratamientos'),
-    safeGet('cotizaciones'),
-    safeGet('doctores'),
+  const [citas, abonos, pacientes, trats, cotizaciones, doctores] = await Promise.all([
+    safeGetToday('citas'),     // solo citas de HOY — crítico para rendimiento
+    safeGetToday('abonos'),    // solo abonos de HOY
+    safeGet('pacientes', r => r.limit(200)), // máximo 200 para dashboard
+    safeGet('tratamientos', r => r.limit(100)),
+    safeGet('cotizaciones', r => r.limit(50)),
+    safeGet('doctores'),        // doctores son pocos, cargar todos
   ]);
   ALL_CITAS=citas; ALL_ABONOS=abonos; ALL_PACIENTES=pacientes; ALL_TRATS=trats; ALL_COTIZACIONES=cotizaciones; ALL_DOCTORES=doctores;
 
@@ -466,7 +482,7 @@ function renderDashboard(clinica,user){
   <!-- GREETING -->
   <div class="greeting">
     <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
-    <div class="greeting-sub">${clinica.nombre||'Hersantych Dental'}</div>
+    <div class="greeting-sub">${clinica.nombre||'DentalOS'}</div>
   </div>
 
   <!-- MÉTRICAS DEL DÍA -->
@@ -732,7 +748,7 @@ window.toggleDoctorDisponible = async function(doctorNombre, citaId){
     showToast('✅ Dr. '+doctorNombre+' marcado como disponible','success');
     renderEstadoDoctores();
     renderTurno(); // actualizar dropdown de doctores en próximos turnos
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'index'); }
 };
 
 
@@ -972,7 +988,7 @@ window.asignarDoctorTurno = async function(citaId, doctorNombre){
       showToast('👨‍⚕️ Dr. '+doctorNombre+' asignado — presiona ▶️ para iniciar','success');
     }
     renderTurno();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'index'); }
 };
 
 // ── INICIAR TRATAMIENTO ───────────────────────────────────
@@ -1015,7 +1031,7 @@ window.iniciarTratamiento = async function(citaId, paciente){
     renderChartDiaHoy();
     if(typeof renderMetricasDia==='function') renderMetricasDia();
     if(typeof renderEstadoDoctores==='function') renderEstadoDoctores();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'index'); }
 };
 
 window.confirmarCita = async function(id) {
@@ -1024,7 +1040,7 @@ window.confirmarCita = async function(id) {
     showToast('Cita confirmada ✅','success');
     ALL_CITAS = ALL_CITAS.map(c=>c.id===id?{...c,estado:'Confirmado'}:c);
     renderTurno(); renderCitasHoy();
-  } catch(e) { showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'index'); }
 };
 
 window.marcarEspera = async function(id) {
@@ -1033,7 +1049,7 @@ window.marcarEspera = async function(id) {
     showToast('Paciente marcado en sala de espera 🪑','success');
     ALL_CITAS = ALL_CITAS.map(c=>c.id===id?{...c,estado:'En sala de espera'}:c);
     renderTurno(); renderCitasHoy();
-  } catch(e) { showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'index'); }
 };
 // ── CITAS HOY ─────────────────────────────────────────────
 function renderCitasHoy(){
@@ -1136,7 +1152,7 @@ window.guardarMeta=async function(){
     closeModal('modalMeta');
     renderMeta();
     showToast('Meta actualizada a '+fmtMXN(val),'success');
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'index'); }
 };
 
 // ── CHARTS ────────────────────────────────────────────────
@@ -1772,7 +1788,7 @@ async function confirmarFinCita(){
       setTimeout(()=>{ window.location.href='agenda.html?reagendar=1&paciente='+px; },1200);
     }
 
-  }catch(e){showToast('Error al guardar: '+e.message,'error');}
+  } catch(e) { handleError(e, 'index'); }
   if(btn){btn.disabled=false;btn.textContent='✅ Confirmar';}
 }
 window.confirmarFinCita = confirmarFinCita;

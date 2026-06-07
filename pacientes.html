@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Expedientes</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Expedientes</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -195,9 +195,27 @@ initSession('any').then(async session => {
   document.getElementById('btnExport').addEventListener('click', exportCSV);
 });
 
-async function loadPacientes() {
-  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
-  renderGrid();
+let _pxCursor = null;
+const PAGE_SIZE = 25;
+
+async function loadPacientes(reset = true) {
+  if (reset) { allPacientes = []; _pxCursor = null; }
+  try {
+    const { docs, next } = await fsGetPage('pacientes', _pxCursor, PAGE_SIZE, r => r.orderBy('nombre','asc'));
+    allPacientes = reset ? docs : [...allPacientes, ...docs];
+    _pxCursor = next;
+    renderGrid();
+    let btn = document.getElementById('btnLoadMore');
+    if (!btn) {
+      btn = document.createElement('div');
+      btn.id = 'btnLoadMore';
+      btn.style.cssText = 'text-align:center;margin:16px 0';
+      document.getElementById('pxGrid').insertAdjacentElement('afterend', btn);
+    }
+    btn.innerHTML = next
+      ? `<button class="btn btn-ghost btn-sm" onclick="loadPacientes(false)" style="min-width:180px">Cargar más pacientes</button>`
+      : '';
+  } catch(e) { handleError(e, 'loadPacientes'); }
 }
 
 // Calcular edad en años desde una fecha ISO (ej '1990-03-15')
@@ -259,8 +277,8 @@ function renderGrid() {
 }).join('');ml>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Expedientes</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Expedientes</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -453,9 +471,27 @@ initSession('any').then(async session => {
   document.getElementById('btnExport').addEventListener('click', exportCSV);
 });
 
-async function loadPacientes() {
-  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
-  renderGrid();
+let _pxCursor = null;
+const PAGE_SIZE = 25;
+
+async function loadPacientes(reset = true) {
+  if (reset) { allPacientes = []; _pxCursor = null; }
+  try {
+    const { docs, next } = await fsGetPage('pacientes', _pxCursor, PAGE_SIZE, r => r.orderBy('nombre','asc'));
+    allPacientes = reset ? docs : [...allPacientes, ...docs];
+    _pxCursor = next;
+    renderGrid();
+    let btn = document.getElementById('btnLoadMore');
+    if (!btn) {
+      btn = document.createElement('div');
+      btn.id = 'btnLoadMore';
+      btn.style.cssText = 'text-align:center;margin:16px 0';
+      document.getElementById('pxGrid').insertAdjacentElement('afterend', btn);
+    }
+    btn.innerHTML = next
+      ? `<button class="btn btn-ghost btn-sm" onclick="loadPacientes(false)" style="min-width:180px">Cargar más pacientes</button>`
+      : '';
+  } catch(e) { handleError(e, 'loadPacientes'); }
 }
 
 // Calcular edad en años desde una fecha ISO (ej '1990-03-15')
@@ -639,7 +675,7 @@ async function savePaciente() {
     document.getElementById('searchInput').value = '';
     document.getElementById('filterGenero').value = '';
     await loadPacientes();
-  } catch(e) { showToast('Error al guardar: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'pacientes'); }
   btn.disabled = false; btn.textContent = '💾 Guardar paciente';
 }
 
@@ -680,7 +716,7 @@ async function deletePaciente(id) {
     document.getElementById('searchInput').value = '';
     document.getElementById('filterGenero').value = '';
     await loadPacientes();
-  } catch(e) { showToast('Error al eliminar: '+e.message, 'error'); }
+  } catch(e) { handleError(e, 'pacientes'); }
 }
 
 async function verPaciente(id) {
