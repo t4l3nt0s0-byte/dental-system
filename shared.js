@@ -360,6 +360,10 @@ async function initSession(requiredPage) {
                 document.title = document.title.replace('DentalOS', clinicaData.nombre);
               }
               if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
+              // Backup diario silencioso — no bloquea la carga
+              setTimeout(function() {
+                if (typeof runDailyBackup === 'function') runDailyBackup();
+              }, 5000);
 
               resolve(SESSION);
             })
@@ -607,6 +611,65 @@ window.getOrgClinics = async function() {
   } catch(e) { return []; }
 };
 
+
+// ══════════════════════════════════════════════════════════════
+// BACKUP AUTOMÁTICO — exporta datos críticos a Firestore
+// Se ejecuta una vez al día por sesión, guarda los últimos 30 días
+// ══════════════════════════════════════════════════════════════
+window.runDailyBackup = async function() {
+  if (!SESSION || !SESSION.clinica) return;
+  var today    = todayISO();
+  var cId      = SESSION.clinica.id;
+  var backupKey = 'dentalos_backup_' + cId + '_' + today;
+
+  // Solo una vez al día por sesión
+  if (localStorage.getItem(backupKey)) return;
+
+  try {
+    // Recopilar datos críticos del día
+    var [pacSnap, citSnap, docSnap] = await Promise.all([
+      clinicaCol('pacientes').orderBy('creadoEn','desc').limit(500).get(),
+      clinicaCol('citas').where('fecha','==',today).get(),
+      clinicaCol('doctores').get(),
+    ]);
+
+    var summary = {
+      fecha:     today,
+      ts:        firebase.firestore.FieldValue.serverTimestamp(),
+      pacientes: pacSnap.docs.length,
+      citas:     citSnap.docs.length,
+      doctores:  docSnap.docs.length,
+      // Guardar IDs y nombres (no datos sensibles completos)
+      pacientesList: pacSnap.docs.slice(0,50).map(function(d) {
+        return { id: d.id, nombre: d.data().nombre || '', tel: d.data().tel || '' };
+      }),
+      citasList: citSnap.docs.map(function(d) {
+        return { id: d.id, paciente: d.data().paciente || '', hora: d.data().hora || '', estado: d.data().estado || '' };
+      }),
+    };
+
+    // Guardar backup del día
+    await db.collection('clinicas').doc(cId)
+      .collection('backups').doc(today).set(summary);
+
+    // Marcar como hecho hoy
+    localStorage.setItem(backupKey, '1');
+
+    // Limpiar backups de más de 30 días (silent)
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate()-30);
+    var cutoffStr = cutoff.toISOString().split('T')[0];
+    db.collection('clinicas').doc(cId).collection('backups')
+      .where('fecha','<',cutoffStr).get()
+      .then(function(old) {
+        old.docs.forEach(function(d) { d.ref.delete(); });
+      }).catch(function(){});
+
+  } catch(e) {
+    console.warn('[Backup]', e.message); // silencioso
+  }
+};
+
 async function logout() {
   _loggingOut = true; // Marcar antes de signOut para evitar redirect loop
   try {
@@ -731,6 +794,65 @@ window.handleError = handleError;
     if (!navigator.onLine) showOffline();
   }
 })();
+
+// ══════════════════════════════════════════════════════════════
+// AUDITORÍA DE ACCIONES — trazabilidad para clínicas formales
+// Cumplimiento NOM-024 / requisito enterprise
+// Guarda en clinicas/{id}/auditoria/{docId}
+// ══════════════════════════════════════════════════════════════
+async function audit(accion, datos) {
+  if (!SESSION || !SESSION.user) return;
+  try {
+    var uid     = SESSION.user.uid;
+    var nombre  = SESSION.user.nombre || SESSION.user.email || 'Sistema';
+    var clinica = SESSION.clinica ? SESSION.clinica.id : 'unknown';
+    var registro = {
+      accion,                          // ej: 'CREATE_PACIENTE', 'DELETE_CITA'
+      datos:   datos || {},            // datos relevantes de la acción
+      uid,
+      userName: nombre,
+      pagina:   window.CURRENT_PAGE || 'unknown',
+      ip:       'client',
+      ts:       firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    // Fire-and-forget — no bloquear la UI por la auditoría
+    db.collection('clinicas').doc(clinica)
+      .collection('auditoria').add(registro)
+      .catch(function(e) { console.warn('[Audit]', e.message); });
+  } catch(e) {
+    console.warn('[Audit failed]', e.message);
+  }
+}
+window.audit = audit;
+
+// Wrapper de fsCreate con auditoría automática
+var _origFsCreate = fsCreate;
+async function fsCreate(col, data) {
+  cacheInvalidate(col);
+  var ref = await clinicaCol(col).add({
+    ...data,
+    creadoEn:     firebase.firestore.FieldValue.serverTimestamp(),
+    actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  // Auditar creaciones importantes
+  var auditCols = ['pacientes','citas','abonos','tratamientos','doctores','usuarios','rx'];
+  if (auditCols.indexOf(col) !== -1) {
+    audit('CREATE_'+col.toUpperCase(), { id: ref.id, nombre: data.nombre || data.paciente || '' });
+  }
+  return ref;
+}
+
+// Wrapper de fsDelete con auditoría automática
+var _origFsDelete = fsDelete;
+async function fsDelete(col, id) {
+  cacheInvalidate(col);
+  // Auditar ANTES de eliminar (para tener el id)
+  var auditCols = ['pacientes','citas','doctores'];
+  if (auditCols.indexOf(col) !== -1) {
+    audit('DELETE_'+col.toUpperCase(), { id });
+  }
+  await clinicaDoc(col, id).delete();
+}
 
 async function fsGetAll(col, constraints) {
   // Use cache for unconstrained reads (full collection)

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Hersantych Dental · Crear cuenta</title>
+<title>DentalOS · Crear cuenta</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -244,7 +244,7 @@ select.input{cursor:pointer}
   <!-- Success -->
   <div class="success" id="successWrap">
     <div class="success-icon">🎉</div>
-    <div class="success-title">¡Bienvenido a Hersantych Dental!</div>
+    <div class="success-title">¡Bienvenido a DentalOS!</div>
     <div class="success-sub">
       Tu cuenta fue creada exitosamente.<br>
       Tienes <strong style="color:var(--teal)">7 días de prueba gratuita</strong>.<br><br>
@@ -405,7 +405,7 @@ async function registrar() {
     setTimeout(function(){
       document.getElementById('progressFill').style.width = '100%';
     }, 100);
-    setTimeout(function(){ window.location.href = 'index.html'; }, 3200);
+    setTimeout(function(){ window.location.href = 'setup.html'; // Onboarding wizard }, 3200);
 
   } catch(e) {
     console.error(e);

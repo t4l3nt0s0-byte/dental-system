@@ -1,259 +1,439 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Configuración Inicial</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DentalOS · Bienvenido</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-:root{--bg:#060D14;--surface:#0C1622;--surface2:#111E2E;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);--teal:#00C2A8;--teal-dim:rgba(0,194,168,.12);--teal-glow:rgba(0,194,168,.25);--gold:#F4B942;--red:#FF5C5C;--blue:#4A9EFF;--text:#E8F0F8;--text-muted:rgba(232,240,248,.50);--text-dim:rgba(232,240,248,.25);--font-display:'Instrument Serif',Georgia,serif;--font-body:'DM Sans',sans-serif;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,194,168,.08),transparent);pointer-events:none}
-.setup-wrap{width:100%;max-width:560px;position:relative;z-index:1}
-.setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:40px 36px;box-shadow:0 24px 80px rgba(0,0,0,.6)}
-.step{display:none}.step.active{display:block}
-.brand{text-align:center;margin-bottom:28px}
-.brand-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--teal),#008F7A);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;box-shadow:0 8px 24px var(--teal-glow)}
-.brand-name{font-family:var(--font-display);font-size:1.5rem}.brand-name span{color:var(--teal)}
-.brand-sub{font-size:.72rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
-.step-title{font-family:var(--font-display);font-size:1.2rem;font-style:italic;margin-bottom:6px;color:var(--text)}
-.step-sub{font-size:.8rem;color:var(--text-muted);margin-bottom:22px}
-.form-group{margin-bottom:14px}
-.form-label{display:block;font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
-.form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--font-body);font-size:.88rem;outline:none;transition:border-color .2s}
-.form-input:focus,.form-select:focus{border-color:var(--teal)}
-.form-input::placeholder{color:var(--text-dim)}
-.form-select option{background:var(--surface2)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.btn-next{width:100%;padding:13px;background:var(--teal);color:#060D14;border:none;border-radius:10px;font-family:var(--font-body);font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-next:hover{background:#00d4b8;transform:translateY(-1px)}
-.btn-next:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn-back{background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:10px;padding:10px 18px;font-family:var(--font-body);font-size:.82rem;cursor:pointer;transition:all .2s;margin-top:8px}
-.btn-back:hover{color:var(--text);border-color:var(--border2)}
-.progress{display:flex;gap:6px;margin-bottom:24px;justify-content:center}
-.prog-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:all .3s}
-.prog-dot.active{background:var(--teal);width:24px;border-radius:4px}
-.prog-dot.done{background:var(--teal)}
-.plan-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px}
-.plan-card{background:var(--surface2);border:2px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
-.plan-card:hover{border-color:var(--border2)}
-.plan-card.selected{border-color:var(--teal);background:var(--teal-dim)}
-.plan-card .plan-icon{font-size:1.4rem;margin-bottom:6px}
-.plan-card .plan-name{font-weight:700;font-size:.82rem;margin-bottom:3px}
-.plan-card .plan-feats{font-size:.65rem;color:var(--text-dim);line-height:1.5}
-.error-box{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.2);border-radius:8px;padding:10px 14px;font-size:.8rem;color:#FF5C5C;margin-top:10px;display:none}
-.error-box.show{display:block}
-.success-state{text-align:center;padding:20px 0}
-.success-icon{font-size:3rem;margin-bottom:16px}
-.success-title{font-family:var(--font-display);font-size:1.4rem;font-style:italic;margin-bottom:8px}
-.success-sub{font-size:.82rem;color:var(--text-muted);margin-bottom:24px}
-.spinner{width:18px;height:18px;border:2px solid rgba(6,13,20,.3);border-top-color:#060D14;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.btn-next.loading .spinner{display:block}.btn-next.loading .btn-text{display:none}
-@keyframes spin{to{transform:rotate(360deg)}}
+.wiz-wrap{max-width:560px;margin:0 auto;padding:2rem 1rem}
+.wiz-progress{display:flex;align-items:center;gap:0;margin-bottom:2.5rem}
+.wiz-step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;transition:all .3s;border:2px solid var(--border)}
+.wiz-step-dot.done{background:var(--teal);border-color:var(--teal);color:#060D14}
+.wiz-step-dot.active{background:var(--teal);border-color:var(--teal);color:#060D14;box-shadow:0 0 0 4px rgba(0,194,168,.2)}
+.wiz-step-dot.pending{background:var(--surface2);color:var(--text-dim)}
+.wiz-line{flex:1;height:2px;background:var(--border);transition:background .3s}
+.wiz-line.done{background:var(--teal)}
+.wiz-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-bottom:1.5rem}
+.wiz-title{font-family:var(--font-display);font-size:1.5rem;font-style:italic;color:var(--text);margin-bottom:.5rem}
+.wiz-sub{font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem}
+.step-panel{display:none}.step-panel.active{display:block}
+.wiz-nav{display:flex;justify-content:space-between;align-items:center;margin-top:1rem}
+.skip-link{font-size:.75rem;color:var(--text-dim);cursor:pointer;text-decoration:underline}
+.skip-link:hover{color:var(--text-muted)}
+.check-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.check-item:last-child{border-bottom:none}
+.check-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0}
+.check-done{background:rgba(0,194,168,.15);color:var(--teal)}
+.check-pend{background:var(--surface2);color:var(--text-dim)}
+.preview-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:.82rem}
+.preview-label{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px}
+.tour-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;border-radius:8px}
+.tour-item:hover{background:var(--surface2)}
+.tour-item:last-child{border-bottom:none}
+.tour-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
 </style>
 </head>
 <body>
-<div class="setup-wrap">
-  <div class="setup-card">
-    <div class="brand">
-      <div class="brand-icon">🦷</div>
-      <div class="brand-name">Hersantych<span> Dental</span></div>
-      <div class="brand-sub">Configuración inicial del sistema</div>
+<main class="main" style="margin-left:0">
+  <div class="wiz-wrap">
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:2.5rem;margin-bottom:.5rem">🦷</div>
+      <div style="font-family:var(--font-display);font-size:1.8rem;font-style:italic;color:var(--teal)" id="welcomeName">Bienvenido a DentalOS</div>
+      <div style="font-size:.85rem;color:var(--text-muted);margin-top:.25rem">Configuremos tu consultorio en 5 minutos</div>
     </div>
 
-    <div class="progress">
-      <div class="prog-dot active" id="dot0"></div>
-      <div class="prog-dot" id="dot1"></div>
-      <div class="prog-dot" id="dot2"></div>
+    <!-- Progress -->
+    <div class="wiz-progress" id="wizProgress">
+      <div class="wiz-step-dot active" id="dot-1">1</div>
+      <div class="wiz-line" id="line-1"></div>
+      <div class="wiz-step-dot pending" id="dot-2">2</div>
+      <div class="wiz-line" id="line-2"></div>
+      <div class="wiz-step-dot pending" id="dot-3">3</div>
+      <div class="wiz-line" id="line-3"></div>
+      <div class="wiz-step-dot pending" id="dot-4">4</div>
+      <div class="wiz-line" id="line-4"></div>
+      <div class="wiz-step-dot pending" id="dot-5">5</div>
     </div>
 
-    <!-- STEP 0: Clínica -->
-    <div class="step active" id="step0">
-      <div class="step-title">Datos del consultorio</div>
-      <div class="step-sub">Ingresa la información básica de tu clínica dental.</div>
-      <div class="form-group"><label class="form-label">Nombre del consultorio *</label><input class="form-input" id="s-clinica" placeholder="Hersantych Dental" value="Hersantych Dental"></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="s-tel" placeholder="55 0000 0000"></div>
-        <div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" id="s-ciudad" placeholder="Ciudad de México"></div>
-      </div>
-      <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="s-dir" placeholder="Calle, número, colonia"></div>
-      <div class="form-group"><label class="form-label">Correo del consultorio</label><input class="form-input" id="s-email-clinica" type="email" placeholder="contacto@hersantych.com"></div>
-      <button class="btn-next" onclick="goStep(1)"><span class="btn-text">Continuar →</span><div class="spinner"></div></button>
-    </div>
-
-    <!-- STEP 1: Plan -->
-    <div class="step" id="step1">
-      <div class="step-title">Elige el plan</div>
-      <div class="step-sub">Podrás cambiarlo en cualquier momento desde la administración.</div>
-      <div class="plan-cards">
-        <div class="plan-card" data-plan="basico" onclick="selectPlan('basico')">
-          <div class="plan-icon">🔵</div>
-          <div class="plan-name" style="color:#4A9EFF">Básico</div>
-          <div class="plan-feats">1 usuario<br>50 pacientes<br>Funciones esenciales</div>
+    <!-- ── PASO 1: Nombre del consultorio ── -->
+    <div class="step-panel active" id="step-1">
+      <div class="wiz-card">
+        <div class="wiz-title">Tu consultorio</div>
+        <div class="wiz-sub">Personaliza cómo se verá tu sistema. Puedes cambiarlo después en Configuración.</div>
+        <div class="form-group">
+          <label class="form-label">Nombre del consultorio *</label>
+          <input class="form-input" id="s1-nombre" placeholder="Ej. Consultorio Dental García">
         </div>
-        <div class="plan-card selected" data-plan="profesional" onclick="selectPlan('profesional')">
-          <div class="plan-icon">🟢</div>
-          <div class="plan-name" style="color:#00C2A8">Profesional</div>
-          <div class="plan-feats">5 usuarios<br>∞ pacientes<br>Métricas + Odontograma</div>
+        <div class="form-group">
+          <label class="form-label">Slogan o descripción</label>
+          <input class="form-input" id="s1-slogan" placeholder="Tu sonrisa, nuestra pasión">
         </div>
-        <div class="plan-card" data-plan="premium" onclick="selectPlan('premium')">
-          <div class="plan-icon">🟡</div>
-          <div class="plan-name" style="color:#F4B942">Premium</div>
-          <div class="plan-feats">∞ usuarios<br>∞ pacientes<br>Multi-sucursal + KPI</div>
+        <div class="form-group">
+          <label class="form-label">Ciudad</label>
+          <input class="form-input" id="s1-ciudad" placeholder="Ciudad de México">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono del consultorio</label>
+          <input class="form-input" id="s1-tel" placeholder="55 0000 0000" type="tel">
         </div>
       </div>
-      <button class="btn-next" onclick="goStep(2)" style="margin-top:14px"><span class="btn-text">Continuar →</span><div class="spinner"></div></button>
-      <button class="btn-back" onclick="goStep(0)">← Atrás</button>
-    </div>
-
-    <!-- STEP 2: Admin -->
-    <div class="step" id="step2">
-      <div class="step-title">Cuenta del administrador</div>
-      <div class="step-sub">Este será el usuario principal con acceso total al sistema.</div>
-      <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="s-nombre" placeholder="Dr. Nombre Apellido"></div>
-      <div class="form-group"><label class="form-label">Correo electrónico *</label><input class="form-input" id="s-email" type="email" placeholder="admin@hersantych.com"></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Contraseña *</label><input class="form-input" id="s-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
-        <div class="form-group"><label class="form-label">Confirmar contraseña *</label><input class="form-input" id="s-pass2" type="password" placeholder="Repetir contraseña"></div>
-      </div>
-      <div class="error-box" id="setupError"></div>
-      <button class="btn-next" id="btnCreate" onclick="createAdmin()"><span class="btn-text">✨ Crear sistema</span><div class="spinner"></div></button>
-      <button class="btn-back" onclick="goStep(1)">← Atrás</button>
-    </div>
-
-    <!-- STEP SUCCESS -->
-    <div class="step" id="stepSuccess">
-      <div class="success-state">
-        <div class="success-icon">🎉</div>
-        <div class="success-title">¡Sistema listo!</div>
-        <div class="success-sub">Tu consultorio <strong id="successClinica"></strong> ha sido configurado correctamente. Inicia sesión para comenzar.</div>
-        <button class="btn-next" onclick="window.location.href='login.html'" style="max-width:220px;margin:0 auto"><span class="btn-text">Ir al inicio de sesión</span><div class="spinner"></div></button>
+      <div class="wiz-nav">
+        <span></span>
+        <button class="btn btn-primary" onclick="goStep(2)">Continuar →</button>
       </div>
     </div>
+
+    <!-- ── PASO 2: Primer doctor ── -->
+    <div class="step-panel" id="step-2">
+      <div class="wiz-card">
+        <div class="wiz-title">👨‍⚕️ Tu primer doctor</div>
+        <div class="wiz-sub">Agrega al primer doctor del consultorio para poder agendar citas.</div>
+        <div class="form-group">
+          <label class="form-label">Nombre completo *</label>
+          <input class="form-input" id="s2-nombre" placeholder="Dr. Nombre Apellido">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Especialidad</label>
+          <input class="form-input" id="s2-esp" placeholder="Cirujano Dentista, Ortodoncista...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cédula profesional</label>
+          <input class="form-input" id="s2-cedula" placeholder="12345678">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono de contacto</label>
+          <input class="form-input" id="s2-tel" placeholder="55 0000 0000" type="tel">
+        </div>
+      </div>
+      <div class="wiz-nav">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Atrás</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="skip-link" onclick="goStep(3)">Saltar por ahora</span>
+          <button class="btn btn-primary" onclick="saveDoctor()">Guardar y continuar →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PASO 3: Primera cita de prueba ── -->
+    <div class="step-panel" id="step-3">
+      <div class="wiz-card">
+        <div class="wiz-title">📅 Agenda tu primera cita</div>
+        <div class="wiz-sub">Prueba el sistema agendando una cita real o de ejemplo para ver cómo funciona.</div>
+        <div class="form-group">
+          <label class="form-label">Nombre del paciente</label>
+          <input class="form-input" id="s3-paciente" placeholder="Nombre del primer paciente">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-input" id="s3-tel" placeholder="55 0000 0000" type="tel">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-input" id="s3-fecha">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-input" id="s3-hora" value="10:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tratamiento</label>
+          <input class="form-input" id="s3-trat" placeholder="Limpieza dental, Consulta...">
+        </div>
+      </div>
+      <div class="wiz-nav">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Atrás</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="skip-link" onclick="goStep(4)">Saltar por ahora</span>
+          <button class="btn btn-primary" onclick="saveCita()">Agendar y continuar →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PASO 4: Invitar recepcionista ── -->
+    <div class="step-panel" id="step-4">
+      <div class="wiz-card">
+        <div class="wiz-title">👥 Invita a tu equipo</div>
+        <div class="wiz-sub">Agrega a tu recepcionista o asistente para que pueda usar el sistema.</div>
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input class="form-input" id="s4-nombre" placeholder="Nombre de tu recepcionista">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input type="email" class="form-input" id="s4-email" placeholder="recepcion@tuclinica.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select class="form-select" id="s4-rol">
+            <option value="recepcion">Recepción</option>
+            <option value="asistente">Asistente</option>
+            <option value="doctor">Doctor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña temporal *</label>
+          <input type="password" class="form-input" id="s4-pass" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">
+          💡 El usuario deberá cambiar su contraseña al primer inicio de sesión.
+        </div>
+      </div>
+      <div class="wiz-nav">
+        <button class="btn btn-ghost" onclick="goStep(3)">← Atrás</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="skip-link" onclick="goStep(5)">Saltar por ahora</span>
+          <button class="btn btn-primary" onclick="inviteUser()">Invitar y continuar →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PASO 5: Tour de funciones ── -->
+    <div class="step-panel" id="step-5">
+      <div class="wiz-card">
+        <div class="wiz-title">🎉 ¡Todo listo!</div>
+        <div class="wiz-sub">Tu consultorio está configurado. Estas son las funciones principales:</div>
+
+        <div id="checkList" style="margin-bottom:1.5rem">
+          <div class="check-item">
+            <div class="check-icon check-done" id="ck-clinica">✓</div>
+            <div><strong>Consultorio</strong> configurado</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon" id="ck-doctor">—</div>
+            <div><strong>Doctor</strong> registrado</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon" id="ck-cita">—</div>
+            <div><strong>Primera cita</strong> agendada</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon" id="ck-user">—</div>
+            <div><strong>Equipo</strong> invitado</div>
+          </div>
+        </div>
+
+        <div style="font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Explora el sistema</div>
+        <div class="tour-item" onclick="window.location.href='index.html'">
+          <div class="tour-icon" style="background:rgba(0,194,168,.12)">📊</div>
+          <div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--text)">Dashboard</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">Ve el estado del consultorio en tiempo real</div>
+          </div>
+        </div>
+        <div class="tour-item" onclick="window.location.href='agenda.html'">
+          <div class="tour-icon" style="background:rgba(74,158,255,.12)">📅</div>
+          <div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--text)">Agenda de citas</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">Calendario mensual con vista por día</div>
+          </div>
+        </div>
+        <div class="tour-item" onclick="window.location.href='pacientes.html'">
+          <div class="tour-icon" style="background:rgba(244,185,66,.12)">👤</div>
+          <div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--text)">Expedientes</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">Historial clínico, recetas y tratamientos</div>
+          </div>
+        </div>
+        <div class="tour-item" onclick="window.location.href='metricas.html'">
+          <div class="tour-icon" style="background:rgba(160,120,255,.12)">📈</div>
+          <div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--text)">Métricas</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">Ingresos, pacientes y rendimiento del consultorio</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <button class="btn btn-primary" style="padding:12px 32px;font-size:1rem" onclick="finish()">
+          🚀 Ir al Dashboard
+        </button>
+        <div style="margin-top:10px">
+          <a href="configuracion.html" style="font-size:.75rem;color:var(--text-dim)">Seguir configurando →</a>
+        </div>
+      </div>
+    </div>
+
   </div>
-</div>
+</main>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'setup';
 
-const firebaseConfig = {
-  apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
-  authDomain:"dental-add.firebaseapp.com",
-  projectId:"dental-add",
-  storageBucket:"dental-add.firebasestorage.app",
-  messagingSenderId:"1350878692",
-  appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
-};
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
+const TOTAL_STEPS = 5;
+let currentStep = 1;
+const completed  = { doctor: false, cita: false, user: false };
 
-let currentStep = 0;
-let selectedPlan = 'profesional';
+// ── INIT ──────────────────────────────────────────────────────
+initSession('any').then(session => {
+  if (!session) { window.location.href = 'login.html'; return; }
+  const name = session.clinica.nombre || session.user.nombre || '';
+  if (name) document.getElementById('welcomeName').textContent = `¡Bienvenido a ${name}!`;
+  // Set today as default date for cita
+  document.getElementById('s3-fecha').value = todayISO();
+  // If already configured, go to dashboard
+  if (session.clinica.setupDone) window.location.href = 'index.html';
+});
 
-window.selectPlan = function(plan) {
-  selectedPlan = plan;
-  document.querySelectorAll('.plan-card').forEach(c => c.classList.toggle('selected', c.dataset.plan === plan));
-};
-
-window.goStep = function(n) {
-  // Validation step 0
-  if (n === 1 && !document.getElementById('s-clinica').value.trim()) {
-    alert('El nombre del consultorio es obligatorio'); return;
-  }
-  document.getElementById('step'+currentStep).classList.remove('active');
+// ── NAVIGATION ────────────────────────────────────────────────
+function goStep(n) {
+  if (n < 1 || n > TOTAL_STEPS) return;
+  document.getElementById('step-'+currentStep).classList.remove('active');
   currentStep = n;
-  const stepEl = document.getElementById('step'+currentStep) || document.getElementById('stepSuccess');
-  if(stepEl) stepEl.classList.add('active');
-  // Update dots
-  for(let i=0;i<3;i++){
-    const d = document.getElementById('dot'+i);
-    if(!d) continue;
-    d.classList.toggle('active', i===n);
-    d.classList.toggle('done', i<n);
+  document.getElementById('step-'+n).classList.add('active');
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress() {
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const dot  = document.getElementById('dot-'+i);
+    const line = document.getElementById('line-'+i);
+    if (i < currentStep)       { dot.className = 'wiz-step-dot done'; dot.textContent = '✓'; }
+    else if (i === currentStep){ dot.className = 'wiz-step-dot active'; dot.textContent = i; }
+    else                       { dot.className = 'wiz-step-dot pending'; dot.textContent = i; }
+    if (line) line.className = 'wiz-line' + (i < currentStep ? ' done' : '');
   }
-};
+}
 
-window.createAdmin = async function() {
-  const nombre = document.getElementById('s-nombre').value.trim();
-  const email  = document.getElementById('s-email').value.trim();
-  const pass   = document.getElementById('s-pass').value;
-  const pass2  = document.getElementById('s-pass2').value;
-  const errEl  = document.getElementById('setupError');
-  errEl.classList.remove('show');
-
-  if (!nombre || !email || !pass) { errEl.textContent='Completa todos los campos requeridos'; errEl.classList.add('show'); return; }
-  if (pass !== pass2) { errEl.textContent='Las contraseñas no coinciden'; errEl.classList.add('show'); return; }
-  if (pass.length < 6) { errEl.textContent='La contraseña debe tener al menos 6 caracteres'; errEl.classList.add('show'); return; }
-
-  const btn = document.getElementById('btnCreate');
-  btn.classList.add('loading'); btn.disabled = true;
-
+// ── PASO 1: Guardar datos del consultorio ─────────────────────
+async function saveClinica() {
+  const nombre = document.getElementById('s1-nombre').value.trim();
+  if (!nombre) { showToast('El nombre del consultorio es obligatorio','error'); return false; }
   try {
-    // 1. Crear usuario en Firebase Auth
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid = cred.user.uid;
-    const clinicaId = 'clinica_' + uid;
-
-    // 2. Crear documento de clínica
-    await setDoc(doc(db, 'clinicas', clinicaId), {
-      nombre: document.getElementById('s-clinica').value.trim(),
-      telefono: document.getElementById('s-tel').value.trim(),
-      ciudad: document.getElementById('s-ciudad').value.trim(),
-      direccion: document.getElementById('s-dir').value.trim(),
-      emailClinica: document.getElementById('s-email-clinica').value.trim(),
-      plan: selectedPlan,
-      adminUid: uid,
-      creadoEn: serverTimestamp(),
-      activo: true,
-      sucursales: [{ id:'principal', nombre: document.getElementById('s-clinica').value.trim() }]
+    await db.collection('clinicas').doc(SESSION.clinica.id).update({
+      nombre,
+      eslogan:  document.getElementById('s1-slogan').value.trim(),
+      ciudad:   document.getElementById('s1-ciudad').value.trim(),
+      telefono: document.getElementById('s1-tel').value.trim(),
     });
+    SESSION.clinica.nombre = nombre;
+    cacheInvalidate();
+    return true;
+  } catch(e) { handleError(e,'setup-clinica'); return false; }
+}
 
-    // 3. Crear documento de usuario
-    await setDoc(doc(db, 'usuarios', uid), {
-      nombre, email, rol: 'admin',
-      clinicaId, activo: true,
-      creadoEn: serverTimestamp()
+// ── PASO 2: Guardar doctor ────────────────────────────────────
+async function saveDoctor() {
+  // Save clinica data first
+  await saveClinica();
+  const nombre = document.getElementById('s2-nombre').value.trim();
+  if (!nombre) { showToast('Escribe el nombre del doctor','error'); return; }
+  try {
+    await fsCreate('doctores', {
+      nombre,
+      especialidad: document.getElementById('s2-esp').value.trim()    || 'Cirujano Dentista',
+      cedula:       document.getElementById('s2-cedula').value.trim() || '',
+      tel:          document.getElementById('s2-tel').value.trim()    || '',
+      color:        '#00C2A8',
     });
+    completed.doctor = true;
+    showToast('Doctor registrado correctamente','success');
+    goStep(3);
+  } catch(e) { handleError(e,'setup-doctor'); }
+}
 
-    // 4. Crear catálogo inicial
-    const catalogoInicial = [
-      {tratamiento:'Consulta',desc:'Valoración y diagnóstico inicial',min:300,max:500,sugerido:400,vigente:true},
-      {tratamiento:'Limpieza',desc:'Profilaxis dental + aplicación de fluoruro',min:500,max:900,sugerido:700,vigente:true},
-      {tratamiento:'Endodoncia',desc:'Tratamiento de conducto radicular completo',min:7000,max:12000,sugerido:9500,vigente:true},
-      {tratamiento:'Resina',desc:'Restauración de composite fotopolimerizable',min:1500,max:3500,sugerido:2500,vigente:true},
-      {tratamiento:'Corona',desc:'Corona de porcelana feldespática / zirconia',min:8000,max:18000,sugerido:13000,vigente:true},
-      {tratamiento:'Extracción Simple',desc:'Extracción dental sin complicaciones',min:600,max:1200,sugerido:900,vigente:true},
-      {tratamiento:'Extracción Quirúrgica',desc:'Con elevación de colgajo y/o remoción ósea',min:1500,max:3000,sugerido:2250,vigente:true},
-      {tratamiento:'Blanqueamiento',desc:'Blanqueamiento dental con lámpara LED',min:2500,max:5000,sugerido:3750,vigente:true},
-      {tratamiento:'Implante',desc:'Implante de titanio grado quirúrgico',min:18000,max:30000,sugerido:24000,vigente:true},
-      {tratamiento:'Ortodoncia',desc:'Aparatología fija completa',min:25000,max:45000,sugerido:35000,vigente:true},
-      {tratamiento:'Poste',desc:'Poste de fibra de vidrio pre-fabricado',min:2500,max:5000,sugerido:3750,vigente:true},
-      {tratamiento:'Placa Nocturna',desc:'Placa oclusal de acrílico',min:1500,max:3000,sugerido:2250,vigente:true},
-      {tratamiento:'Radiografía Periapical',desc:'Radiografía periapical unitaria digital',min:100,max:200,sugerido:150,vigente:true},
-      {tratamiento:'Radiografía Panorámica',desc:'Radiografía panorámica',min:300,max:600,sugerido:450,vigente:true},
-    ];
-    for (const item of catalogoInicial) {
-      await setDoc(doc(db,'clinicas',clinicaId,'catalogo', item.tratamiento.replace(/\s+/g,'-').toLowerCase()), { ...item, creadoEn: serverTimestamp() });
+// ── PASO 3: Agendar cita ──────────────────────────────────────
+async function saveCita() {
+  const paciente = document.getElementById('s3-paciente').value.trim();
+  const fecha    = document.getElementById('s3-fecha').value;
+  if (!paciente) { showToast('Escribe el nombre del paciente','error'); return; }
+  try {
+    // Create patient record first
+    const pxRef = await fsCreate('pacientes', {
+      nombre:    paciente,
+      tel:       document.getElementById('s3-tel').value.trim(),
+      genero:    '—',
+      alta:      todayISO(),
+    });
+    // Create appointment
+    await fsCreate('citas', {
+      paciente,
+      expId:       pxRef.id,
+      fecha,
+      hora:        document.getElementById('s3-hora').value || '10:00',
+      tratamiento: document.getElementById('s3-trat').value.trim() || 'Consulta general',
+      estado:      'Agendado',
+      tel:         document.getElementById('s3-tel').value.trim(),
+    });
+    completed.cita = true;
+    showToast('Primera cita agendada','success');
+    goStep(4);
+  } catch(e) { handleError(e,'setup-cita'); }
+}
+
+// ── PASO 4: Invitar usuario ───────────────────────────────────
+async function inviteUser() {
+  const nombre = document.getElementById('s4-nombre').value.trim();
+  const email  = document.getElementById('s4-email').value.trim();
+  const pass   = document.getElementById('s4-pass').value;
+  const rol    = document.getElementById('s4-rol').value;
+  if (!nombre || !email) { showToast('Nombre y correo son obligatorios','error'); return; }
+  if (!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres','error'); return; }
+  try {
+    const appName   = 'setup_tmp_'+Date.now();
+    const mainApp   = firebase.app('dental');
+    const tmpApp    = firebase.initializeApp(mainApp.options, appName);
+    const tmpAuth   = tmpApp.auth();
+    const tmpDb     = tmpApp.firestore();
+    try {
+      const cred  = await tmpAuth.createUserWithEmailAndPassword(email, pass);
+      const ROL_DEFAULT_PERMS = {
+        doctor:    ['agenda','pacientes','tratamientos','odontograma','expediente','recetas','inventario'],
+        recepcion: ['agenda','pacientes','cotizacion','abonos','catalogo','recordatorios','expediente','recibo','busqueda','corte-caja','estado-cuenta'],
+        asistente: ['agenda','pacientes','busqueda'],
+      };
+      await tmpDb.collection('usuarios').doc(cred.user.uid).set({
+        nombre, email, rol, activo: true,
+        permisos:   ROL_DEFAULT_PERMS[rol] || [],
+        clinicaId:  SESSION.clinica.id,
+        orgId:      SESSION.user.orgId || SESSION.clinica.id,
+        creadoEn:   firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      completed.user = true;
+      showToast(`${nombre} invitado correctamente`,'success');
+    } finally {
+      try { await tmpAuth.signOut(); } catch(_){}
+      try { await tmpApp.delete();   } catch(_){}
     }
-
-    document.getElementById('successClinica').textContent = document.getElementById('s-clinica').value.trim();
-    document.getElementById('step2').classList.remove('active');
-    document.getElementById('stepSuccess').classList.add('active');
-
+    goStep(5);
   } catch(e) {
     const msgs = {
-      'auth/email-already-in-use':'Ese correo ya está registrado. Ve a iniciar sesión.',
-      'auth/weak-password':'La contraseña es demasiado débil',
-      'auth/invalid-email':'Correo electrónico inválido'
+      'auth/email-already-in-use': 'Ese correo ya tiene una cuenta',
+      'auth/weak-password': 'Contraseña muy débil',
     };
-    errEl.textContent = msgs[e.code] || 'Error: ' + e.message;
-    errEl.classList.add('show');
-    btn.classList.remove('loading'); btn.disabled = false;
+    showToast(msgs[e.code] || 'Error: '+e.message,'error');
   }
-};
+}
+
+// ── PASO 5: Finalizar ─────────────────────────────────────────
+async function finish() {
+  // Update checklist icons
+  ['doctor','cita','user'].forEach(k => {
+    const el = document.getElementById('ck-'+k);
+    if (el) {
+      el.textContent  = completed[k] ? '✓' : '—';
+      el.className    = 'check-icon ' + (completed[k] ? 'check-done' : 'check-pend');
+    }
+  });
+  // Mark setup as done
+  try {
+    await db.collection('clinicas').doc(SESSION.clinica.id)
+      .update({ setupDone: true });
+  } catch(e) {}
+  window.location.href = 'index.html';
+}
+
+// Override goStep for step 2 to save clinica first
+const _origGoStep = goStep;
 </script>
 </body>
 </html>
