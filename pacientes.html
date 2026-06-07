@@ -201,8 +201,12 @@ const PAGE_SIZE = 25;
 async function loadPacientes(reset = true) {
   if (reset) { allPacientes = []; _pxCursor = null; }
   try {
-    const { docs, next } = await fsGetPage('pacientes', _pxCursor, PAGE_SIZE, r => r.orderBy('nombre','asc'));
-    allPacientes = reset ? docs : [...allPacientes, ...docs];
+    // Sin orderBy en la query — evita índice compuesto, ordenamos en cliente
+    const { docs, next } = await fsGetPage('pacientes', _pxCursor, PAGE_SIZE, null);
+    const sorted = docs.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    allPacientes = reset ? sorted : [...allPacientes, ...sorted].sort(
+      (a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es')
+    );
     _pxCursor = next;
     renderGrid();
     let btn = document.getElementById('btnLoadMore');
@@ -210,7 +214,8 @@ async function loadPacientes(reset = true) {
       btn = document.createElement('div');
       btn.id = 'btnLoadMore';
       btn.style.cssText = 'text-align:center;margin:16px 0';
-      document.getElementById('pxGrid').insertAdjacentElement('afterend', btn);
+      const grid = document.getElementById('pxGrid');
+      if(grid) grid.insertAdjacentElement('afterend', btn);
     }
     btn.innerHTML = next
       ? `<button class="btn btn-ghost btn-sm" onclick="loadPacientes(false)" style="min-width:180px">Cargar más pacientes</button>`
@@ -477,8 +482,12 @@ const PAGE_SIZE = 25;
 async function loadPacientes(reset = true) {
   if (reset) { allPacientes = []; _pxCursor = null; }
   try {
-    const { docs, next } = await fsGetPage('pacientes', _pxCursor, PAGE_SIZE, r => r.orderBy('nombre','asc'));
-    allPacientes = reset ? docs : [...allPacientes, ...docs];
+    // Sin orderBy en la query — evita índice compuesto, ordenamos en cliente
+    const { docs, next } = await fsGetPage('pacientes', _pxCursor, PAGE_SIZE, null);
+    const sorted = docs.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    allPacientes = reset ? sorted : [...allPacientes, ...sorted].sort(
+      (a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es')
+    );
     _pxCursor = next;
     renderGrid();
     let btn = document.getElementById('btnLoadMore');
@@ -486,7 +495,8 @@ async function loadPacientes(reset = true) {
       btn = document.createElement('div');
       btn.id = 'btnLoadMore';
       btn.style.cssText = 'text-align:center;margin:16px 0';
-      document.getElementById('pxGrid').insertAdjacentElement('afterend', btn);
+      const grid = document.getElementById('pxGrid');
+      if(grid) grid.insertAdjacentElement('afterend', btn);
     }
     btn.innerHTML = next
       ? `<button class="btn btn-ghost btn-sm" onclick="loadPacientes(false)" style="min-width:180px">Cargar más pacientes</button>`

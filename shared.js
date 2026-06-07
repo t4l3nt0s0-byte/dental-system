@@ -723,12 +723,20 @@ window.cacheInvalidate = cacheInvalidate;
 // Para siguiente página: await fsGetPage('pacientes', next, 20)
 // ══════════════════════════════════════════════════════════════
 async function fsGetPage(col, cursor, limit, constraints) {
-  let ref = clinicaCol(col).orderBy('creadoEn', 'desc').limit(limit || 20);
-  if (constraints) ref = constraints(ref);
+  // Si hay constraints personalizados, usarlos directamente
+  // Si no, usar query simple SIN orderBy para evitar requerir índices compuestos
+  var lim = limit || 20;
+  var ref;
+  if (constraints) {
+    ref = clinicaCol(col).limit(lim);
+    ref = constraints(ref);
+  } else {
+    ref = clinicaCol(col).limit(lim);
+  }
   if (cursor) ref = ref.startAfter(cursor);
   const snap = await ref.get();
   const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const next = snap.docs.length === (limit || 20)
+  const next = snap.docs.length === lim
     ? snap.docs[snap.docs.length - 1]
     : null;
   return { docs, next, hasMore: next !== null };
