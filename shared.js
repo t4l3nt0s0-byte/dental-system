@@ -7,7 +7,7 @@
 // <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 // <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-const FIREBASE_CONFIG = {
+var FIREBASE_CONFIG = {
   apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
   authDomain:"dental-add.firebaseapp.com",
   projectId:"dental-add",
