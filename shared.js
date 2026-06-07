@@ -324,13 +324,17 @@ async function initSession(requiredPage) {
               // Permisos efectivos: los del doc (admin los configura) o defaults del rol
               var userPermisos = userData.permisos || ROL_DEFAULT_PERMS[rol] || [];
               // Admin siempre tiene acceso total, ignorar lista
-              var permsEfectivos = isAdminRole ? null : userPermisos;
+              // Admin, owner y director tienen acceso total — permsEfectivos null
+              var isFullAccess = isAdminRole || rol === 'owner' || rol === 'director';
+              var permsEfectivos = isFullAccess ? null : userPermisos;
 
               // Guardar en SESSION para uso en sidebar y otros checks
               userData._permsEfectivos = permsEfectivos;
 
               // Verificar acceso a la página requerida
-              if (requiredPage && requiredPage !== 'any' && !isAdminRole) {
+              // Owner y director tienen acceso total — no verificar permisos
+              var isOwnerRole    = rol === 'owner' || rol === 'director';
+              if (requiredPage && requiredPage !== 'any' && !isAdminRole && !isOwnerRole) {
                 var allowed = permsEfectivos && permsEfectivos.indexOf(requiredPage) !== -1;
                 if (!allowed) {
                   window.location.replace('index.html');
@@ -514,6 +518,7 @@ function renderSidebar() {
     ${navItem('index','📊','Dashboard','any')}
     ${navItem('agenda','📅','Agenda de Citas','any')}
     ${navItem('pacientes','👤','Expedientes','any')}
+    ${navItem('expediente','📋','Expediente Completo','any')}
     <div class="nav-section">Clínica</div>
     ${navItem('tratamientos','🦷','Tratamientos','any')}
     ${navItem('abonos','💰','Abonos & Pagos','any')}
@@ -532,7 +537,6 @@ function renderSidebar() {
     <div class="nav-section">Sistema</div>
     ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
     ${navItem('api','🔌','API pública','api')}
-    ${navItem('expediente','📋','Expediente Completo','expediente')}
     ${navItem('recibo','🧾','Recibo de Pago','any')}
     ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}
     ${navItem('recordatorios','💬','Recordatorios WA','any')}
