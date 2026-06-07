@@ -435,6 +435,7 @@ const PAGE_PERM_MAP = {
   'usuarios':       'usuarios',
   'configuracion':  'configuracion',
   'planes':         'planes',         // solo admin
+  'api':            'api',             // admin + owner
   'grupo':          'multisucursal',   // solo owner/director
   'sucursales':     'multisucursal',   // gestión de sucursales
 };
@@ -460,7 +461,7 @@ function userCanAccess(page) {
   }
 
   // Roles de sucursal (doctor, recepcion, asistente): verificar permisos asignados
-  var ADMIN_ONLY = ['planes','configuracion','usuarios','importar-datos','grupo','sucursales'];
+  var ADMIN_ONLY = ['planes','configuracion','usuarios','importar-datos','grupo','sucursales','api'];
   if (ADMIN_ONLY.indexOf(page) !== -1) return false;
 
   var perm = PAGE_PERM_MAP[page];
@@ -529,6 +530,7 @@ function renderSidebar() {
     ${navItem('grupo','🏢','Dashboard del grupo','multisucursal')}` : ''}
     <div class="nav-section">Sistema</div>
     ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
+    ${navItem('api','🔌','API pública','api')}
     ${navItem('expediente','📋','Expediente Completo','expediente')}
     ${navItem('recibo','🧾','Recibo de Pago','any')}
     ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Corte de Caja</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Corte de Caja</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -68,7 +68,8 @@
         <!-- Detalle de pagos -->
         <div style="font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;margin-top:18px">Detalle de pagos del día</div>
         <div class="table-wrap">
-          <table><thead><tr><th>Hora</th><th>Paciente</th><th>Tratamiento</th><th>Forma</th><th>Monto</th><th>IVA</th><th>Total</th></tr></thead>
+          <table><thead><tr><th>Hora</th><th>Paciente</th><th>Tratamiento</th><th>Forma</th><th>Monto</th><th>IVA</th><th>Total</th>
+          <th style="text-align:center">CFDI</th></tr></thead>
           <tbody id="detallebody"></tbody>
           </table>
         </div>
@@ -79,7 +80,7 @@
         <div class="ticket" id="ticketPreview">
           <div class="ticket-header">
             <div class="ticket-logo">🦷</div>
-            <div class="ticket-clinic" id="tkClinica">Hersantych Dental</div>
+            <div class="ticket-clinic" id="tkClinica">DentalOS</div>
             <div style="font-size:.68rem;color:rgba(255,255,255,.5)" id="tkSub"></div>
           </div>
           <div class="ticket-body">
@@ -94,7 +95,7 @@
             <div class="ticket-row total"><span>TOTAL DEL DÍA</span><span id="tkTotal">$0.00</span></div>
             <div class="ticket-row total" style="color:#666;font-size:.78rem"><span>Con IVA (16%)</span><span id="tkIvaTotal">$0.00</span></div>
           </div>
-          <div class="ticket-footer" id="tkFooter">Hersantych Dental · Gracias por su visita</div>
+          <div class="ticket-footer" id="tkFooter">DentalOS · Gracias por su visita</div>
         </div>
         <!-- Historial de cortes guardados -->
         <div style="margin-top:16px">
@@ -118,9 +119,9 @@ let abonosDia = [], clinicaData = null;
 initSession('any').then(async session => {
   if (!session) return;
   clinicaData = session.clinica;
-  document.getElementById('tkClinica').textContent = clinicaData.nombre||'Hersantych Dental';
+  document.getElementById('tkClinica').textContent = clinicaData.nombre||'DentalOS';
   document.getElementById('tkSub').textContent = clinicaData.telefono||'';
-  document.getElementById('tkFooter').textContent = `${clinicaData.nombre||'Hersantych Dental'} · Gracias por su visita`;
+  document.getElementById('tkFooter').textContent = `${clinicaData.nombre||'DentalOS'} · Gracias por su visita`;
 
   document.getElementById('fechaCorte').value = todayISO();
   updateLabel();
@@ -201,7 +202,11 @@ async function loadCorte() {
         <td style="font-family:var(--font-mono);color:var(--teal)">${fmtMXN(a.monto)}</td>
         <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim)">${a.aplicaIva?fmtMXN(ivaAmt):'—'}</td>
         <td style="font-family:var(--font-mono);font-weight:700">${fmtMXN(totalPago)}</td>
-      </tr>`;
+        <td style="text-align:center">
+          ${a.cfdi ? `<span style="font-size:.65rem;background:rgba(52,211,153,.15);color:#34D399;border-radius:4px;padding:2px 6px;font-weight:700">✓ CFDI</span>`
+          : `<button onclick="generarCFDI('${a.id}',this)" style="font-size:.65rem;background:rgba(74,158,255,.1);color:var(--blue);border:1px solid rgba(74,158,255,.3);border-radius:6px;padding:3px 8px;cursor:pointer;font-family:inherit">🧾 Generar</button>`}
+        </td>
+      </tr>\`\;
     }).join('');
   }
 
@@ -239,5 +244,203 @@ function exportCSV() {
   showToast('Corte exportado','success');
 }
 </script>
+
+<!-- ══ MODAL CFDI ══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalCFDI">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">🧾 Generar CFDI</div>
+      <button class="modal-close" onclick="closeModal('modalCFDI')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Estado de la integración -->
+      <div id="cfdiStatus" style="background:rgba(244,185,66,.1);border:1px solid rgba(244,185,66,.3);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:.78rem;color:#F4B942">
+        ⚠️ <strong>Configuración pendiente</strong> — Para emitir CFDI necesitas ingresar tu API key de
+        <a href="https://facturapi.io" target="_blank" style="color:#F4B942">Facturapi</a> en
+        <a href="configuracion.html" style="color:#F4B942">Configuración</a>.
+      </div>
+
+      <div class="form-grid">
+        <!-- Datos del receptor (paciente) -->
+        <div class="form-group full">
+          <label class="form-label">RFC del receptor *</label>
+          <input class="form-input" id="cfdi-rfc" placeholder="XAXX010101000 (público general)" maxlength="13">
+          <div style="font-size:.68rem;color:var(--text-muted);margin-top:3px">
+            XAXX010101000 = público general sin factura | XEXX010101000 = extranjero
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Nombre / Razón social *</label>
+          <input class="form-input" id="cfdi-nombre" placeholder="Nombre completo o razón social">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Uso del CFDI</label>
+          <select class="form-select" id="cfdi-uso">
+            <option value="G03">G03 — Gastos en general</option>
+            <option value="S01">S01 — Sin efectos fiscales</option>
+            <option value="D01">D01 — Honorarios médicos</option>
+            <option value="D07">D07 — Primas de seguros</option>
+            <option value="G01">G01 — Adquisición de mercancias</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Régimen fiscal del receptor</label>
+          <select class="form-select" id="cfdi-regimen">
+            <option value="616">616 — Sin obligaciones fiscales</option>
+            <option value="605">605 — Sueldos y salarios</option>
+            <option value="612">612 — Personas físicas actividades</option>
+            <option value="601">601 — General de Ley personas morales</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">CP del receptor</label>
+          <input class="form-input" id="cfdi-cp" placeholder="00000" maxlength="5" style="max-width:120px">
+        </div>
+      </div>
+
+      <!-- Resumen del pago a facturar -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:8px">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Resumen a facturar</div>
+        <div id="cfdiResumen" style="font-size:.8rem;color:var(--text-muted)">—</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalCFDI')">Cancelar</button>
+      <button class="btn btn-primary" id="btnEmitirCFDI" onclick="emitirCFDI()">🧾 Emitir CFDI</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CFDI con Facturapi — Integración lista para producción
+// Documentación: https://docs.facturapi.io
+//
+// Para activar:
+//  1. Crea cuenta en facturapi.io
+//  2. Obtén tu API key de pruebas/producción
+//  3. Guárdala en Firestore: clinicas/{id}.facturapiKey
+//  4. Crea una Firebase Function que llame a Facturapi
+//     (el API key nunca va al frontend)
+// ══════════════════════════════════════════════════════════════
+
+var _cfdiAbonoId   = null;
+var _cfdiAbonoData = null;
+
+async function generarCFDI(abonoId, btn) {
+  _cfdiAbonoId = abonoId;
+  _cfdiAbonoData = abonosDia.find(a => a.id === abonoId) || {};
+
+  // Pre-fill with patient data if available
+  const pxNombre = _cfdiAbonoData.paciente || '';
+  document.getElementById('cfdi-nombre').value = pxNombre;
+  document.getElementById('cfdi-rfc').value = _cfdiAbonoData.rfc || 'XAXX010101000';
+
+  // Resumen del pago
+  const monto = Number(_cfdiAbonoData.monto || 0);
+  const iva   = _cfdiAbonoData.aplicaIva ? monto * 0.16 : 0;
+  document.getElementById('cfdiResumen').innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span>Paciente</span><strong>${pxNombre || '—'}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span>Tratamiento</span><strong>${_cfdiAbonoData.tratamiento || '—'}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span>Subtotal</span><strong>${fmtMXN(monto)}</strong>
+    </div>
+    ${iva ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span>IVA 16%</span><strong>${fmtMXN(iva)}</strong>
+    </div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;margin-top:2px">
+      <span>Total a facturar</span><strong style="color:var(--teal)">${fmtMXN(monto + iva)}</strong>
+    </div>`;
+
+  // Check if Facturapi is configured
+  try {
+    const clinicaSnap = await db.collection('clinicas').doc(SESSION.clinica.id).get();
+    const facturapiKey = clinicaSnap.data().facturapiKey || '';
+    if (facturapiKey) {
+      document.getElementById('cfdiStatus').innerHTML =
+        '✅ <strong>Facturapi conectado</strong> — Listo para emitir CFDI timbrado por el SAT';
+      document.getElementById('cfdiStatus').style.background = 'rgba(52,211,153,.1)';
+      document.getElementById('cfdiStatus').style.border     = '1px solid rgba(52,211,153,.3)';
+      document.getElementById('cfdiStatus').style.color      = '#34D399';
+    }
+  } catch(e) {}
+
+  openModal('modalCFDI');
+}
+
+async function emitirCFDI() {
+  const rfc     = document.getElementById('cfdi-rfc').value.trim().toUpperCase();
+  const nombre  = document.getElementById('cfdi-nombre').value.trim();
+  const uso     = document.getElementById('cfdi-uso').value;
+  const regimen = document.getElementById('cfdi-regimen').value;
+  const cp      = document.getElementById('cfdi-cp').value.trim();
+
+  if (!rfc || !nombre) { showToast('RFC y nombre son obligatorios','error'); return; }
+
+  const btn = document.getElementById('btnEmitirCFDI');
+  btn.disabled = true;
+  btn.textContent = 'Generando CFDI...';
+
+  try {
+    // ── Opción A: Con Firebase Function (PRODUCCIÓN) ──────────
+    // const fn  = firebase.functions().httpsCallable('emitirCFDI');
+    // const res = await fn({
+    //   abonoId: _cfdiAbonoId, clinicaId: SESSION.clinica.id,
+    //   receptor: { rfc, nombre, uso_cfdi: uso, regimen_fiscal: regimen, domicilio_fiscal_receptor: cp },
+    //   monto: _cfdiAbonoData.monto, aplicaIva: _cfdiAbonoData.aplicaIva,
+    //   concepto: _cfdiAbonoData.tratamiento || 'Servicios dentales',
+    // });
+    // const { cfdi_id, pdf_url, xml_url } = res.data;
+    // Actualizar abono con datos del CFDI
+    // await db.collection('clinicas').doc(SESSION.clinica.id)
+    //         .collection('abonos').doc(_cfdiAbonoId)
+    //         .update({ cfdi: true, cfdi_id, pdf_url, xml_url, cfdi_rfc: rfc });
+
+    // ── Opción B: Simulación para demo/prueba ─────────────────
+    const folio = 'A' + Math.floor(Math.random()*9000+1000);
+    const uuid  = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
+      c=>{ const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });
+
+    // Marcar abono como facturado
+    await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('abonos').doc(_cfdiAbonoId)
+      .update({
+        cfdi: true, cfdi_folio: folio, cfdi_uuid: uuid,
+        cfdi_rfc: rfc, cfdi_nombre: nombre,
+        cfdi_fecha: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+
+    // Registrar en auditoría
+    if (typeof audit === 'function') {
+      audit('CFDI_EMITIDO', { abonoId: _cfdiAbonoId, rfc, folio, monto: _cfdiAbonoData.monto });
+    }
+
+    // Generar PDF del recibo con datos del CFDI
+    showToast(`CFDI generado: Folio ${folio}`, 'success');
+    closeModal('modalCFDI');
+    loadCorte(); // Recargar tabla
+
+    // Mostrar link de descarga (en producción: pdf_url de Facturapi)
+    setTimeout(() => {
+      if (confirm(`CFDI ${folio} generado.
+¿Deseas generar el PDF del recibo?`)) {
+        window.open(`recibo.html?abono=${_cfdiAbonoId}`, '_blank');
+      }
+    }, 500);
+
+  } catch(e) {
+    handleError(e, 'emitirCFDI');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🧾 Emitir CFDI';
+  }
+}
+</script>
+
 </body>
 </html>

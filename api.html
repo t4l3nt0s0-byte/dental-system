@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DentalOS · API</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.api-wrap{max-width:800px;margin:0 auto;padding:1.5rem 1rem}
+.api-key-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.key-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-top:10px}
+.key-val{font-family:var(--font-mono);font-size:.78rem;flex:1;color:var(--teal);word-break:break-all}
+.endpoint{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.endpoint-head{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;transition:background .12s}
+.endpoint-head:hover{background:var(--surface2)}
+.method{font-family:var(--font-mono);font-size:.68rem;font-weight:800;border-radius:4px;padding:2px 8px;flex-shrink:0}
+.method-get{background:rgba(52,211,153,.15);color:#34D399}
+.method-post{background:rgba(74,158,255,.15);color:#4A9EFF}
+.method-del{background:rgba(255,92,92,.15);color:#FF5C5C}
+.endpoint-path{font-family:var(--font-mono);font-size:.78rem;color:var(--text);flex:1}
+.endpoint-desc{font-size:.72rem;color:var(--text-muted)}
+.endpoint-body{display:none;padding:16px;border-top:1px solid var(--border);background:var(--surface2)}
+.endpoint-body.open{display:block}
+.code-block{background:#060D14;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px 14px;font-family:var(--font-mono);font-size:.72rem;color:#CDD6F4;overflow-x:auto;margin-top:8px;white-space:pre}
+.param-table{width:100%;border-collapse:collapse;font-size:.75rem;margin-top:8px}
+.param-table th{padding:6px 10px;text-align:left;font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border)}
+.param-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text-muted)}
+.param-table td:first-child{font-family:var(--font-mono);color:var(--teal)}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-ok{background:#34D399}
+.status-err{background:#FF5C5C}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🔌 API pública</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary btn-sm" onclick="generarApiKey()">+ Generar API Key</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="api-wrap">
+
+      <!-- API Keys -->
+      <div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">🔑 Tus API Keys</div>
+      <div id="apiKeysList">
+        <div style="text-align:center;padding:20px;color:var(--text-dim);font-size:.8rem">Cargando...</div>
+      </div>
+
+      <!-- Base URL -->
+      <div style="margin:20px 0 10px;font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim)">📡 Base URL</div>
+      <div class="code-block">https://dental-add.web.app/api/v1
+Authorization: Bearer {tu_api_key}</div>
+
+      <!-- Endpoints -->
+      <div style="margin:20px 0 10px;font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim)">📋 Endpoints disponibles</div>
+
+      <!-- GET /citas/hoy -->
+      <div class="endpoint">
+        <div class="endpoint-head" onclick="toggleEndpoint('e1')">
+          <span class="method method-get">GET</span>
+          <span class="endpoint-path">/citas/hoy</span>
+          <span class="endpoint-desc">Citas del día actual</span>
+        </div>
+        <div class="endpoint-body" id="e1">
+          <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:8px">Retorna todas las citas agendadas para hoy en tu clínica.</div>
+          <table class="param-table">
+            <tr><th>Header</th><th>Descripción</th><th>Requerido</th></tr>
+            <tr><td>Authorization</td><td>Bearer {api_key}</td><td style="color:#34D399">Sí</td></tr>
+          </table>
+          <div style="font-size:.68rem;color:var(--text-dim);margin:10px 0 4px">Respuesta exitosa (200):</div>
+          <div class="code-block">{
+  "fecha": "2026-06-07",
+  "total": 8,
+  "citas": [
+    {
+      "id": "abc123",
+      "paciente": "García López María",
+      "hora": "09:00",
+      "tratamiento": "Limpieza dental",
+      "doctor": "Dr. Hernández",
+      "estado": "Agendado",
+      "tel": "5512345678"
+    }
+  ]
+}</div>
+          <div class="code-block">curl -X GET https://dental-add.web.app/api/v1/citas/hoy \
+  -H "Authorization: Bearer {tu_api_key}"</div>
+        </div>
+      </div>
+
+      <!-- GET /pacientes -->
+      <div class="endpoint">
+        <div class="endpoint-head" onclick="toggleEndpoint('e2')">
+          <span class="method method-get">GET</span>
+          <span class="endpoint-path">/pacientes</span>
+          <span class="endpoint-desc">Lista de pacientes (paginada)</span>
+        </div>
+        <div class="endpoint-body" id="e2">
+          <table class="param-table">
+            <tr><th>Parámetro</th><th>Descripción</th><th>Default</th></tr>
+            <tr><td>limit</td><td>Resultados por página</td><td>20</td></tr>
+            <tr><td>page</td><td>Número de página</td><td>1</td></tr>
+            <tr><td>q</td><td>Buscar por nombre</td><td>—</td></tr>
+          </table>
+          <div class="code-block">curl -X GET "https://dental-add.web.app/api/v1/pacientes?limit=20&page=1" \
+  -H "Authorization: Bearer {tu_api_key}"</div>
+        </div>
+      </div>
+
+      <!-- GET /pacientes/{id} -->
+      <div class="endpoint">
+        <div class="endpoint-head" onclick="toggleEndpoint('e3')">
+          <span class="method method-get">GET</span>
+          <span class="endpoint-path">/pacientes/{id}</span>
+          <span class="endpoint-desc">Expediente completo de un paciente</span>
+        </div>
+        <div class="endpoint-body" id="e3">
+          <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:8px">Retorna el expediente completo incluyendo tratamientos, abonos y citas pasadas.</div>
+          <div class="code-block">curl -X GET https://dental-add.web.app/api/v1/pacientes/px123 \
+  -H "Authorization: Bearer {tu_api_key}"</div>
+        </div>
+      </div>
+
+      <!-- POST /citas -->
+      <div class="endpoint">
+        <div class="endpoint-head" onclick="toggleEndpoint('e4')">
+          <span class="method method-post">POST</span>
+          <span class="endpoint-path">/citas</span>
+          <span class="endpoint-desc">Crear nueva cita</span>
+        </div>
+        <div class="endpoint-body" id="e4">
+          <div class="code-block">{
+  "paciente": "García López María",
+  "tel": "5512345678",
+  "fecha": "2026-06-15",
+  "hora": "10:30",
+  "tratamiento": "Consulta general",
+  "doctor": "Dr. Hernández"
+}</div>
+          <div class="code-block">curl -X POST https://dental-add.web.app/api/v1/citas \
+  -H "Authorization: Bearer {tu_api_key}" \
+  -H "Content-Type: application/json" \
+  -d '{"paciente":"García López María","fecha":"2026-06-15","hora":"10:30"}'</div>
+        </div>
+      </div>
+
+      <!-- GET /metricas/resumen -->
+      <div class="endpoint">
+        <div class="endpoint-head" onclick="toggleEndpoint('e5')">
+          <span class="method method-get">GET</span>
+          <span class="endpoint-path">/metricas/resumen</span>
+          <span class="endpoint-desc">KPIs del mes actual</span>
+        </div>
+        <div class="endpoint-body" id="e5">
+          <div class="code-block">{
+  "mes": "2026-06",
+  "ingresos_mes": 48500,
+  "pacientes_nuevos": 12,
+  "citas_completadas": 87,
+  "tasa_asistencia": 0.92
+}</div>
+        </div>
+      </div>
+
+      <!-- DELETE /citas/{id} -->
+      <div class="endpoint">
+        <div class="endpoint-head" onclick="toggleEndpoint('e6')">
+          <span class="method method-del">DELETE</span>
+          <span class="endpoint-path">/citas/{id}</span>
+          <span class="endpoint-desc">Cancelar una cita</span>
+        </div>
+        <div class="endpoint-body" id="e6">
+          <div class="code-block">curl -X DELETE https://dental-add.web.app/api/v1/citas/abc123 \
+  -H "Authorization: Bearer {tu_api_key}"</div>
+        </div>
+      </div>
+
+      <!-- Implementación -->
+      <div style="margin:24px 0 10px;font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim)">⚙️ Implementación (Firebase Functions)</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:.78rem;color:var(--text-muted)">
+        <p style="margin-bottom:10px">La API REST se implementa como <strong style="color:var(--text)">Firebase Functions</strong>. El código base está listo — solo necesitas desplegarlo:</p>
+        <div class="code-block">npm install -g firebase-tools
+firebase init functions  # selecciona dental-add
+firebase deploy --only functions</div>
+        <p style="margin-top:10px">El middleware de autenticación valida el API key contra Firestore en <code>clinicas/{id}/apiKeys/{key}</code> antes de procesar cada request.</p>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'api';
+
+initSession('any').then(async session => {
+  if (!session) return;
+  if (!['admin','owner'].includes(session.user.rol)) {
+    window.location.replace('index.html'); return;
+  }
+  await loadApiKeys();
+});
+
+// ── API Keys Management ────────────────────────────────────────
+async function loadApiKeys() {
+  const el = document.getElementById('apiKeysList');
+  try {
+    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('apiKeys').get();
+    if (snap.empty) {
+      el.innerHTML = `<div class="api-key-card" style="text-align:center;color:var(--text-muted);font-size:.82rem">
+        <div style="font-size:1.5rem;margin-bottom:8px">🔑</div>
+        Sin API keys generadas — crea una para empezar a integrar
+      </div>`;
+      return;
+    }
+    el.innerHTML = snap.docs.map(d => {
+      const k = d.data();
+      const created = k.creadoEn?.toDate?.()?.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}) || '—';
+      const lastUsed = k.ultimoUso?.toDate?.()?.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) || 'Nunca';
+      return `<div class="api-key-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--text)">${k.nombre||'API Key'}</div>
+            <div style="font-size:.7rem;color:var(--text-muted)">Creada: ${created} · Último uso: ${lastUsed}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="status-dot ${k.activa!==false?'status-ok':'status-err'}"></div>
+            <span style="font-size:.7rem;color:var(--text-muted)">${k.activa!==false?'Activa':'Inactiva'}</span>
+          </div>
+        </div>
+        <div class="key-row">
+          <span class="key-val">${k.key||'dk_••••••••••••••••••••••••••'}</span>
+          <button class="btn btn-ghost btn-sm" onclick="copyKey('${k.key||''}')">📋</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-ghost btn-sm" onclick="revocarKey('${d.id}')">🚫 Revocar</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    handleError(e, 'loadApiKeys');
+  }
+}
+
+async function generarApiKey() {
+  const nombre = prompt('Nombre para esta API key (ej: "Integración CRM", "App móvil"):');
+  if (!nombre) return;
+
+  const chars  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const random = Array.from({length:40}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+  // Formato: dk_{clinicaId}_{random} — no usa prefijo dk_live_ de Stripe
+  const key    = `dk_${SESSION.clinica.id.slice(-6)}_${random}`;
+
+  try {
+    await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('apiKeys').add({
+        nombre, key, activa: true,
+        clinicaId: SESSION.clinica.id,
+        creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+        creadoPor: SESSION.user.uid,
+      });
+
+    // Copy to clipboard
+    try { await navigator.clipboard.writeText(key); } catch(e) {}
+
+    showToast(`API Key generada y copiada al portapapeles`, 'success');
+    audit('API_KEY_CREATED', { nombre });
+    await loadApiKeys();
+
+    // Show one-time warning
+    alert(`⚠️ Guarda esta key en un lugar seguro — solo se muestra una vez:\n\n${key}`);
+  } catch(e) {
+    handleError(e, 'generarApiKey');
+  }
+}
+
+async function revocarKey(docId) {
+  const ok = await confirmDialog('¿Revocar esta API key? Las integraciones que la usen dejarán de funcionar.');
+  if (!ok) return;
+  try {
+    await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('apiKeys').doc(docId)
+      .update({ activa: false });
+    showToast('API key revocada','success');
+    audit('API_KEY_REVOKED', { docId });
+    await loadApiKeys();
+  } catch(e) {
+    handleError(e, 'revocarKey');
+  }
+}
+
+function copyKey(key) {
+  if (!key) return;
+  navigator.clipboard.writeText(key).then(() => showToast('Key copiada','success')).catch(()=>{});
+}
+
+function toggleEndpoint(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+</script>
+</body>
+</html>

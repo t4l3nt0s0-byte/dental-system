@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Configuración del Consultorio</title>
+<title>DentalOS · Configuración del Consultorio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -134,7 +134,7 @@
                 <div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#060D14" id="checkDefault">✓</div>
                 <div style="font-size:2.8rem;margin-bottom:8px">🦷</div>
                 <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:3px">Ícono predeterminado</div>
-                <div style="font-size:.68rem;color:var(--text-muted)">El ícono de muela de Hersantych Dental</div>
+                <div style="font-size:.68rem;color:var(--text-muted)">El ícono de muela de DentalOS</div>
               </div>
 
               <!-- OPCIÓN B: Logo personalizado -->
@@ -167,7 +167,7 @@
             <!-- NOMBRE -->
             <div class="form-group">
               <label class="form-label">Nombre del consultorio *</label>
-              <input class="form-input" id="cf-nombre" placeholder="Hersantych Dental" oninput="markDirty()">
+              <input class="form-input" id="cf-nombre" placeholder="DentalOS" oninput="markDirty()">
             </div>
             <div class="form-group">
               <label class="form-label">Eslogan / descripción corta</label>
@@ -247,6 +247,16 @@
                 </select>
               </div>
               <div class="form-group full" style="grid-column:1/-1"><label class="form-label">Leyenda del recibo</label><input class="form-input" id="cf-leyenda" placeholder="Gracias por su preferencia" oninput="markDirty()"></div>
+            <div class="form-group full" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+              <label class="form-label">🔑 API Key de Facturapi <span style="font-size:.65rem;color:var(--text-dim);font-weight:400">(para emitir CFDI)</span></label>
+              <input class="form-input" id="cf-facturapiKey" placeholder="Tu API Key de Facturapi aquí" oninput="markDirty()"
+                style="font-family:var(--font-mono);font-size:.78rem">
+              <div style="font-size:.68rem;color:var(--text-muted);margin-top:4px">
+                Obtén tu API key en <a href="https://facturapi.io" target="_blank" style="color:var(--teal)">facturapi.io</a>
+                — necesaria para emitir facturas CFDI timbradas por el SAT desde Corte de Caja.
+              </div>
+            </div>
+            </div>
             </div>
           </div>
         </div>
@@ -269,7 +279,7 @@
           </div>
           <div class="section-card">
             <div class="section-title">💎 Plan & Suscripción</div>
-            <div class="section-sub">Gestiona tu plan de Hersantych Dental.</div>
+            <div class="section-sub">Gestiona tu plan de DentalOS.</div>
             <div id="planInfo" style="margin-bottom:14px;font-size:.82rem;color:var(--text-muted)"></div>
             <a href="planes.html" class="btn btn-primary">💎 Ver planes y precios</a>
           </div>
@@ -491,6 +501,8 @@ initSession('any').then(async session => {
   document.getElementById('cf-cedula').value      = fiscal.cedula      || '';
   document.getElementById('cf-especialidad').value= fiscal.especialidad|| '';
   document.getElementById('cf-leyenda').value     = fiscal.leyenda     || '';
+  const fkEl = document.getElementById('cf-facturapiKey');
+  if(fkEl) fkEl.value = (fiscal.facturapiKey||data.facturapiKey||'');
   if (fiscal.regimen) document.getElementById('cf-regimen').value = fiscal.regimen;
 
   // Cuenta
@@ -686,6 +698,7 @@ window.guardarConfig = async function() {
       web:          document.getElementById('cf-web').value.trim(),
       fiscal, config: configData,
       actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      facturapiKey: (document.getElementById('cf-facturapiKey')?.value||'').trim(),
     };
     // Logo — guardar opción seleccionada
     updates.logoOpcion = logoOpcionActiva;
@@ -718,7 +731,7 @@ window.guardarConfig = async function() {
     // Re-renderizar sidebar con el nuevo nombre
     renderSidebar();
 
-  } catch(e) { showToast('Error al guardar: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'configuracion'); }
   btn.disabled = false; btn.textContent = '💾 Guardar cambios';
 };
 
@@ -750,7 +763,7 @@ window.cambiarPass = async function() {
     await auth.currentUser.updatePassword(pass);
     document.getElementById('cf-pass').value = '';
     showToast('Contraseña actualizada correctamente','success');
-  } catch(e) { showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'configuracion'); }
 };
 
 // ── MODAL DE CONTRASEÑA PARA ACCIONES CRÍTICAS ─────────────
@@ -821,7 +834,7 @@ window.exportarTodo = function() {
       a.download = `backup_${SESSION.clinica.nombre?.replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
       showToast(`Backup completo descargado — ${pacientes.length} pacientes, ${tratamientos.length} tratamientos`, 'success');
-    } catch(e) { showToast('Error al exportar: '+e.message,'error'); }
+    } catch(e) { handleError(e, 'configuracion'); }
   });
 };
 
@@ -853,7 +866,7 @@ async function ejecutarRestauracion(file) {
     const text = await file.text();
     const backup = JSON.parse(text);
     if (!backup.pacientes && !backup.catalogo) {
-      addLog('❌ Archivo inválido — no es un backup de Hersantych Dental','var(--red)'); return;
+      addLog('❌ Archivo inválido — no es un backup de DentalOS','var(--red)'); return;
     }
     addLog(`📋 Backup: <strong>${backup.clinica||'—'}</strong> · ${backup.exportadoEl?.slice(0,10)||''} · v${backup.version||'1.0'}`,'var(--teal)');
     addLog(`📊 Contiene: ${backup.pacientes?.length||0} pacientes · ${backup.tratamientos?.length||0} trats · ${backup.abonos?.length||0} abonos · ${backup.catalogo?.length||0} catálogo`);
@@ -1000,7 +1013,7 @@ window.saveDoctor = async function(){
     }
     clearDoctorForm();
     await loadDoctores();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'configuracion'); }
   btn.disabled=false; btn.textContent='💾 Guardar doctor';
 };
 
@@ -1043,7 +1056,7 @@ window.deleteDoctor = async function(id, nombre){
     await fsDelete('doctores', id);
     showToast('Doctor eliminado','success');
     await loadDoctores();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'configuracion'); }
 };
 
 // Cargar doctores cuando se abre la sección
@@ -1080,7 +1093,7 @@ async function loadSucursales(){
         </div>
       </div>`;
     }).join('');
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'configuracion'); }
 }
 
 async function openModalNuevaSuc(){
@@ -1115,7 +1128,7 @@ async function crearNuevaSucursal(){
     showToast('Sucursal "'+nombre+'" creada correctamente','success');
     closeModal('modalNuevaSuc');
     loadSucursales();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'configuracion'); }
 }
 
 async function desactivarSucursal(id, nombre){
@@ -1125,7 +1138,7 @@ async function desactivarSucursal(id, nombre){
     await db.collection('clinicas').doc(id).update({activo:false});
     showToast('Sucursal desactivada','success');
     loadSucursales();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'configuracion'); }
 }
 </script>
 
@@ -1138,7 +1151,7 @@ async function desactivarSucursal(id, nombre){
     </div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Nombre del consultorio *</label>
-        <input class="form-input" id="suc-nombre" placeholder="Ej. Hersantych Dental Norte"></div>
+        <input class="form-input" id="suc-nombre" placeholder="Ej. DentalOS Norte"></div>
       <div class="form-group"><label class="form-label">Ciudad / Ubicación</label>
         <input class="form-input" id="suc-ciudad" placeholder="Ciudad de México"></div>
       <div class="form-group"><label class="form-label">Dirección</label>
