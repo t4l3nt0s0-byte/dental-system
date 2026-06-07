@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Abonos & Pagos</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -209,13 +210,13 @@ function renderTable() {
     const formaCls = `forma-${(a.forma||'default').replace(/\s/g,'')}`;
     return `<tr>
       <td style="font-family:var(--font-mono);font-size:.78rem">${a.fecha||'—'}</td>
-      <td><div style="font-weight:600;color:var(--text);font-size:.83rem">${a.paciente||'—'}</div></td>
-      <td style="font-size:.78rem">${a.tratamiento||'—'}</td>
+      <td><div style="font-weight:600;color:var(--text);font-size:.83rem">${esc(a.paciente)||'—'}</div></td>
+      <td style="font-size:.78rem">${esc(a.tratamiento)||'—'}</td>
       <td style="font-family:var(--font-mono);color:var(--teal)">${fmtMXN(a.monto)}</td>
       <td style="font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted)">${a.aplicaIva?fmtMXN(ivaAmt):'—'}</td>
       <td style="font-family:var(--font-mono);font-weight:700">${fmtMXN(total)}</td>
       <td><span class="forma-badge ${formaCls}">${a.forma||'—'}</span></td>
-      <td style="font-size:.77rem;color:var(--text-muted)">${a.concepto||'—'}</td>
+      <td style="font-size:.77rem;color:var(--text-muted)">${esc(a.concepto)||'—'}</td>
       <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim)">${a.recibo||'—'}</td>
       <td>
         <div style="display:flex;gap:5px">

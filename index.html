@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -850,7 +851,7 @@ function buildConsultaCard(c){
   const nom0=(c.paciente||'').split(' ')[0];
   return`<tr>
     <td>
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><div class="ct-pulse"></div><span class="ct-nombre">${c.paciente||'—'}</span></div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><div class="ct-pulse"></div><span class="ct-nombre">${esc(c.paciente)||'—'}</span></div>
       <div class="ct-trat">🦷 ${c.tratamiento||'Sin tratamiento'}</div>
       ${c.tiempoExtra>0?`<div class="ct-extra">⏰ +${c.tiempoExtra}min extendido</div>`:''}
     </td>
@@ -1071,7 +1072,7 @@ function renderCitasHoy(){
     <div class="cita-row">
       <div class="cita-hora">${c.hora||'—'}</div>
       <div class="cita-info">
-        <div class="cita-px">${c.paciente||'—'}</div>
+        <div class="cita-px">${esc(c.paciente)||'—'}</div>
         <div class="cita-trat">${c.tratamiento||'Sin tratamiento'}</div>
       </div>
       <span class="badge ${estadoClass[c.estado]||'badge-gold'}" style="font-size:.6rem;flex-shrink:0">${c.estado||'Agendado'}</span>

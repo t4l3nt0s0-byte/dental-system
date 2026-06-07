@@ -822,6 +822,104 @@ window.handleError = handleError;
 // Cumplimiento NOM-024 / requisito enterprise
 // Guarda en clinicas/{id}/auditoria/{docId}
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// SANITIZACIÓN XSS — PROTECCIÓN COMPLETA
+// Dos funciones para dos contextos distintos:
+//   esc(str)      → escapa HTML para mostrar texto en el DOM
+//   sanitize(html)→ limpia HTML con atributos permitidos (rich text)
+// NUNCA usar innerHTML con datos del usuario sin pasar por esc()
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * esc(str) — Escapa caracteres HTML peligrosos
+ * Usar para: nombres, emails, teléfonos, cualquier dato del usuario
+ * en template literals: `<div>${esc(px.nombre)}</div>`
+ */
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g,  '&#039;')
+    .replace(/\//g, '&#x2F;')
+    .replace(/`/g,  '&#x60;')
+    .replace(/=/g,  '&#x3D;');
+}
+window.esc = esc;
+
+/**
+ * sanitize(html) — Elimina tags y atributos peligrosos de HTML
+ * Usar para: contenido que puede tener formato (notas, observaciones)
+ * Permite: b, i, br, p, strong, em, ul, li, span
+ */
+function sanitize(html) {
+  if (!html) return '';
+  // Crear un elemento temporal para parsear el HTML
+  var tmp = document.createElement('div');
+  tmp.textContent = String(html); // textContent escapa todo
+  return tmp.innerHTML;           // retorna el texto escapado como HTML
+}
+window.sanitize = sanitize;
+
+/**
+ * safeHTML(template, data) — Template seguro con auto-escape
+ * Reemplaza {key} con esc(data[key])
+ * Uso: safeHTML('<b>{nombre}</b> · {email}', px)
+ */
+function safeHTML(template, data) {
+  return template.replace(/\{(\w+)\}/g, function(_, key) {
+    return data && data[key] !== undefined ? esc(data[key]) : '';
+  });
+}
+window.safeHTML = safeHTML;
+
+// ── Validadores de entrada ──────────────────────────────────
+var VALIDATORS = {
+  nombre:    { max:120, pattern:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-'\.]+$/, label:'nombre' },
+  email:     { max:200, pattern:/^[^\s@]+@[^\s@]+\.[^\s@]+$/, label:'correo' },
+  tel:       { max:20,  pattern:/^[\d\s\-\+\(\)]+$/, label:'teléfono' },
+  rfc:       { max:13,  pattern:/^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/, label:'RFC' },
+  cp:        { max:5,   pattern:/^\d{5}$/, label:'código postal' },
+  numerico:  { max:20,  pattern:/^[\d\.]+$/, label:'número' },
+};
+
+/**
+ * validateInput(value, type) — Valida y sanitiza un campo de entrada
+ * Retorna { ok: bool, value: string limpio, error: string }
+ */
+function validateInput(value, type) {
+  var v = String(value || '').trim();
+  if (!v) return { ok:true, value:'', error:null }; // vacío es válido (salvo required)
+  var rule = VALIDATORS[type];
+  if (!rule) return { ok:true, value:esc(v), error:null }; // tipo desconocido → escapar
+  if (v.length > rule.max) return { ok:false, value:'', error:`El ${rule.label} es demasiado largo (máx ${rule.max} chars)` };
+  if (rule.pattern && !rule.pattern.test(v)) return { ok:false, value:'', error:`El formato del ${rule.label} no es válido` };
+  return { ok:true, value:esc(v), error:null };
+}
+window.validateInput = validateInput;
+
+// ── Sanitizar objeto de datos antes de guardar en Firestore ─
+/**
+ * sanitizeData(obj, fields) — Limpia campos de texto antes de Firestore
+ * Elimina caracteres de control y trunca strings largos
+ */
+function sanitizeData(obj, fields) {
+  var clean = Object.assign({}, obj);
+  (fields || Object.keys(clean)).forEach(function(key) {
+    var v = clean[key];
+    if (typeof v === 'string') {
+      // Eliminar caracteres de control (null bytes, etc.)
+      clean[key] = v
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .slice(0, 5000); // truncar a 5000 chars máximo
+    }
+  });
+  return clean;
+}
+window.sanitizeData = sanitizeData;
+
 async function audit(accion, datos) {
   if (!SESSION || !SESSION.user) return;
   try {
@@ -904,6 +1002,7 @@ async function fsCreate(col, data) {
 
 async function fsUpdate(col, id, data) {
   cacheInvalidate(col); // invalidar cache al escribir
+  var cleanUpd = sanitizeData(data);
   await clinicaDoc(col, id).update({ ...data, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
 }
 

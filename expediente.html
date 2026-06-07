@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Expediente Completo</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -426,7 +427,7 @@ async function loadExpediente() {
   renderRX(rxList);
   renderNotas(notas);
 
-  document.title = `Expediente · ${px.nombre||'Paciente'} · DentalOS`;
+  document.title = `Expediente · ${esc(px.nombre)||'Paciente'} · DentalOS`;
 }
 
 function renderPerfil(px) {
@@ -533,7 +534,7 @@ async function renderRecetas(){
         <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px">
           ${meds.map(m=>`
           <div style="display:flex;align-items:baseline;gap:8px;font-size:.72rem">
-            <span style="font-weight:700;color:var(--text);min-width:120px">${m.nombre||'—'}</span>
+            <span style="font-weight:700;color:var(--text);min-width:120px">${esc(m.nombre)||'—'}</span>
             <span style="color:var(--text-muted)">${[m.forma,m.dosis,m.frecuencia,m.duracion].filter(Boolean).join(' · ')}</span>
           </div>`).join('')}
         </div>`:''}

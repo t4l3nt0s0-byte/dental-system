@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>DentalOS · Usuarios & Roles</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -301,8 +302,8 @@ function renderGrid(){
       <div class="user-header">
         <div class="user-avatar" style="background:${color}">${ini}</div>
         <div style="min-width:0">
-          <div class="user-name">${u.nombre||'Sin nombre'}</div>
-          <div class="user-email">${u.email||'—'}</div>
+          <div class="user-name">${esc(u.nombre||'Sin nombre')}</div>
+          <div class="user-email">${esc(u.email||'—')}</div>
         </div>
       </div>
       <div class="user-row">
@@ -433,7 +434,7 @@ function editUser(id){
 
 // ── SAVE USER ─────────────────────────────────────────────────
 async function saveUser(){
-  const nombre   = document.getElementById('f-nombre').value.trim();
+  const nombre   = document.getElementById('f-nombre').value.trim().slice(0,120);
   const email    = document.getElementById('f-email').value.trim();
   const pass     = document.getElementById('f-pass').value;
   const rol      = document.getElementById('f-rol').value;
