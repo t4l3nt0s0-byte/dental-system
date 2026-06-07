@@ -477,7 +477,8 @@ function renderSidebar() {
   const planKey = clinica.plan || 'basico';
   const plan    = PLANES[planKey] || PLANES.basico;
   const feats   = plan.features;
-  const isAdmin = user.rol === 'admin';
+  const rol     = user.rol || 'recepcion';
+  const isAdmin = rol === 'admin';
 
   function navItem(page, icon, label, feat) {
     // 1. Sin permiso → no aparece en el sidebar
