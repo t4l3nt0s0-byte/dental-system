@@ -91,7 +91,10 @@
             <option value="asistente">Asistente</option>
             <option value="doctor">Doctor</option>
             <option value="admin">Administrador</option>
+            <option value="director" id="optDirector" style="display:none">🏢 Director Regional</option>
+            <option value="owner" id="optOwner" style="display:none">👑 Propietario</option>
           </select>
+          <div id="rolDesc" style="font-size:.7rem;color:var(--text-muted);margin-top:4px;min-height:1.2em"></div>
         </div>
         <div class="form-group">
           <label class="form-label">Estado</label>
@@ -188,8 +191,12 @@ const ALL_PAGES = {
 
 // Permisos por defecto según rol — claves deben coincidir con PAGE_PERM_MAP en shared.js
 const ROL_DEFAULT_PERMS = {
-  // Admin: acceso total — incluyendo páginas exclusivas de admin
-  admin:     [...Object.keys(ALL_PAGES), 'usuarios','configuracion','importar','planes'],
+  // Propietario: acceso total + grupo (multi-sucursal)
+  owner:     [...Object.keys(ALL_PAGES), 'usuarios','configuracion','importar','planes','grupo','auditoria'],
+  // Director regional: acceso operativo completo sin planes/billing
+  director:  [...Object.keys(ALL_PAGES), 'usuarios','configuracion','grupo','auditoria'],
+  // Admin: acceso total a su sucursal
+  admin:     [...Object.keys(ALL_PAGES), 'usuarios','configuracion','importar','planes','auditoria'],
   // Doctor: clínica completa + recetas
   doctor:    ['agenda','pacientes','tratamientos','odontograma',
                'expediente','recetas','inventario'],
@@ -202,10 +209,12 @@ const ROL_DEFAULT_PERMS = {
 };
 
 const ROL_COLORS = {
-  admin:'#F4B942', doctor:'#00C2A8', recepcion:'#4A9EFF', asistente:'#a078ff'
+  owner:'#E24B4A', director:'#FF8C00', admin:'#F4B942',
+  doctor:'#00C2A8', recepcion:'#4A9EFF', asistente:'#a078ff'
 };
 const ROL_BADGE = {
-  admin:'badge-gold', doctor:'badge-teal', recepcion:'badge-blue', asistente:'badge-purple'
+  owner:'badge-red', director:'badge-orange', admin:'badge-gold',
+  doctor:'badge-teal', recepcion:'badge-blue', asistente:'badge-purple'
 };
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -367,9 +376,21 @@ function getSelectedPerms(){
 }
 
 function onRolChange(){
-  const rol = document.getElementById('f-rol').value;
+  const rol     = document.getElementById('f-rol').value;
+  const isAdmin = rol === 'admin' || rol === 'owner' || rol === 'director';
   const defaults = ROL_DEFAULT_PERMS[rol] || [];
-  buildPermsGrid(defaults, rol==='admin');
+  buildPermsGrid(defaults, isAdmin);
+  // Mostrar descripción del rol
+  const desc = {
+    owner:     '👑 Acceso total a todas las sucursales del grupo',
+    director:  '🏢 Acceso a sucursales asignadas, sin configuración de planes',
+    admin:     '⚙️ Acceso total a esta sucursal',
+    doctor:    '🦷 Agenda, expedientes, tratamientos y recetas',
+    recepcion: '📅 Agenda, pacientes, cobros y recordatorios',
+    asistente: '📋 Agenda y consulta de pacientes',
+  }[rol] || '';
+  const descEl = document.getElementById('rolDesc');
+  if(descEl) descEl.textContent = desc;
 }
 
 // ── OPEN MODALS ───────────────────────────────────────────────
@@ -380,6 +401,12 @@ function openNewModal(){
   document.getElementById('f-email').value  = '';
   document.getElementById('f-pass').value   = '';
   document.getElementById('f-rol').value    = 'recepcion';
+  // Solo owner puede crear directores — mostrar/ocultar opciones avanzadas
+  const isOwner = SESSION?.user?.rol === 'owner';
+  const optDir  = document.getElementById('optDirector');
+  const optOwn  = document.getElementById('optOwner');
+  if(optDir) optDir.style.display = isOwner ? '' : 'none';
+  if(optOwn) optOwn.style.display = 'none'; // owner nunca se puede crear desde aquí
   document.getElementById('f-activo').value = 'true';
   document.getElementById('passGroup').style.display = 'block';
   document.getElementById('f-email').disabled = false;

@@ -319,7 +319,7 @@ async function initSession(requiredPage) {
                 asistente: ['agenda','pacientes','busqueda'],
               };
               var rol = userData.rol || 'recepcion';
-              var isAdminRole = rol === 'admin';
+              var isAdminRole = (rol === 'admin' || rol === 'owner' || rol === 'director');
 
               // Permisos efectivos: los del doc (admin los configura) o defaults del rol
               var userPermisos = userData.permisos || ROL_DEFAULT_PERMS[rol] || [];
@@ -535,7 +535,7 @@ function renderSidebar() {
     ${navItem('ofertas','🎁','Ofertas & Promos','ofertas')}
     ${navItem('metricas','📈','Métricas','metricas')}
     ${navItem('reportes','📊','Reportes','reportes')}
-    ${SESSION.user.isOwner || SESSION.user.isDirector ? `<div class="nav-section">Grupo</div>
+    ${(rol === 'owner' || rol === 'director') ? `<div class="nav-section">Grupo</div>
     ${navItem('grupo','🏢','Dashboard del grupo','multisucursal')}` : ''}
     <div class="nav-section">Sistema</div>
     ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
@@ -552,6 +552,7 @@ function renderSidebar() {
   <div class="sidebar-footer">
     <div class="clinic-name">${clinica.nombre || 'Consultorio'}</div>
     <div class="clinic-info">${user.nombre || user.email} · ${ROLES[user.rol]?.label || 'Usuario'}</div>
+    ${(rol === 'owner' || rol === 'director') ? '<div style="font-size:.58rem;color:var(--teal);font-weight:700;letter-spacing:.06em;margin-top:2px">🔑 Acceso multi-sucursal</div>' : ''}
     ${clinica.plan === 'trial' ? '<span class="plan-badge" style="background:rgba(244,185,66,.15);color:#F4B942;border:1px solid rgba(244,185,66,.3)">⏳ Trial</span>' : '<span class="plan-badge" style="background:'+plan.color+'22;color:'+plan.color+';border:1px solid '+plan.color+'44">'+plan.nombre+'</span>'}
     <br><button onclick="logout()" style="background:none;border:none;color:var(--text-dim);font-size:.7rem;cursor:pointer;margin-top:6px;padding:0">🚪 Cerrar sesión</button>
   </div>`;

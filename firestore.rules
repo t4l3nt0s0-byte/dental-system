@@ -2,99 +2,181 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helpers ─────────────────────────────────────────────────
-    // IMPORTANTE: máximo 1 get() por evaluación de regla en Firestore.
-    // Toda la lógica de pertenencia se basa en campos del doc del usuario,
-    // sin get() adicionales encadenados.
+    // ═══════════════════════════════════════════════════════════
+    // DENTALOS — RBAC COMPLETO
+    // Roles: owner > director > admin > doctor > recepcion > asistente
+    // Un solo get() por evaluación — sin get() anidados
+    // ═══════════════════════════════════════════════════════════
 
     function authed() {
       return request.auth != null;
     }
 
-    // Leer doc del usuario autenticado (1 get() máximo por regla)
-    function myData() {
+    // Leer doc del usuario actual (1 get() por regla — límite de Firestore)
+    function me() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
     }
 
-    // El usuario pertenece a esta clínica si:
-    //   a) su clinicaId o clinicaActiva coincide, O
-    //   b) su orgId coincide (owner con acceso a todo el grupo)
-    //   c) es director y la clínica está en su lista de sucursales
+    // ── Helpers de rol ─────────────────────────────────────────
+    function isOwner()    { return authed() && me().rol == 'owner'; }
+    function isDirector() { return authed() && me().rol == 'director'; }
+    function isAdmin()    { return authed() && me().rol == 'admin'; }
+    function isDoctor()   { return authed() && me().rol == 'doctor'; }
+    function isSuperUser(){ return authed() && (me().rol == 'owner' || me().rol == 'director' || me().rol == 'admin'); }
+
+    // ── Pertenencia a clínica ──────────────────────────────────
+    // Sin get() anidado — usa campos del doc del usuario directamente
     function belongsToClinica(clinicaId) {
-      let d = myData();
+      let d = me();
       return authed() && (
-        d.clinicaId     == clinicaId ||
-        d.clinicaActiva == clinicaId ||
-        d.orgId         == clinicaId
+        d.clinicaId     == clinicaId ||   // clínica base
+        d.clinicaActiva == clinicaId ||   // clínica activa (multi-sucursal)
+        d.orgId         == clinicaId      // propietario del org (orgId = clinicaId raíz)
       );
     }
 
-    // Admin o superior de la clínica
-    function isAdminOf(clinicaId) {
-      let d = myData();
+    // ── Puede administrar esta clínica ──────────────────────────
+    function canAdminClinica(clinicaId) {
+      let d = me();
       return authed() && (
-        d.rol == 'owner'                           ||
-        d.rol == 'director'                        ||
-        (d.rol == 'admin' && (
-          d.clinicaId     == clinicaId ||
-          d.clinicaActiva == clinicaId ||
-          d.orgId         == clinicaId
-        ))
+        d.rol == 'owner' ||
+        d.rol == 'director' ||
+        (d.rol == 'admin' && (d.clinicaId == clinicaId || d.clinicaActiva == clinicaId))
       );
     }
 
-    // ── Organizaciones ───────────────────────────────────────────
-    match /organizaciones/{orgId} {
-      allow read, write: if authed() && myData().orgId == orgId;
-    }
+    // ══════════════════════════════════════════════════════════
+    // COLECCIONES GLOBALES
+    // ══════════════════════════════════════════════════════════
 
-    // ── Usuarios ────────────────────────────────────────────────
+    // ── Usuarios ───────────────────────────────────────────────
+    // Lectura: cualquier usuario autenticado puede leer (para el selector de doctores, etc.)
+    // Escritura: solo admin+ puede crear/editar/eliminar
     match /usuarios/{uid} {
       allow read:   if authed();
       allow create: if authed() && (
-        request.auth.uid == uid ||
-        myData().rol == 'admin' ||
-        myData().rol == 'owner'
+        request.auth.uid == uid ||   // auto-registro
+        isSuperUser()                // admin+ crea empleados
       );
       allow update: if authed() && (
-        request.auth.uid == uid ||
-        myData().rol == 'admin' ||
-        myData().rol == 'owner' ||
-        myData().rol == 'director'
+        request.auth.uid == uid ||   // propio perfil
+        isSuperUser()                // admin+ edita
       );
-      allow delete: if authed() && (
-        myData().rol == 'admin' ||
-        myData().rol == 'owner'
-      );
+      allow delete: if isSuperUser();
     }
 
-    // ── Clínicas ─────────────────────────────────────────────────
-    match /clinicas/{clinicaId} {
-      allow read:   if belongsToClinica(clinicaId);
+    // ── Organizaciones ──────────────────────────────────────────
+    match /organizaciones/{orgId} {
+      allow read:   if authed() && me().orgId == orgId;
+      allow write:  if isOwner() && me().orgId == orgId;
+    }
+
+    // ── Tokens del portal del paciente ─────────────────────────
+    match /_tokens/{tokenId} {
+      allow read:   if true;  // público — el token ya es la autenticación
       allow create: if authed();
-      allow update: if belongsToClinica(clinicaId);
-      allow delete: if isAdminOf(clinicaId);
-
-      // Sub-colecciones: pacientes, citas, tratamientos, etc.
-      match /{col}/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
-      match /{col1}/{doc1}/{col2}/{doc2} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
-      match /{col1}/{doc1}/{col2}/{doc2}/{col3}/{doc3} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
+      allow delete: if authed();
     }
 
-    // ── Globales ─────────────────────────────────────────────────
+    // ── Global anónimo ──────────────────────────────────────────
     match /_calificaciones_globales/{docId} {
       allow create: if authed();
       allow read:   if false;
     }
-    match /_mensajes_soporte/{docId} {
+
+    // ══════════════════════════════════════════════════════════
+    // CLÍNICAS — datos multi-nivel
+    // ══════════════════════════════════════════════════════════
+    match /clinicas/{clinicaId} {
+
+      // Doc de la clínica: leer si pertenece, editar si es admin+
+      allow read:   if belongsToClinica(clinicaId);
       allow create: if authed();
-      allow read:   if false;
+      allow update: if canAdminClinica(clinicaId);
+      allow delete: if isOwner();
+
+      // ── Sub-colecciones operativas ─────────────────────────
+      // Todos los miembros de la clínica pueden leer y escribir
+      match /pacientes/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /citas/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /tratamientos/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /abonos/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /cotizaciones/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /catalogo/{docId} {
+        allow read:  if belongsToClinica(clinicaId);
+        allow write: if canAdminClinica(clinicaId);
+      }
+      match /doctores/{docId} {
+        allow read:  if belongsToClinica(clinicaId);
+        allow write: if canAdminClinica(clinicaId);
+      }
+
+      // ── Sub-colecciones clínicas ───────────────────────────
+      match /odontogramas/{pxId} {
+        allow read, write: if belongsToClinica(clinicaId);
+        match /historial/{hId} {
+          allow read, write: if belongsToClinica(clinicaId);
+        }
+      }
+      match /rx/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /recetas/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /notas-clinicas/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+
+      // ── Sub-colecciones financieras ────────────────────────
+      match /cortes/{docId} {
+        allow read:  if belongsToClinica(clinicaId);
+        allow write: if canAdminClinica(clinicaId);
+      }
+      match /recibos/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /inventario/{docId} {
+        allow read:  if belongsToClinica(clinicaId);
+        allow write: if canAdminClinica(clinicaId);
+      }
+      match /ofertas/{docId} {
+        allow read:  if belongsToClinica(clinicaId);
+        allow write: if canAdminClinica(clinicaId);
+      }
+
+      // ── Sub-colecciones del sistema (admin+ solo) ──────────
+      match /apiKeys/{keyId} {
+        allow read, write: if canAdminClinica(clinicaId);
+      }
+      match /auditoria/{docId} {
+        allow read:   if canAdminClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId); // cualquiera puede generar eventos
+        allow update, delete: if false; // inmutables
+      }
+      match /backups/{backupId} {
+        allow read:   if canAdminClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId);
+        allow update, delete: if false; // inmutables
+      }
+      match /tokens/{tokenId} {
+        allow read, write: if canAdminClinica(clinicaId);
+      }
+
+      // ── Fallback para otras subcolecciones ─────────────────
+      match /{collection}/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
     }
   }
 }
