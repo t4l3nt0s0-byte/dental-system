@@ -415,33 +415,43 @@ initSession('any').then(async session=>{
   if(fechaEl) fechaEl.textContent=now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 
   // Cargar datos con manejo individual de errores
-  // Dashboard optimizado: carga solo lo necesario para el día de hoy
-  // citas y abonos filtrados por fecha — NO toda la colección
+  // Carga de datos del dashboard — robusto con fallbacks en cada paso
   const today = todayISO();
-  const safeGet      = async (col, constraint) => {
-    try { return await fsGetAll(col, constraint); }
-    catch(e) { console.warn('No se pudo cargar:', col, e.message); return []; }
-  };
-  const safeGetToday = async (col) => {
+  const mesActualStr = today.slice(0,7);          // ej: "2026-06"
+  const mesAnteriorStr = (()=>{ const d=new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
+  const base  = db.collection('clinicas').doc(clinica.id);
+
+  // Helper: query segura con fallback vacío
+  const q = async (col, buildQuery) => {
     try {
-      // Intentar con filtro de fecha para reducir lecturas
-      const snap = await clinicaCol(col).where('fecha','==',today).get();
+      const ref  = buildQuery ? buildQuery(base.collection(col)) : base.collection(col);
+      const snap = await ref.get();
       return snap.docs.map(d=>({id:d.id,...d.data()}));
     } catch(e) {
-      // Fallback: cargar todo y filtrar en memoria (si no hay índice)
-      return safeGet(col);
+      console.warn('Dashboard load skip:', col, e.message);
+      return [];
     }
   };
 
-  const [citas, abonos, pacientes, trats, cotizaciones, doctores] = await Promise.all([
-    safeGetToday('citas'),     // solo citas de HOY — crítico para rendimiento
-    safeGetToday('abonos'),    // solo abonos de HOY
-    safeGet('pacientes', r => r.limit(200)), // máximo 200 para dashboard
-    safeGet('tratamientos', r => r.limit(100)),
-    safeGet('cotizaciones', r => r.limit(50)),
-    safeGet('doctores'),        // doctores son pocos, cargar todos
+  const [citas, abonosMes, abonosAnt, pacientes, trats, doctores] = await Promise.all([
+    // Citas de HOY para el panel operativo
+    q('citas',        r => r.where('fecha','==',today)),
+    // Abonos del mes actual para KPIs (necesario para calcCobradoMes)
+    q('abonos',       r => r.where('fecha','>=',mesActualStr+'-01').where('fecha','<=',mesActualStr+'-31')),
+    // Abonos del mes anterior para comparativa
+    q('abonos',       r => r.where('fecha','>=',mesAnteriorStr+'-01').where('fecha','<=',mesAnteriorStr+'-31')),
+    q('pacientes',    r => r.orderBy('nombre','asc').limit(200)),
+    q('tratamientos', r => r.limit(100)),
+    q('doctores'),
   ]);
-  ALL_CITAS=citas; ALL_ABONOS=abonos; ALL_PACIENTES=pacientes; ALL_TRATS=trats; ALL_COTIZACIONES=cotizaciones; ALL_DOCTORES=doctores;
+
+  // ALL_ABONOS = mes actual + mes anterior para que calcCobradoMes funcione
+  ALL_CITAS         = citas;
+  ALL_ABONOS        = [...abonosMes, ...abonosAnt];
+  ALL_PACIENTES     = pacientes;
+  ALL_TRATS         = trats;
+  ALL_COTIZACIONES  = [];
+  ALL_DOCTORES      = doctores;
 
   // Meta mensual
   try {
