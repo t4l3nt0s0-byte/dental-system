@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>DentalOS · API</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -39,6 +40,7 @@
   <div class="topbar">
     <div class="topbar-title">🔌 API pública</div>
     <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportarEstadisticasAPI()">📥 Exportar logs</button>
       <button class="btn btn-primary btn-sm" onclick="generarApiKey()">+ Generar API Key</button>
     </div>
   </div>
@@ -222,30 +224,51 @@ async function loadApiKeys() {
       </div>`;
       return;
     }
-    el.innerHTML = snap.docs.map(d => {
+    const cards = await Promise.all(snap.docs.map(async d => {
       const k = d.data();
-      const created = k.creadoEn?.toDate?.()?.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}) || '—';
+      const plan      = SESSION.clinica.plan || 'basico';
+      const lims      = API_RATE_LIMITS[plan] || API_RATE_LIMITS.basico;
+      const apiLimLabel = `${lims.perMin}/min · ${lims.perDay===Infinity?'∞':lims.perDay.toLocaleString()}/día`;
+      const stats     = await getApiUsageStats(SESSION.clinica.id, d.id).catch(()=>({hoy:0,pct:0}));
+      const barColor  = (stats.pct||0) > 90 ? '#FF5C5C' : (stats.pct||0) > 70 ? '#F4B942' : '#34D399';
+      const created   = k.creadoEn?.toDate?.()?.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}) || '—';
       const lastUsed = k.ultimoUso?.toDate?.()?.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) || 'Nunca';
       return `<div class="api-key-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:10px">
           <div>
-            <div style="font-size:.85rem;font-weight:700;color:var(--text)">${k.nombre||'API Key'}</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--text)">${esc(k.nombre||'API Key')}</div>
             <div style="font-size:.7rem;color:var(--text-muted)">Creada: ${created} · Último uso: ${lastUsed}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div class="status-dot ${k.activa!==false?'status-ok':'status-err'}"></div>
-            <span style="font-size:.7rem;color:var(--text-muted)">${k.activa!==false?'Activa':'Inactiva'}</span>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <div style="display:flex;align-items:center;gap:5px">
+              <div class="status-dot ${k.activa!==false?'status-ok':'status-err'}"></div>
+              <span style="font-size:.7rem;color:var(--text-muted)">${k.activa!==false?'Activa':'Inactiva'}</span>
+            </div>
+            <div style="font-size:.62rem;color:var(--text-dim)">${apiLimLabel}</div>
+          </div>
+        </div>
+        <!-- Barra de uso diario -->
+        <div style="margin:8px 0">
+          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-dim);margin-bottom:3px">
+            <span>${stats.hoy || 0} req hoy</span>
+            <span style="color:${barColor}">${stats.pct || 0}% del límite</span>
+          </div>
+          <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${Math.min(100,stats.pct||0)}%;background:${barColor};border-radius:3px;transition:width .4s"></div>
           </div>
         </div>
         <div class="key-row">
-          <span class="key-val">${k.key||'dk_••••••••••••••••••••••••••'}</span>
+          <span class="key-val">${esc(k.key||'dk_••••••••••••••••••••••••••')}</span>
           <button class="btn btn-ghost btn-sm" onclick="copyKey('${k.key||''}')">📋</button>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-ghost btn-sm" onclick="revocarKey('${d.id}')">🚫 Revocar</button>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="verLogsKey('${d.id}','${esc(k.nombre||'')}')">📊 Logs</button>
+          <button class="btn btn-ghost btn-sm" onclick="editLimitesKey('${d.id}','${esc(k.nombre||'')}')">⚡ Límites</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto" onclick="revocarKey('${d.id}')">🚫 Revocar</button>
         </div>
-      </div>`;
-    }).join('');
+      </div>`
+    }));
+  el.innerHTML = cards.join('');
   } catch(e) {
     handleError(e, 'loadApiKeys');
   }
@@ -260,13 +283,22 @@ async function generarApiKey() {
   // Formato: dk_{clinicaId}_{random} — no usa prefijo dk_live_ de Stripe
   const key    = `dk_${SESSION.clinica.id.slice(-6)}_${random}`;
 
+  const plan   = SESSION.clinica.plan || 'basico';
+  const limits = API_RATE_LIMITS[plan] || API_RATE_LIMITS.basico;
+
   try {
     await db.collection('clinicas').doc(SESSION.clinica.id)
       .collection('apiKeys').add({
         nombre, key, activa: true,
-        clinicaId: SESSION.clinica.id,
-        creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-        creadoPor: SESSION.user.uid,
+        clinicaId:  SESSION.clinica.id,
+        creadoEn:   firebase.firestore.FieldValue.serverTimestamp(),
+        creadoPor:  SESSION.user.uid,
+        // Límites heredados del plan actual
+        limites: {
+          perMin:   limits.perMin,
+          perDay:   limits.perDay,
+          perMonth: limits.perMonth,
+        },
       });
 
     // Copy to clipboard
@@ -307,6 +339,149 @@ function toggleEndpoint(id) {
   const el = document.getElementById(id);
   if (el) el.classList.toggle('open');
 }
+
+// ── API Rate Limit Functions ───────────────────────────────────
+
+// Ver logs de una API key
+async function verLogsKey(keyId, nombre) {
+  const el = document.getElementById('logsModal');
+  if (!el) return;
+  document.getElementById('logsModalTitle').textContent = `📊 Logs · ${nombre}`;
+  document.getElementById('logsBody').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">⏳ Cargando...</div>';
+  openModal('modalLogs');
+  try {
+    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('apiLogs')
+      .where('keyId','==',keyId)
+      .orderBy('ts','desc')
+      .limit(50)
+      .get()
+      .catch(async () =>
+        // Fallback sin orderBy si falta índice
+        db.collection('clinicas').doc(SESSION.clinica.id)
+          .collection('apiLogs').where('keyId','==',keyId).limit(50).get()
+      );
+    if (snap.empty) {
+      document.getElementById('logsBody').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">Sin logs registrados</div>';
+      return;
+    }
+    const rows = snap.docs.map(d => {
+      const log = d.data();
+      const ts  = log.ts?.toDate?.()?.toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'}) || '—';
+      const statusColor = log.status===200?'#34D399':log.status===429?'#F4B942':'#FF5C5C';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.75rem">
+        <span style="font-family:var(--font-mono);color:var(--text-muted);min-width:120px;font-size:.68rem">${ts}</span>
+        <span style="font-family:var(--font-mono);font-weight:700;color:${statusColor};min-width:36px">${log.status||'—'}</span>
+        <span style="color:var(--text);flex:1">${esc(log.endpoint||'—')}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('logsBody').innerHTML = rows;
+  } catch(e) { handleError(e,'verLogsKey'); }
+}
+
+// Editar límites personalizados de una API key
+async function editLimitesKey(keyId, nombre) {
+  const plan  = SESSION.clinica.plan || 'basico';
+  const lims  = API_RATE_LIMITS[plan] || API_RATE_LIMITS.basico;
+  document.getElementById('limitKeyId').value    = keyId;
+  document.getElementById('limitKeyNombre').textContent = nombre;
+  document.getElementById('limitPerMin').value   = lims.perMin === Infinity ? '' : lims.perMin;
+  document.getElementById('limitPerDay').value   = lims.perDay === Infinity ? '' : lims.perDay;
+  document.getElementById('limitPlanInfo').textContent =
+    `Plan ${plan}: ${lims.perMin}/min · ${lims.perDay===Infinity?'∞':lims.perDay}/día`;
+  openModal('modalLimites');
+}
+
+async function guardarLimites() {
+  const keyId    = document.getElementById('limitKeyId').value;
+  const perMin   = parseInt(document.getElementById('limitPerMin').value) || null;
+  const perDay   = parseInt(document.getElementById('limitPerDay').value) || null;
+  if (!keyId) return;
+  try {
+    await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('apiKeys').doc(keyId)
+      .update({
+        'limites.perMin': perMin,
+        'limites.perDay': perDay,
+        limitesPersonalizados: true,
+        actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    audit('API_LIMITS_CHANGED', { keyId, perMin, perDay });
+    showToast('Límites actualizados','success');
+    closeModal('modalLimites');
+    await loadApiKeys();
+  } catch(e) { handleError(e,'guardarLimites'); }
+}
+
+// Exportar estadísticas de uso como CSV
+async function exportarEstadisticasAPI() {
+  try {
+    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('apiLogs').limit(1000).get();
+    const rows = [['Fecha','Hora','KeyID','Endpoint','Status']];
+    snap.docs.forEach(d => {
+      const log = d.data();
+      const dt  = log.ts?.toDate ? log.ts.toDate() : new Date();
+      rows.push([
+        dt.toLocaleDateString('es-MX'),
+        dt.toLocaleTimeString('es-MX'),
+        log.keyId||'',
+        log.endpoint||'',
+        log.status||'',
+      ]);
+    });
+    const csv  = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `api_logs_${todayISO()}.csv`;
+    a.click();
+    showToast('Logs exportados','success');
+  } catch(e) { handleError(e,'exportarEstadisticasAPI'); }
+}
 </script>
+
+<!-- MODAL LOGS -->
+<div class="modal-overlay" id="modalLogs">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title" id="logsModalTitle">📊 Logs</div>
+      <button class="modal-close" onclick="closeModal('modalLogs')">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:60vh;overflow-y:auto" id="logsBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="exportarEstadisticasAPI()">📥 Exportar CSV</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalLogs')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LÍMITES -->
+<div class="modal-overlay" id="modalLimites">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">⚡ Límites personalizados</div>
+      <button class="modal-close" onclick="closeModal('modalLimites')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="limitKeyId">
+      <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:6px" id="limitKeyNombre"></div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:14px" id="limitPlanInfo"></div>
+      <div class="form-group">
+        <label class="form-label">Límite por minuto</label>
+        <input type="number" class="form-input" id="limitPerMin" placeholder="Ej: 100">
+        <div style="font-size:.68rem;color:var(--text-dim);margin-top:3px">Dejar vacío para usar el límite del plan</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Límite por día</label>
+        <input type="number" class="form-input" id="limitPerDay" placeholder="Ej: 5000">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalLimites')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarLimites()">💾 Guardar límites</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

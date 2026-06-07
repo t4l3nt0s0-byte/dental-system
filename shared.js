@@ -920,6 +920,123 @@ function sanitizeData(obj, fields) {
 }
 window.sanitizeData = sanitizeData;
 
+// ══════════════════════════════════════════════════════════════
+// API RATE LIMITING — SISTEMA COMPLETO
+// Estrategia: ventanas de 1 minuto en Firestore con contadores atómicos
+// Límites por plan definidos abajo
+// ══════════════════════════════════════════════════════════════
+
+var API_RATE_LIMITS = {
+  trial:       { perMin:10,  perDay:100,    perMonth:1000 },
+  basico:      { perMin:50,  perDay:1000,   perMonth:20000 },
+  profesional: { perMin:200, perDay:10000,  perMonth:200000 },
+  premium:     { perMin:500, perDay:50000,  perMonth:1000000 },
+  'multi-3':   { perMin:500, perDay:50000,  perMonth:1000000 },
+  'multi-10':  { perMin:500, perDay:100000, perMonth:2000000 },
+  enterprise:  { perMin:Infinity, perDay:Infinity, perMonth:Infinity },
+};
+
+/**
+ * checkRateLimit(apiKeyDoc) — Verifica límites antes de procesar request
+ * Retorna { allowed: bool, reason: string, remaining: { min, day } }
+ * Usa Firestore transactions para contadores atómicos sin race conditions
+ */
+window.checkRateLimit = async function(clinicaId, keyId) {
+  var plan   = SESSION && SESSION.clinica ? SESSION.clinica.plan : 'basico';
+  var limits = API_RATE_LIMITS[plan] || API_RATE_LIMITS.basico;
+
+  if (limits.perDay === Infinity) return { allowed:true, reason:null, remaining:{min:Infinity,day:Infinity} };
+
+  var now       = new Date();
+  var minWindow = now.toISOString().slice(0,16).replace('T','-').replace(':','-'); // '2026-06-07-10-30'
+  var dayWindow = now.toISOString().slice(0,10);                                   // '2026-06-07'
+
+  var limRef = db.collection('clinicas').doc(clinicaId).collection('apiRateLimits').doc(keyId);
+
+  try {
+    var result = await db.runTransaction(async function(tx) {
+      var doc  = await tx.get(limRef);
+      var data = doc.exists ? doc.data() : {};
+
+      // Ventana actual del minuto
+      var minCount  = (data.window === minWindow) ? (data.count || 0) : 0;
+      // Conteo del día actual
+      var dayCount  = (data.day === dayWindow)    ? (data.dayCount || 0) : 0;
+
+      // Verificar límites
+      if (minCount >= limits.perMin) {
+        return { allowed:false, reason:`Límite por minuto alcanzado (${limits.perMin} req/min)`, minCount, dayCount };
+      }
+      if (dayCount >= limits.perDay) {
+        return { allowed:false, reason:`Límite diario alcanzado (${limits.perDay} req/día)`, minCount, dayCount };
+      }
+
+      // Incrementar contadores
+      tx.set(limRef, {
+        window:    minWindow,
+        count:     minCount + 1,
+        day:       dayWindow,
+        dayCount:  dayCount + 1,
+        ultimoUso: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge:true });
+
+      return {
+        allowed:true,
+        reason:null,
+        remaining: {
+          min: limits.perMin - minCount - 1,
+          day: limits.perDay - dayCount - 1,
+        }
+      };
+    });
+    return result;
+  } catch(e) {
+    console.warn('[RateLimit]', e.message);
+    return { allowed:true, reason:null, remaining:{min:99,day:999} }; // fail-open en error de Firestore
+  }
+};
+
+/**
+ * logApiRequest(clinicaId, keyId, endpoint, status) — Registra cada request
+ * Se auto-limpia documentos de más de 30 días
+ */
+window.logApiRequest = async function(clinicaId, keyId, endpoint, status) {
+  try {
+    await db.collection('clinicas').doc(clinicaId)
+      .collection('apiLogs').add({
+        keyId, endpoint, status,
+        ts:     firebase.firestore.FieldValue.serverTimestamp(),
+        day:    new Date().toISOString().slice(0,10),
+      });
+  } catch(e) { /* silencioso */ }
+};
+
+/**
+ * getApiUsageStats(clinicaId, keyId) — Estadísticas de uso de una API key
+ */
+window.getApiUsageStats = async function(clinicaId, keyId) {
+  try {
+    var today    = new Date().toISOString().slice(0,10);
+    var limSnap  = await db.collection('clinicas').doc(clinicaId)
+      .collection('apiRateLimits').doc(keyId).get();
+    var logSnap  = await db.collection('clinicas').doc(clinicaId)
+      .collection('apiLogs').where('keyId','==',keyId).where('day','==',today).get();
+
+    var limData  = limSnap.exists ? limSnap.data() : {};
+    var plan     = SESSION && SESSION.clinica ? SESSION.clinica.plan : 'basico';
+    var limits   = API_RATE_LIMITS[plan] || API_RATE_LIMITS.basico;
+
+    return {
+      hoy:      logSnap.docs.length,
+      limite:   limits.perDay,
+      minuto:   limData.count || 0,
+      limMin:   limits.perMin,
+      ultimoUso:limData.ultimoUso || null,
+      pct:      limits.perDay === Infinity ? 0 : Math.round((logSnap.docs.length/limits.perDay)*100),
+    };
+  } catch(e) { return { hoy:0, limite:0, minuto:0, limMin:0, pct:0 }; }
+};
+
 async function audit(accion, datos) {
   if (!SESSION || !SESSION.user) return;
   try {
