@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Tratamientos</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Tratamientos</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -194,7 +194,7 @@ function renderTable() {
       <div style="display:flex;gap:5px">
         <button class="btn btn-ghost btn-sm" onclick="editTrat('${t.id}')">✏️</button>
         <a href="abonos.html?trat=${t.id}" class="btn btn-ghost btn-sm" title="Registrar abono">💰</a>
-        ${t.expId ? `<button class="btn btn-ghost btn-sm" onclick="whatsapp(getPxTel('${t.expId}'),'Hola ${(t.paciente||'').split(' ')[0]}, te recordamos que tienes un saldo pendiente de ${fmtMXN(t.saldo)} en Hersantych Dental.')" title="WhatsApp">💬</button>` : ''}
+        ${t.expId ? `<button class="btn btn-ghost btn-sm" onclick="whatsapp(getPxTel('${t.expId}'),'Hola ${(t.paciente||'').split(' ')[0]}, te recordamos que tienes un saldo pendiente de ${fmtMXN(t.saldo)} en DentalOS.')" title="WhatsApp">💬</button>` : ''}
         <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteTrat('${t.id}')">🗑️</button>
       </div>
     </td>
@@ -291,7 +291,7 @@ async function saveTrat() {
     showToast(editId ? 'Tratamiento actualizado' : 'Tratamiento registrado', 'success');
     closeModal('modalTrat');
     await loadTrat();
-  } catch(e) { showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'tratamientos'); }
   btn.disabled = false; btn.textContent = '💾 Guardar tratamiento';
 }
 
@@ -303,8 +303,9 @@ async function deleteTrat(id) {
     await Promise.all(abonos.map(a => fsDelete('abonos', a.id)));
     await fsDelete('tratamientos', id);
     showToast('Tratamiento eliminado','success');
+    audit('DELETE_TRATAMIENTO',{id:id||''});
     await loadTrat();
-  } catch(e) { showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'tratamientos'); }
 }
 
 function exportCSV() {

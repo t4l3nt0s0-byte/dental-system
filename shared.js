@@ -342,7 +342,9 @@ async function initSession(requiredPage) {
                 }
               }
 
-              // ✅ Todo OK — establecer sesión
+              // ✅ Todo OK
+              // Auditar inicio de sesión
+              audit('LOGIN', { pagina: requiredPage || window.CURRENT_PAGE || '' });
               SESSION = Object.assign(
                 { user: Object.assign({}, userData, {
                     uid:      user.uid,
@@ -440,6 +442,7 @@ const PAGE_PERM_MAP = {
   'configuracion':  'configuracion',
   'planes':         'planes',         // solo admin
   'api':            'api',             // admin + owner
+  'auditoria':      'auditoria',       // admin + owner
   'grupo':          'multisucursal',   // solo owner/director
   'sucursales':     'multisucursal',   // gestión de sucursales
 };
@@ -465,7 +468,7 @@ function userCanAccess(page) {
   }
 
   // Roles de sucursal (doctor, recepcion, asistente): verificar permisos asignados
-  var ADMIN_ONLY = ['planes','configuracion','usuarios','importar-datos','grupo','sucursales','api'];
+  var ADMIN_ONLY = ['planes','configuracion','usuarios','importar-datos','grupo','sucursales','api','auditoria'];
   if (ADMIN_ONLY.indexOf(page) !== -1) return false;
 
   var perm = PAGE_PERM_MAP[page];
@@ -537,6 +540,7 @@ function renderSidebar() {
     <div class="nav-section">Sistema</div>
     ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
     ${navItem('api','🔌','API pública','api')}
+    ${navItem('auditoria','🔍','Auditoría','auditoria')}
     ${navItem('recibo','🧾','Recibo de Pago','any')}
     ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}
     ${navItem('recordatorios','💬','Recordatorios WA','any')}
@@ -678,6 +682,8 @@ window.runDailyBackup = async function() {
 };
 
 async function logout() {
+  // Auditar cierre de sesión antes de salir
+  audit('LOGOUT', {}).catch(()=>{});
   _loggingOut = true; // Marcar antes de signOut para evitar redirect loop
   try {
     await auth.signOut();

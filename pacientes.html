@@ -392,12 +392,14 @@ async function savePaciente() {
     if (editId) {
       await fsUpdate('pacientes', editId, data);
       showToast('Paciente actualizado','success');
+    if(typeof audit==='function') audit('UPDATE_PACIENTE',{nombre:document.getElementById('f-nombre')?.value||''});
     } else {
       const count = allPacientes.length + 1;
       data.expediente = 'P-' + String(count).padStart(3,'0');
       data.alta = new Date().toLocaleDateString('es-MX');
       await fsCreate('pacientes', data);
       showToast('Paciente registrado','success');
+    if(typeof audit==='function') audit('CREATE_PACIENTE',{nombre:document.getElementById('f-nombre')?.value||''});
     }
     closeModal('modalPx');
     // Limpiar búsqueda para mostrar todos los pacientes

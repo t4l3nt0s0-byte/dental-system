@@ -396,6 +396,7 @@ async function saveCita() {
   try {
     if(editId) await fsUpdate('citas',editId,data);
     else await fsCreate('citas',data);
+    if(typeof audit==='function') audit(editId?'UPDATE_CITA':'CREATE_CITA',{paciente:data.paciente||'',fecha:data.fecha||''});
     showToast(editId?'Cita actualizada':'Cita agendada','success');
     closeModal('modalCita');
     await loadCitas();
@@ -411,6 +412,7 @@ async function deleteCita(id) {
   try {
     await fsDelete('citas',id);
     showToast('Cita eliminada','success');
+    audit('DELETE_CITA',{id:id||''});
     await loadCitas();
     renderCalendar();
     renderDay(selectedDate);

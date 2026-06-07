@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DentalOS · Auditoría</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.audit-table{width:100%;border-collapse:collapse}
+.audit-table thead th{padding:8px 12px;font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--surface)}
+.audit-table tbody tr{border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer}
+.audit-table tbody tr:last-child{border-bottom:none}
+.audit-table tbody tr:hover{background:var(--surface2)}
+.audit-table td{padding:9px 12px;font-size:.78rem;vertical-align:middle}
+.action-badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;border-radius:4px;padding:2px 8px;letter-spacing:.06em}
+.action-CREATE{background:rgba(52,211,153,.15);color:#34D399}
+.action-UPDATE{background:rgba(74,158,255,.15);color:#4A9EFF}
+.action-DELETE{background:rgba(255,92,92,.15);color:#FF5C5C}
+.action-LOGIN{background:rgba(0,194,168,.12);color:var(--teal)}
+.action-LOGOUT{background:rgba(160,120,255,.12);color:#a078ff}
+.action-CFDI{background:rgba(244,185,66,.15);color:#F4B942}
+.action-API{background:rgba(244,185,66,.15);color:#F4B942}
+.action-CANCEL{background:rgba(255,140,0,.15);color:#FF8C00}
+.action-other{background:rgba(255,255,255,.08);color:var(--text-muted)}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filter-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:.72rem;cursor:pointer;color:var(--text-muted);transition:all .15s}
+.filter-chip.active{background:rgba(0,194,168,.12);border-color:rgba(0,194,168,.4);color:var(--teal);font-weight:700}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
+.stat-val{font-family:var(--font-mono);font-size:1.4rem;font-weight:800;color:var(--teal)}
+.stat-lbl{font-size:.65rem;color:var(--text-muted);margin-top:2px}
+.empty-state{text-align:center;padding:48px;color:var(--text-dim);grid-column:1/-1}
+.search-input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:.8rem;outline:none;min-width:220px;flex:1}
+.search-input:focus{border-color:var(--teal)}
+.detail-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:var(--font-mono);font-size:.72rem;color:var(--teal);margin-top:8px;word-break:break-all}
+@media(max-width:700px){.stats-grid{grid-template-columns:1fr 1fr}.audit-table td:nth-child(4){display:none}}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🔍 Auditoría de acciones</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 Exportar CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="loadAudit(true)">🔄 Actualizar</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-val" id="stTotal">—</div><div class="stat-lbl">Total registros</div></div>
+      <div class="stat-card"><div class="stat-val" id="stHoy">—</div><div class="stat-lbl">Hoy</div></div>
+      <div class="stat-card"><div class="stat-val" id="stUsuarios">—</div><div class="stat-lbl">Usuarios activos</div></div>
+      <div class="stat-card"><div class="stat-val" id="stAccion">—</div><div class="stat-lbl">Acción más frecuente</div></div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-bar">
+      <input class="search-input" id="searchInput" placeholder="🔍 Buscar por usuario, acción o datos..." oninput="renderTable()">
+      <select class="selector-suc" id="filtroRango" onchange="loadAudit(true)" style="font-size:.78rem">
+        <option value="7">Últimos 7 días</option>
+        <option value="30" selected>Últimos 30 días</option>
+        <option value="90">Últimos 3 meses</option>
+        <option value="365">Último año</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Limpiar</button>
+    </div>
+
+    <!-- Chips de tipo de acción -->
+    <div class="filter-bar" id="actionChips" style="margin-bottom:14px"></div>
+
+    <!-- Tabla -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Acción</th>
+              <th>Usuario</th>
+              <th>Página</th>
+              <th>Datos</th>
+            </tr>
+          </thead>
+          <tbody id="auditBody">
+            <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim)">⏳ Cargando registros...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="loadMoreWrap" style="text-align:center;padding:12px;border-top:1px solid var(--border);display:none">
+        <button class="btn btn-ghost btn-sm" onclick="loadMore()">Cargar más registros</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal detalle -->
+<div class="modal-overlay" id="modalDetalle">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title" id="detalleTitle">Detalle</div>
+      <button class="modal-close" onclick="closeModal('modalDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="detalleBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalDetalle')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<script>
+window.CURRENT_PAGE = 'auditoria';
+
+let allLogs = [], filteredLogs = [], activeFilter = '';
+const PAGE_SIZE = 50;
+let displayCount = PAGE_SIZE;
+
+// ── INIT ──────────────────────────────────────────────────────
+initSession('any').then(async session => {
+  if (!session) return;
+  const rol = session.user.rol;
+  if (!['admin','owner','director'].includes(rol)) {
+    window.location.replace('index.html'); return;
+  }
+  await loadAudit(true);
+});
+
+// ── LOAD AUDIT LOGS ───────────────────────────────────────────
+async function loadAudit(reset = false) {
+  if (reset) { allLogs = []; displayCount = PAGE_SIZE; }
+  try {
+    const dias   = parseInt(document.getElementById('filtroRango').value) || 30;
+    const desde  = new Date();
+    desde.setDate(desde.getDate() - dias);
+    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('auditoria')
+      .where('ts','>=', firebase.firestore.Timestamp.fromDate(desde))
+      .orderBy('ts','desc')
+      .limit(500)
+      .get();
+
+    allLogs = snap.docs.map(d => ({id:d.id,...d.data()}));
+    buildChips();
+    updateStats();
+    renderTable();
+  } catch(e) {
+    // Fallback: load without date filter if index missing
+    try {
+      const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+        .collection('auditoria')
+        .orderBy('ts','desc')
+        .limit(500)
+        .get();
+      allLogs = snap.docs.map(d => ({id:d.id,...d.data()}));
+      buildChips();
+      updateStats();
+      renderTable();
+    } catch(e2) {
+      handleError(e2,'loadAudit');
+    }
+  }
+}
+
+// ── BUILD ACTION CHIPS ────────────────────────────────────────
+function buildChips() {
+  const container = document.getElementById('actionChips');
+  const types = [...new Set(allLogs.map(l => getActionType(l.accion)))];
+  container.innerHTML = `<span class="filter-chip ${!activeFilter?'active':''}" onclick="setFilter('')">Todas (${allLogs.length})</span>` +
+    types.map(t => {
+      const cnt = allLogs.filter(l=>getActionType(l.accion)===t).length;
+      return `<span class="filter-chip ${activeFilter===t?'active':''}" onclick="setFilter('${t}')">${t} (${cnt})</span>`;
+    }).join('');
+}
+
+function getActionType(accion) {
+  if (!accion) return 'OTRO';
+  if (accion.startsWith('CREATE_')) return 'CREAR';
+  if (accion.startsWith('UPDATE_')) return 'EDITAR';
+  if (accion.startsWith('DELETE_')) return 'ELIMINAR';
+  if (accion.startsWith('CANCEL_')) return 'CANCELAR';
+  if (accion === 'LOGIN') return 'SESIÓN';
+  if (accion === 'LOGOUT') return 'SESIÓN';
+  if (accion.includes('CFDI')) return 'FACTURA';
+  if (accion.includes('API')) return 'API';
+  return 'OTRO';
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  displayCount = PAGE_SIZE;
+  buildChips();
+  renderTable();
+}
+
+function clearFilters() {
+  activeFilter = '';
+  document.getElementById('searchInput').value = '';
+  displayCount = PAGE_SIZE;
+  buildChips();
+  renderTable();
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats() {
+  const today = todayISO();
+  const todayLogs = allLogs.filter(l => {
+    try { return l.ts?.toDate().toISOString().startsWith(today); } catch(e){ return false; }
+  });
+  const users   = new Set(allLogs.map(l=>l.uid)).size;
+  const acciones = {};
+  allLogs.forEach(l => { acciones[l.accion] = (acciones[l.accion]||0)+1; });
+  const topAccion = Object.entries(acciones).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('stTotal').textContent    = allLogs.length;
+  document.getElementById('stHoy').textContent      = todayLogs.length;
+  document.getElementById('stUsuarios').textContent = users;
+  document.getElementById('stAccion').textContent   = topAccion ? topAccion[0].replace('_',' ') : '—';
+}
+
+// ── RENDER TABLE ──────────────────────────────────────────────
+function renderTable() {
+  const q = (document.getElementById('searchInput').value||'').toLowerCase();
+  filteredLogs = allLogs.filter(l => {
+    if (activeFilter && getActionType(l.accion) !== activeFilter) return false;
+    if (!q) return true;
+    const str = JSON.stringify(l).toLowerCase();
+    return str.includes(q);
+  });
+
+  const toShow = filteredLogs.slice(0, displayCount);
+  const tbody  = document.getElementById('auditBody');
+
+  if (!toShow.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+      <div style="font-size:1.5rem;margin-bottom:8px">🔍</div>
+      <div>Sin registros para los filtros seleccionados</div>
+    </div></td></tr>`;
+    document.getElementById('loadMoreWrap').style.display = 'none';
+    return;
+  }
+
+  tbody.innerHTML = toShow.map(log => {
+    const ts       = fmtTs(log.ts);
+    const tipo     = getActionType(log.accion);
+    const badgeCls = {
+      'CREAR':'action-CREATE','EDITAR':'action-UPDATE','ELIMINAR':'action-DELETE',
+      'SESIÓN':'action-LOGIN','CANCELAR':'action-CANCEL','FACTURA':'action-CFDI',
+      'API':'action-API'
+    }[tipo] || 'action-other';
+    const datosStr = log.datos ? summarizeDatos(log.datos) : '—';
+    const accionShort = log.accion?.replace(/_/g,' ') || '—';
+
+    return `<tr onclick="showDetalle(${JSON.stringify(log).replace(/'/g,"&#39;")})">
+      <td style="font-family:var(--font-mono);font-size:.72rem;white-space:nowrap;color:var(--text-muted)">${ts}</td>
+      <td><span class="action-badge ${badgeCls}">${accionShort}</span></td>
+      <td style="font-size:.78rem">
+        <div style="font-weight:600;color:var(--text)">${log.userName||'—'}</div>
+        <div style="font-size:.65rem;color:var(--text-dim)">${log.uid?.slice(0,8)||''}...</div>
+      </td>
+      <td style="font-size:.72rem;color:var(--text-muted)">${log.pagina||'—'}</td>
+      <td style="font-size:.72rem;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${datosStr}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('loadMoreWrap').style.display =
+    filteredLogs.length > displayCount ? 'block' : 'none';
+}
+
+function loadMore() {
+  displayCount += PAGE_SIZE;
+  renderTable();
+}
+
+function summarizeDatos(datos) {
+  if (!datos || typeof datos !== 'object') return String(datos||'');
+  const parts = [];
+  if (datos.nombre)   parts.push(datos.nombre);
+  if (datos.paciente) parts.push(datos.paciente);
+  if (datos.email)    parts.push(datos.email);
+  if (datos.monto)    parts.push('$'+datos.monto);
+  if (datos.id)       parts.push('id:'+String(datos.id).slice(0,8));
+  return parts.join(' · ') || JSON.stringify(datos).slice(0,60);
+}
+
+// ── DETAIL MODAL ──────────────────────────────────────────────
+function showDetalle(log) {
+  if (typeof log === 'string') { try { log = JSON.parse(log); } catch(e){return;} }
+  const tipo     = getActionType(log.accion);
+  const badgeCls = {'CREAR':'action-CREATE','EDITAR':'action-UPDATE','ELIMINAR':'action-DELETE','SESIÓN':'action-LOGIN','CANCELAR':'action-CANCEL','FACTURA':'action-CFDI','API':'action-API'}[tipo]||'action-other';
+
+  document.getElementById('detalleTitle').innerHTML =
+    `<span class="action-badge ${badgeCls}" style="font-size:.75rem;margin-right:8px">${(log.accion||'').replace(/_/g,' ')}</span>`;
+
+  document.getElementById('detalleBody').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">Usuario</div>
+          <div style="font-size:.82rem;font-weight:600;color:var(--text)">${log.userName||'—'}</div>
+          <div style="font-size:.68rem;color:var(--text-dim);font-family:var(--font-mono)">${log.uid||''}</div>
+        </div>
+        <div>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">Fecha y hora</div>
+          <div style="font-size:.82rem;color:var(--text)">${fmtTs(log.ts)}</div>
+        </div>
+        <div>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">Página</div>
+          <div style="font-size:.82rem;color:var(--text)">${log.pagina||'—'}</div>
+        </div>
+        <div>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">IP</div>
+          <div style="font-size:.82rem;color:var(--text)">${log.ip||'client'}</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Datos registrados</div>
+        <div class="detail-box">${JSON.stringify(log.datos||{}, null, 2)}</div>
+      </div>
+      <div style="font-size:.65rem;color:var(--text-dim)">ID del registro: ${log.id||'—'}</div>
+    </div>`;
+
+  openModal('modalDetalle');
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────
+function exportCSV() {
+  const rows = [['Fecha','Hora','Accion','Usuario','UID','Pagina','Datos']];
+  filteredLogs.forEach(l => {
+    const d = l.ts?.toDate ? l.ts.toDate() : new Date();
+    rows.push([
+      d.toLocaleDateString('es-MX'),
+      d.toLocaleTimeString('es-MX'),
+      l.accion||'',
+      l.userName||'',
+      l.uid||'',
+      l.pagina||'',
+      JSON.stringify(l.datos||{}).replace(/,/g,';'),
+    ]);
+  });
+  const csv  = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `auditoria_${SESSION.clinica.nombre}_${todayISO()}.csv`;
+  a.click();
+  showToast('CSV exportado','success');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function fmtTs(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleString('es-MX',{
+      day:'2-digit',month:'short',year:'2-digit',
+      hour:'2-digit',minute:'2-digit',second:'2-digit'
+    });
+  } catch(e){ return '—'; }
+}
+</script>
+</body>
+</html>

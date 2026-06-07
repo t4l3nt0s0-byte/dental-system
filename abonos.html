@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Abonos & Pagos</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Abonos & Pagos</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -299,6 +299,7 @@ async function saveAbono() {
     } else {
       await fsCreate('abonos', data);
       // Update tratamiento saldo
+      if(typeof audit==='function') audit('CREATE_ABONO',{monto:data.monto,paciente:data.paciente||''})
       if (trat) {
         const nuevoAbonado = Number(trat.abonado||0) + monto;
         const nuevoSaldo = Math.max(0, Number(trat.saldo||trat.costo||0) - monto);
@@ -312,7 +313,7 @@ async function saveAbono() {
     showToast(editId ? 'Pago actualizado':'Pago registrado', 'success');
     closeModal('modalAbono');
     await loadAbonos();
-  } catch(e) { showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'abonos'); }
   btn.disabled = false; btn.textContent = '💾 Registrar pago';
 }
 
@@ -332,8 +333,9 @@ async function deleteAbono(id) {
     }
     await fsDelete('abonos', id);
     showToast('Pago eliminado','success');
+    if(typeof audit==='function') audit('DELETE_ABONO',{id:id||''});
     await loadAbonos();
-  } catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'abonos'); }
 }
 
 function exportCSV() {

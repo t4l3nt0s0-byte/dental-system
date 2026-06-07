@@ -234,7 +234,7 @@ async function loadUsers(){
     if(updates.length) await Promise.all(updates);
 
     renderGrid();
-  }catch(e){ showToast('Error al cargar usuarios: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'usuarios'); }
 }
 
 // ── RENDER GRID ───────────────────────────────────────────────
@@ -427,6 +427,7 @@ async function saveUser(){
         actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
       });
       showToast('Usuario actualizado correctamente','success');
+    audit('UPDATE_USUARIO',{id:editId,nombre:document.getElementById('f-nombre')?.value||'',rol:document.getElementById('f-rol')?.value||''});
 
     } else {
       // ── CREAR nuevo usuario ──────────────────────────────────
@@ -457,6 +458,7 @@ async function saveUser(){
           creadoEn:  firebase.firestore.FieldValue.serverTimestamp(),
         });
         showToast('Usuario creado correctamente','success');
+    audit('CREATE_USUARIO',{email:email,rol:rol});
 
       } finally {
         // 3. Siempre limpiar la app secundaria
@@ -492,8 +494,9 @@ async function deleteUser(id){
   try{
     await db.collection('usuarios').doc(id).delete();
     showToast('Usuario eliminado','success');
+    audit('DELETE_USUARIO',{id:id,nombre:u?.nombre||''});
     await loadUsers();
-  }catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'usuarios'); }
 }
 
 // ── CAMBIO DE CONTRASEÑA ──────────────────────────────────────
@@ -514,7 +517,7 @@ async function savePass(){
       await auth.currentUser.updatePassword(nueva);
       showToast('Contraseña actualizada','success');
       closeModal('modalPass');
-    }catch(e){ showToast('Error: '+e.message,'error'); }
+    } catch(e) { handleError(e, 'usuarios'); }
   } else {
     await db.collection('usuarios').doc(changePassUid).update({
       passwordReset:true, newPasswordTemp:nueva,
