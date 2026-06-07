@@ -370,15 +370,16 @@ const LOWER_LEFT=[31,32,33,34,35,36,37,38];
 const LOWER_RIGHT=[48,47,46,45,44,43,42,41];
 const STATUS_COLORS={sano:'',caries:'s-caries',obturado:'s-obturado',corona:'s-corona',ausente:'s-ausente',implante:'s-implante',endodoncia:'s-endodoncia'};
 
-initSession('kpi-avanzado').then(async session => {
+initSession('expediente').then(async session => {
   if (!session) return;
 
-  PX_ID = new URLSearchParams(location.search).get('px');
+  PX_ID = new URLSearchParams(window.location.search).get('px');
 
   if (!PX_ID) {
     // Mostrar selector
     document.getElementById('selectorWrap').style.display = 'block';
-    const pxList = await fsGetAll('pacientes', r=>r.orderBy('nombre','asc'));
+    const pxListRaw = await fsGetAll('pacientes');
+    const pxList = pxListRaw.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
     const sel = document.getElementById('selectorPx');
     sel.innerHTML = '<option value="">Seleccionar paciente...</option>' +
       pxList.map(p=>`<option value="${p.id}">${p.nombre||p.id} (${p.expediente||p.id})</option>`).join('');
@@ -826,7 +827,7 @@ async function generarLinkPortal(px) {
     // En producción: generar token en _tokens/{uuid} con expiración
     const clinicaId = SESSION.clinica.id;
     const token = btoa(`${clinicaId}:${PX_ID}`);
-    const base  = location.origin + location.pathname.replace('expediente.html','');
+    const base  = window.location.origin + window.location.pathname.replace('expediente.html','');
     const link  = `${base}paciente.html?t=${token}`;
 
     // Guardar token en Firestore con expiración de 30 días
