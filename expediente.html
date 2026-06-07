@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Expediente Completo</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Expediente Completo</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -139,6 +139,8 @@
               <button class="btn btn-ghost btn-sm" id="btnCotizar">📝 Generar cotización</button>
               <button class="btn btn-ghost btn-sm" id="btnWA">💬 WhatsApp</button>
               <button class="btn btn-ghost btn-sm" id="btnOdo">🦷 Ver odontograma</button>
+              <button class="btn btn-ghost btn-sm" id="btnReceta" style="color:var(--teal);border-color:rgba(0,194,168,.35)">💊 Receta médica</button>
+              <button class="btn btn-ghost btn-sm" id="btnPortal" style="color:var(--blue);border-color:rgba(74,158,255,.35)">🔗 Portal del paciente</button>
               <button class="btn btn-ghost btn-sm" id="btnReceta" style="color:var(--teal);border-color:rgba(0,194,168,.35)">💊 Receta médica</button>
             </div>
           </div>
@@ -423,7 +425,7 @@ async function loadExpediente() {
   renderRX(rxList);
   renderNotas(notas);
 
-  document.title = `Expediente · ${px.nombre||'Paciente'} · Hersantych Dental`;
+  document.title = `Expediente · ${px.nombre||'Paciente'} · DentalOS`;
 }
 
 function renderPerfil(px) {
@@ -470,8 +472,11 @@ function renderBotones(px) {
   const recetaUrl = `recetas.html?pxId=${PX_ID}&paciente=${encodeURIComponent(px.nombre||'')}`;
   document.getElementById('btnReceta').onclick = ()=>window.location.href=recetaUrl;
   document.getElementById('btnNuevaReceta').onclick = ()=>window.location.href=recetaUrl;
+  // Portal del paciente — genera link único
+  const btnPortalEl = document.getElementById('btnPortal');
+  if(btnPortalEl) btnPortalEl.onclick = ()=>generarLinkPortal(px);
   if (px.tel) {
-    document.getElementById('btnWA').onclick = ()=>whatsapp(px.tel, `Hola ${px.nombre?.split(' ')[0]||''}, le contactamos de Hersantych Dental.`);
+    document.getElementById('btnWA').onclick = ()=>whatsapp(px.tel, `Hola ${px.nombre?.split(' ')[0]||''}, le contactamos de DentalOS.`);
   } else {
     document.getElementById('btnWA').disabled = true;
     document.getElementById('btnWA').style.opacity = '.4';
@@ -750,7 +755,7 @@ async function saveRx() {
     closeModal('modalRx');
     const rxList=await fsGetAll('rx',r=>r.where('expId','==',PX_ID));
     renderRX(rxList);
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'expediente'); }
   btn.disabled=false;btn.textContent='💾 Guardar RX';
 }
 
@@ -761,7 +766,7 @@ window.deleteRx = async function(id) {
     showToast('RX eliminada','success');
     const rxList=await fsGetAll('rx',r=>r.where('expId','==',PX_ID));
     renderRX(rxList);
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'expediente'); }
 };
 
 // ── NOTAS CRUD ───────────────────────────────────────────────
@@ -800,7 +805,7 @@ async function saveNota() {
     closeModal('modalNota');
     const notas=await fsGetAll('notas-clinicas',r=>r.where('expId','==',PX_ID));
     renderNotas(notas);
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'expediente'); }
   btn.disabled=false;btn.textContent='💾 Guardar nota';
 }
 
@@ -811,8 +816,76 @@ window.deleteNota = async function(id) {
     showToast('Nota eliminada','success');
     const notas=await fsGetAll('notas-clinicas',r=>r.where('expId','==',PX_ID));
     renderNotas(notas);
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'expediente'); }
 };
+
+// ── PORTAL DEL PACIENTE — generar link único ──────────────────
+async function generarLinkPortal(px) {
+  try {
+    // Token = base64(clinicaId:pxId) — simple, seguro para MVP
+    // En producción: generar token en _tokens/{uuid} con expiración
+    const clinicaId = SESSION.clinica.id;
+    const token = btoa(`${clinicaId}:${PX_ID}`);
+    const base  = location.origin + location.pathname.replace('expediente.html','');
+    const link  = `${base}paciente.html?t=${token}`;
+
+    // Guardar token en Firestore con expiración de 30 días
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 30);
+    db.collection('_tokens').doc(token).set({
+      clinicaId, pxId: PX_ID,
+      paciente: px.nombre || '',
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      expires: firebase.firestore.Timestamp.fromDate(expires),
+    }).catch(()=>{}); // silencioso si falla
+
+    // Copiar al clipboard
+    try { await navigator.clipboard.writeText(link); showToast('Link copiado al portapapeles','success'); }
+    catch(e) { showToast('Link generado — cópialo manualmente','info'); }
+
+    // Modal con link + botón WA
+    const nombre = px.nombre || 'el paciente';
+    const tel    = px.tel || '';
+    const waMsg  = encodeURIComponent(`Hola ${nombre.split(' ')[0]}, aquí puedes consultar tu expediente, próximas citas y recetas:
+${link}`);
+    const waHref = tel ? `https://wa.me/52${tel.replace(/\D/g,'')}?text=${waMsg}` : '';
+
+    // Show modal with link
+    const modalHtml = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:440px;margin:0 auto">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">🔗 Portal del paciente</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:.72rem;word-break:break-all;color:var(--teal);margin-bottom:14px">${link}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Copiado','success'))">📋 Copiar link</button>
+        ${waHref ? `<a href="${waHref}" target="_blank" class="btn btn-ghost btn-sm">💬 Enviar por WhatsApp</a>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="window.open('${link}','_blank')">👁️ Ver portal</button>
+      </div>
+      <div style="font-size:.68rem;color:var(--text-dim);margin-top:10px">⏱ Link válido por 30 días · Solo lectura</div>
+    </div>`;
+
+    // Insert modal content
+    document.getElementById('portalModalBody').innerHTML = modalHtml;
+    openModal('modalPortal');
+
+  } catch(e) {
+    handleError(e, 'generarLinkPortal');
+  }
+}
 </script>
+
+<!-- MODAL PORTAL DEL PACIENTE -->
+<div class="modal-overlay" id="modalPortal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">🔗 Portal del paciente</div>
+      <button class="modal-close" onclick="closeModal('modalPortal')">✕</button>
+    </div>
+    <div class="modal-body" id="portalModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalPortal')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Portal del paciente — consulta tus citas, adeudos y recetas">
+<title>Mi Portal · DentalOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00C2A8;--text:#E8EAF0;--text-muted:#9BA3B0;--text-dim:#4A5260;
+  --bg:#060D14;--surface:#0D1822;--surface2:#131F2E;--border:rgba(255,255,255,.08);
+  --red:#FF5C5C;--gold:#F4B942;--blue:#4A9EFF;--green:#34D399;
+  --font-main:'DM Sans',sans-serif;--font-display:'Instrument Serif',serif;--font-mono:'JetBrains Mono',monospace;
+  --r:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font-main);min-height:100vh;padding:0 0 80px}
+.portal-wrap{max-width:480px;margin:0 auto;padding:1.5rem 1rem}
+/* Header */
+.portal-header{text-align:center;padding:2rem 0 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+.portal-logo{font-size:2rem;margin-bottom:.5rem}
+.portal-clinic{font-family:var(--font-display);font-style:italic;font-size:1.3rem;color:var(--teal)}
+.portal-patient{font-size:.8rem;color:var(--text-muted);margin-top:.25rem}
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+/* Próxima cita */
+.cita-hero{background:linear-gradient(135deg,rgba(0,194,168,.12),rgba(74,158,255,.08));border:1px solid rgba(0,194,168,.25);border-radius:var(--r);padding:1.25rem}
+.cita-fecha{font-family:var(--font-display);font-size:1.6rem;font-style:italic;color:var(--teal);line-height:1.1}
+.cita-hora{font-family:var(--font-mono);font-size:.85rem;color:var(--text-muted);margin-top:.25rem}
+.cita-trat{font-size:.85rem;color:var(--text);margin-top:.5rem}
+.cita-doc{font-size:.75rem;color:var(--text-muted);margin-top:.25rem}
+.no-cita{text-align:center;padding:1.5rem;color:var(--text-dim);font-size:.85rem}
+/* Adeudos */
+.adeudo-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.adeudo-row:last-child{border-bottom:none}
+.adeudo-total{display:flex;justify-content:space-between;padding-top:10px;margin-top:4px;font-weight:700;font-size:.9rem}
+.badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:700;border-radius:20px;padding:2px 8px}
+.badge-red{background:rgba(255,92,92,.15);color:var(--red);border:1px solid rgba(255,92,92,.25)}
+.badge-green{background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.25)}
+.badge-gold{background:rgba(244,185,66,.15);color:var(--gold);border:1px solid rgba(244,185,66,.25)}
+/* Historial citas */
+.hist-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.hist-row:last-child{border-bottom:none}
+.hist-fecha{font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);min-width:80px;flex-shrink:0}
+/* Recetas */
+.rx-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.rx-date{font-size:.7rem;color:var(--text-muted);margin-bottom:6px}
+.rx-med{font-size:.78rem;color:var(--text);display:flex;gap:6px;margin-bottom:3px}
+.rx-med-name{font-weight:700;min-width:120px}
+.rx-med-dose{color:var(--text-muted)}
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:8px;padding:10px 18px;font-size:.82rem;font-weight:600;cursor:pointer;transition:opacity .15s;text-decoration:none}
+.btn:hover{opacity:.85}
+.btn-primary{background:var(--teal);color:#060D14}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-sm{padding:6px 12px;font-size:.75rem}
+.btn-block{width:100%;margin-top:.75rem}
+/* WA float button */
+.wa-float{position:fixed;bottom:20px;right:20px;background:#25D366;color:#fff;border:none;border-radius:50%;width:54px;height:54px;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(37,211,102,.35);transition:transform .2s}
+.wa-float:hover{transform:scale(1.08)}
+/* Loading / Error */
+.loading{text-align:center;padding:3rem 1rem;color:var(--text-muted)}
+.spinner{width:32px;height:32px;border:3px solid rgba(0,194,168,.2);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{text-align:center;padding:3rem 1rem}
+.error-icon{font-size:2.5rem;margin-bottom:.75rem}
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem}
+.tab-btn{background:none;border:none;padding:8px 14px;color:var(--text-muted);font-size:.78rem;cursor:pointer;border-bottom:2px solid transparent;font-family:var(--font-main);transition:all .15s}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal);font-weight:700}
+/* Section divider */
+.sec-div{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin:1.25rem 0 .75rem}
+/* Responsive */
+@media(min-width:520px){.portal-wrap{padding:2rem 1.5rem}}
+</style>
+</head>
+<body>
+
+<div class="portal-wrap" id="portalWrap">
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <div style="font-size:.85rem">Cargando tu información...</div>
+  </div>
+</div>
+
+<!-- WA float button -->
+<button class="wa-float" id="waFloat" style="display:none" title="Contactar consultorio">💬</button>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase (sin auth — portal público) ──────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
+  authDomain:"dental-add.firebaseapp.com",
+  projectId:"dental-add",
+  storageBucket:"dental-add.firebasestorage.app",
+  messagingSenderId:"1350878692",
+  appId:"1:1350878692:web:1b11da0a68054d9f2bf3f1"
+};
+const _app = firebase.apps.length
+  ? firebase.app()
+  : firebase.initializeApp(FIREBASE_CONFIG);
+const db = _app.firestore();
+
+// ── Read token from URL ────────────────────────────────────────
+// URL format: paciente.html?t=TOKEN
+// Token stored in: clinicas/{id}/tokens/{token} → { pxId, clinicaId, expires }
+const params   = new URLSearchParams(location.search);
+const TOKEN    = params.get('t') || params.get('token') || '';
+const wrap     = document.getElementById('portalWrap');
+
+// ── Main load ──────────────────────────────────────────────────
+(async function init() {
+  if (!TOKEN) { showError('Link inválido','No se encontró el token de acceso. Solicita un nuevo link a tu consultorio.'); return; }
+  try {
+    // 1. Resolve token → clinicaId + pxId
+    const tokenData = await resolveToken(TOKEN);
+    if (!tokenData) { showError('Link expirado','Este link ya no es válido. Solicita uno nuevo a tu consultorio.'); return; }
+    const { clinicaId, pxId } = tokenData;
+
+    // 2. Load all data in parallel
+    const base = db.collection('clinicas').doc(clinicaId);
+    const [clinicaSnap, pxSnap, citasSnap, abonosSnap, tratSnap, rxSnap] = await Promise.all([
+      base.get(),
+      base.collection('pacientes').doc(pxId).get(),
+      base.collection('citas').where('expId','==',pxId).orderBy('fecha','desc').limit(20).get(),
+      base.collection('abonos').where('expId','==',pxId).orderBy('creadoEn','desc').limit(50).get().catch(()=>({docs:[]})),
+      base.collection('tratamientos').where('expId','==',pxId).get().catch(()=>({docs:[]})),
+      base.collection('rx').where('expId','==',pxId).orderBy('creadoEn','desc').limit(5).get().catch(()=>({docs:[]})),
+    ]);
+
+    if (!pxSnap.exists || !clinicaSnap.exists) { showError('Paciente no encontrado','No se encontraron tus datos. Contacta a tu consultorio.'); return; }
+
+    const clinica = { id:clinicaId, ...clinicaSnap.data() };
+    const px      = { id:pxId, ...pxSnap.data() };
+    const citas   = citasSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const abonos  = abonosSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const trats   = tratSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const rxs     = rxSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+    renderPortal({ clinica, px, citas, abonos, trats, rxs });
+
+    // WA float button
+    if (clinica.telefono) {
+      const btn = document.getElementById('waFloat');
+      btn.style.display = 'flex';
+      btn.onclick = () => {
+        const tel = clinica.telefono.replace(/\D/g,'');
+        const msg = encodeURIComponent(`Hola ${clinica.nombre}, soy ${px.nombre}. Me comunico a través de mi portal de paciente.`);
+        window.open(`https://wa.me/52${tel}?text=${msg}`,'_blank');
+      };
+    }
+
+  } catch(e) {
+    console.error('Portal error:', e);
+    showError('Error de conexión', e.message || 'Intenta de nuevo más tarde.');
+  }
+})();
+
+// ── Resolve token from Firestore ───────────────────────────────
+// Tries: 1) global tokens collection, 2) scan clinicas (fallback)
+async function resolveToken(token) {
+  try {
+    // Direct lookup: tokens/{token}
+    const snap = await db.collection('_tokens').doc(token).get();
+    if (snap.exists) {
+      const d = snap.data();
+      // Check expiry (tokens last 30 days)
+      if (d.expires && d.expires.toDate && d.expires.toDate() < new Date()) return null;
+      return { clinicaId: d.clinicaId, pxId: d.pxId };
+    }
+  } catch(e) {}
+
+  // Fallback: token may be stored in clinica document
+  // Format: BASE64(clinicaId:pxId) — simple but functional for MVP
+  try {
+    const decoded = atob(token);
+    const [clinicaId, pxId] = decoded.split(':');
+    if (clinicaId && pxId) {
+      const pxSnap = await db.collection('clinicas').doc(clinicaId)
+        .collection('pacientes').doc(pxId).get();
+      if (pxSnap.exists) return { clinicaId, pxId };
+    }
+  } catch(e) {}
+
+  return null;
+}
+
+// ── RENDER PORTAL ──────────────────────────────────────────────
+function renderPortal({ clinica, px, citas, abonos, trats, rxs }) {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Find próxima cita
+  const proxima = citas
+    .filter(c => c.fecha >= today && c.estado !== 'Cancelado')
+    .sort((a,b) => (a.fecha+a.hora).localeCompare(b.fecha+b.hora))[0];
+
+  // Calculate balance
+  const totalTrats  = trats.reduce((s,t) => s+(t.costo||t.precio||0), 0);
+  const totalPagado = abonos.reduce((s,a) => s+(a.monto||0), 0);
+  const saldo       = totalTrats - totalPagado;
+
+  // Citas pasadas (historial)
+  const historial = citas.filter(c => c.fecha < today || c.estado === 'Completado').slice(0,8);
+
+  wrap.innerHTML = `
+  <!-- Header -->
+  <div class="portal-header">
+    <div class="portal-logo">🦷</div>
+    <div class="portal-clinic">${clinica.nombre || 'Tu Consultorio'}</div>
+    <div class="portal-patient">Portal de ${px.nombre || 'Paciente'}</div>
+    ${clinica.ciudad ? `<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px">📍 ${clinica.ciudad}</div>` : ''}
+  </div>
+
+  <!-- Saludo -->
+  <div style="margin-bottom:1.25rem">
+    <div style="font-family:var(--font-display);font-style:italic;font-size:1.1rem;color:var(--text)">
+      Hola, ${(px.nombre||'').split(' ')[0] || 'paciente'} 👋
+    </div>
+    <div style="font-size:.8rem;color:var(--text-muted);margin-top:2px">
+      Aquí puedes consultar tu información clínica
+    </div>
+  </div>
+
+  <!-- Próxima cita -->
+  <div class="sec-div">📅 Próxima cita</div>
+  ${proxima ? `
+  <div class="cita-hero">
+    <div class="cita-fecha">${fmtFechaLarga(proxima.fecha)}</div>
+    <div class="cita-hora">🕐 ${proxima.hora || '—'}</div>
+    <div class="cita-trat" style="margin-top:.75rem;font-weight:600">${proxima.tratamiento || proxima.servicio || 'Consulta'}</div>
+    ${proxima.doctor ? `<div class="cita-doc">👨‍⚕️ ${proxima.doctor}</div>` : ''}
+    <div style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap">
+      <a href="${waLink(clinica.telefono, `Hola ${clinica.nombre}, quiero confirmar mi cita del ${fmtFechaLarga(proxima.fecha)} a las ${proxima.hora}`)}"
+         class="btn btn-primary btn-sm" target="_blank">✅ Confirmar cita</a>
+      <a href="${waLink(clinica.telefono, `Hola ${clinica.nombre}, necesito reagendar mi cita del ${fmtFechaLarga(proxima.fecha)}`)}"
+         class="btn btn-ghost btn-sm" target="_blank">📅 Reagendar</a>
+    </div>
+  </div>` : `
+  <div class="card"><div class="no-cita">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">📅</div>
+    <div>Sin citas próximas agendadas</div>
+    ${clinica.telefono ? `<a href="${waLink(clinica.telefono,'Hola, me gustaría agendar una cita')}"
+      class="btn btn-primary btn-sm" style="margin-top:.75rem;display:inline-flex" target="_blank">
+      Agendar cita</a>` : ''}
+  </div></div>`}
+
+  <!-- Balance / Adeudos -->
+  <div class="sec-div" style="margin-top:1.25rem">💰 Estado de cuenta</div>
+  <div class="card">
+    ${saldo > 0 ? `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:.85rem;color:var(--text-muted)">Saldo pendiente</span>
+      <span class="badge badge-red">Adeudo</span>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:1.8rem;font-weight:800;color:var(--red);margin-bottom:12px">${fmtMXN(saldo)}</div>
+    ${trats.filter(t=>(t.costo||t.precio||0)>0).slice(0,5).map(t=>`
+    <div class="adeudo-row">
+      <span style="color:var(--text)">${t.nombre||t.tratamiento||'Tratamiento'}</span>
+      <span style="font-family:var(--font-mono);color:var(--text-muted)">${fmtMXN(t.costo||t.precio||0)}</span>
+    </div>`).join('')}
+    <div class="adeudo-total">
+      <span style="color:var(--text-muted)">Pagado</span>
+      <span style="color:var(--green);font-family:var(--font-mono)">${fmtMXN(totalPagado)}</span>
+    </div>
+    ${clinica.telefono ? `<a href="${waLink(clinica.telefono,'Hola, quisiera consultar mi saldo y opciones de pago')}"
+      class="btn btn-ghost btn-block" target="_blank">Consultar opciones de pago</a>` : ''}
+    ` : `
+    <div style="text-align:center;padding:1rem 0">
+      <div style="font-size:1.5rem;margin-bottom:.5rem">✅</div>
+      <div style="font-size:.85rem;color:var(--green);font-weight:600">¡Al corriente!</div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">No tienes adeudos pendientes</div>
+    </div>
+    `}
+  </div>
+
+  <!-- Últimas recetas -->
+  ${rxs.length ? `
+  <div class="sec-div" style="margin-top:1.25rem">💊 Mis recetas</div>
+  <div class="card">
+    ${rxs.slice(0,3).map((rx,i) => `
+    <div class="rx-card" ${i===0?'style="border-color:rgba(0,194,168,.3)"':''}>
+      <div class="rx-date">
+        ${i===0?'<span class="badge badge-green" style="margin-right:6px">Última</span>':''}
+        📅 ${fmtFechaCorta(rx.fecha||rx.creadoEn)}
+        ${rx.doctor ? ` · ${rx.doctor}` : ''}
+      </div>
+      ${rx.diagnostico ? `<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px">🩺 ${rx.diagnostico}</div>` : ''}
+      ${(rx.medicamentos||[]).slice(0,4).map(m=>`
+      <div class="rx-med">
+        <span class="rx-med-name">${m.nombre||''}</span>
+        <span class="rx-med-dose">${[m.dosis,m.frecuencia,m.duracion].filter(Boolean).join(' · ')}</span>
+      </div>`).join('')}
+    </div>`).join('')}
+  </div>` : ''}
+
+  <!-- Historial de citas -->
+  ${historial.length ? `
+  <div class="sec-div" style="margin-top:1.25rem">📋 Historial de citas</div>
+  <div class="card">
+    ${historial.map(c=>`
+    <div class="hist-row">
+      <div class="hist-fecha">${fmtFechaCorta(c.fecha)}</div>
+      <div style="flex:1">
+        <div style="font-size:.8rem;font-weight:600;color:var(--text)">${c.tratamiento||c.servicio||'Consulta'}</div>
+        ${c.doctor?`<div style="font-size:.72rem;color:var(--text-muted)">${c.doctor}</div>`:''}
+      </div>
+      <span class="badge ${c.estado==='Completado'?'badge-green':c.estado==='Cancelado'?'badge-red':'badge-gold'}">${c.estado||'—'}</span>
+    </div>`).join('')}
+  </div>` : ''}
+
+  <!-- Footer -->
+  <div style="text-align:center;padding:1.5rem 0;border-top:1px solid var(--border);margin-top:1.5rem">
+    <div style="font-size:.7rem;color:var(--text-dim)">Portal generado por</div>
+    <div style="font-family:var(--font-display);font-style:italic;font-size:.9rem;color:var(--teal);margin-top:2px">DentalOS</div>
+    <div style="font-size:.65rem;color:var(--text-dim);margin-top:4px">Información actualizada en tiempo real</div>
+  </div>
+  `;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function fmtMXN(v) {
+  return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(v||0);
+}
+function fmtFechaLarga(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso+'T12:00:00');
+  return d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function fmtFechaCorta(val) {
+  if (!val) return '—';
+  try {
+    const iso = val.toDate ? val.toDate().toISOString().split('T')[0] : String(val).split('T')[0];
+    const d = new Date(iso+'T12:00:00');
+    return d.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+  } catch(e) { return String(val).split('T')[0]; }
+}
+function waLink(tel, msg) {
+  if (!tel) return '#';
+  const t = tel.replace(/\D/g,'');
+  return `https://wa.me/52${t}?text=${encodeURIComponent(msg)}`;
+}
+function showError(title, msg) {
+  document.getElementById('loadingState')?.remove();
+  wrap.innerHTML = `
+  <div class="error-box">
+    <div class="error-icon">🔐</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.5rem">${title}</div>
+    <div style="font-size:.82rem;color:var(--text-muted)">${msg}</div>
+  </div>`;
+}
+</script>
+</body>
+</html>

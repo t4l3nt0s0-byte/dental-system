@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Recordatorios WhatsApp</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Recordatorios WhatsApp</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -82,7 +82,19 @@
 
     <!-- TAB: CITAS -->
     <div class="tab-panel" id="tab-citas">
-      <div style="display:flex;gap:10px;margin-bottom:16px">
+      <!-- Banner: envío masivo de recordatorios -->
+      <div id="bannerManana" style="background:rgba(0,194,168,.1);border:1px solid rgba(0,194,168,.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:.82rem;font-weight:700;color:var(--teal)">📅 Recordatorios de mañana</div>
+            <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px" id="bannerMananaCount">Cargando...</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnEnviarTodos" onclick="enviarRecordatoriosTodos()">
+            💬 Enviar a todos por WhatsApp
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
         <button class="tipo-btn active" onclick="filterCitas('hoy',this)">📅 Hoy</button>
         <button class="tipo-btn" onclick="filterCitas('manana',this)">📅 Mañana</button>
         <button class="tipo-btn" onclick="filterCitas('semana',this)">📅 Esta semana</button>
@@ -197,7 +209,7 @@
 <script src="shared.js"></script>
 <script>
 window.CURRENT_PAGE = 'recordatorios';
-let allPacientes=[], allTrat=[], allCitas=[], allAbonos=[], clinicaNombre='', plantillas={}, editPlantKey=null;
+var allPacientes=[], allTrat=[], allCitas=[], allAbonos=[], clinicaNombre='', plantillas={}, editPlantKey=null;
 
 // PLANTILLAS POR DEFECTO
 const PLANT_DEFAULT = {
@@ -220,7 +232,7 @@ const PLANT_META = {
 
 initSession('any').then(async session=>{
   if(!session) return;
-  clinicaNombre=session.clinica.nombre||'Hersantych Dental';
+  clinicaNombre=session.clinica.nombre||'DentalOS';
   // Cargar plantillas guardadas
   const cSnap=await db.collection('clinicas').doc(session.clinica.id).get();
   plantillas={...PLANT_DEFAULT,...(cSnap.data()?.plantillas||{})};
@@ -229,6 +241,7 @@ initSession('any').then(async session=>{
   renderStats();
   renderPendientes();
   renderCitas('hoy');
+  initBannerManana();
   renderAdeudos('todos');
   renderCumples('hoy');
   renderPlantillas();
@@ -436,7 +449,7 @@ window.savePlantilla=async function(key){
     await db.collection('clinicas').doc(SESSION.clinica.id).update({plantillas,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
     showToast('Plantilla guardada','success');
     renderPendientes();renderCitas('hoy');renderAdeudos('todos');renderCumples('hoy');
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'recordatorios'); }
 };
 
 window.resetPlantilla=function(key){
@@ -523,6 +536,103 @@ window.showTab=function(name){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',t.getAttribute('onclick').includes("'"+name+"'")));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
 };
+
+// ── WA AUTOMÁTICO — enviar recordatorios masivos ──────────────
+// Se ejecuta al cargar la página: muestra banner si hay citas mañana
+function initBannerManana(){
+  const manana = new Date();
+  manana.setDate(manana.getDate()+1);
+  const mananaISO = manana.toISOString().slice(0,10);
+  const citasManana = allCitas.filter(c=>
+    c.fecha===mananaISO &&
+    c.estado!=='Cancelado' &&
+    c.estado!=='Completado' &&
+    (c.tel||'').length>=8
+  );
+  const banner = document.getElementById('bannerManana');
+  const countEl= document.getElementById('bannerMananaCount');
+  if(!banner) return;
+  if(citasManana.length>0){
+    banner.style.display='block';
+    countEl.textContent = `${citasManana.length} cita(s) con pacientes que tienen teléfono registrado`;
+  }
+}
+
+// Abre WA para cada cita una por una (no se puede abrir múltiples tabs sin interacción)
+async function enviarRecordatoriosTodos(){
+  const manana = new Date();
+  manana.setDate(manana.getDate()+1);
+  const mananaISO = manana.toISOString().slice(0,10);
+  const citasManana = allCitas.filter(c=>
+    c.fecha===mananaISO &&
+    c.estado!=='Cancelado' &&
+    c.estado!=='Completado' &&
+    (c.tel||'').length>=8
+  );
+  if(!citasManana.length){showToast('Sin citas con teléfono para mañana','info');return;}
+
+  // Generate all WA links
+  const links = citasManana.map(c=>{
+    const tel = (c.tel||'').replace(/\D/g,'');
+    const msg = buildMsg('cita',{
+      nombre:  c.paciente||'Paciente',
+      clinica: clinicaNombre,
+      fecha:   fmtFechaRec(mananaISO),
+      hora:    c.hora||'',
+    });
+    return {
+      tel, msg, paciente:c.paciente, hora:c.hora||'',
+      url:`https://wa.me/52${tel}?text=${encodeURIComponent(msg)}`
+    };
+  });
+
+  // Show confirmation modal with all links
+  const linksHtml = links.map((l,i)=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--text)">${l.paciente||'—'}</div>
+        <div style="font-size:.7rem;color:var(--text-muted)">🕐 ${l.hora} · 📱 ${l.tel}</div>
+      </div>
+      <a href="${l.url}" target="_blank" class="btn btn-primary btn-sm" onclick="markSent(${i})">
+        💬 Enviar
+      </a>
+    </div>`).join('');
+
+  // Inject into a modal or new section
+  const container = document.createElement('div');
+  container.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,13,20,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  container.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;padding:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:.9rem;font-weight:700;color:var(--text)">💬 Recordatorios de mañana (${links.length})</div>
+        <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem" onclick="this.closest('[style*=fixed]').remove()">✕</button>
+      </div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:12px">
+        Haz clic en "Enviar" para cada paciente — WhatsApp se abrirá con el mensaje prellenado
+      </div>
+      <div id="reminderLinks">${linksHtml}</div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.72rem;color:var(--text-dim)" id="sentCount">0/${links.length} enviados</span>
+        <button class="btn btn-ghost btn-sm" onclick="this.closest('[style*=fixed]').remove()">Cerrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(container);
+  window._reminderSent=0; window._reminderTotal=links.length;
+}
+
+window.markSent = function(idx){
+  window._reminderSent = (window._reminderSent||0)+1;
+  const el=document.getElementById('sentCount');
+  if(el) el.textContent=`${window._reminderSent}/${window._reminderTotal} enviados`;
+  // Mark as sent visually
+  const btns=document.querySelectorAll('#reminderLinks .btn');
+  if(btns[idx]){ btns[idx].textContent='✅ Enviado'; btns[idx].style.opacity='.5'; btns[idx].style.pointerEvents='none'; }
+};
+
+function fmtFechaRec(iso){
+  const d=new Date(iso+'T12:00:00');
+  return d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+}
 </script>
 </body>
 </html>

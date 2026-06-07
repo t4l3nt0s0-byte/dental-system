@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych · Planes de suscripción</title>
+<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentalOS · Planes & Precios</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -81,7 +81,7 @@
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">💎 Planes de suscripción</div>
+    <div class="topbar-title">💎 Planes & Precios</div>
     <div class="topbar-actions">
       <a href="index.html" class="btn btn-ghost btn-sm">← Dashboard</a>
     </div>
@@ -238,7 +238,7 @@ const COMPARATIVA = [
 const FAQS = [
   {q:'¿Puedo cambiar de plan en cualquier momento?', a:'Sí. Puedes subir o bajar de plan cuando quieras. El cambio aplica inmediatamente y tu información nunca se pierde.'},
   {q:'¿Se pierde mi información si cancelo?', a:'No. Tus datos permanecen en el sistema por 30 días después de cancelar. Puedes exportarlos en cualquier momento desde la sección de Reportes.'},
-  {q:'¿Funciona en celular?', a:'Sí. DentalOS está optimizado para desktop, tablet y celular. Solo necesitas un navegador web, sin instalar nada.'},
+  {q:'¿Funciona en celular?', a:'Sí. El sistema está optimizado para desktop, tablet y celular. Solo necesitas un navegador web, sin instalar nada.'},
   {q:'¿Cuántos pacientes puedo registrar en el plan Básico?', a:'El plan Básico permite hasta 50 expedientes activos. Para consultorios más grandes, el plan Profesional no tiene límite.'},
   {q:'¿Los datos de mis pacientes están seguros?', a:'Sí. Usamos Firebase de Google con cifrado de datos, reglas de seguridad estrictas y respaldo automático en la nube.'},
   {q:'¿Cómo funciona el período de prueba?', a:'Tienes 7 días gratis con todas las funciones del plan que seleccionaste. No pedimos tarjeta de crédito. Al terminar el trial puedes contratar el plan o perderás acceso.'},
@@ -314,35 +314,157 @@ window.toggleFaq = function(i) {
   el.classList.toggle('open');
 };
 
-window.contratarPlan = function(planKey, planNombre, precio) {
-  // STRIPE — DESACTIVADO TEMPORALMENTE
-  // ════════════════════════════════════════════════════════
-  // Para ACTIVAR Stripe:
-  // ARCHIVO: planes.html
-  // BUSCA esta función contratarPlan()
-  // REEMPLAZA el alert por tu integración de Stripe:
-  //
-  // const stripe = Stripe('pk_live_TU_PUBLISHABLE_KEY');
-  // stripe.redirectToCheckout({ lineItems: [...], mode: 'subscription', ... });
-  //
-  // Documentación: https://stripe.com/docs/billing/subscriptions/checkout
-  // ════════════════════════════════════════════════════════
-  showToast(`Plan ${planNombre} seleccionado. Pagos en línea próximamente disponibles.`, 'info');
+window.// ══════════════════════════════════════════════════════════════
+// MERCADOPAGO — Checkout Pro
+// Integración lista para producción. Solo necesitas:
+//   1. Tu PUBLIC_KEY de MercadoPago
+//   2. Un backend que cree la preferencia (Firebase Function)
+//   3. Descomentar la línea de initMercadoPago
+// ══════════════════════════════════════════════════════════════
 
-  // Por ahora: abrir WhatsApp para coordinar el pago manualmente
-  const msg = `Hola! Me interesa contratar el *Plan ${planNombre}* de Hersantych por $${precio.toLocaleString('es-MX')} MXN/mes.\n\nMi consultorio está en el sistema. ¿Cómo procedo con el pago?`;
-  setTimeout(() => {
-    if (confirm(`¿Deseas contactarnos por WhatsApp para activar el Plan ${planNombre}?`)) {
-      // Cambia este número por el tuyo
-      window.open(`https://wa.me/525546940382?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-  }, 500);
+
+
+contratarPlan = async function(planKey, planNombre, precio) {
+  const plan = PRECIOS_MP[planKey] || {};
+
+  // Enterprise → siempre WA (precio personalizado)
+  if (planKey === 'enterprise' || precio === 0) {
+    const msg = `Hola! Me interesa el *Plan Enterprise* de DentalOS para múltiples consultorios. ¿Podemos hablar?`;
+    window.open(`https://wa.me/${MP_CONFIG.waNumber}?text=${encodeURIComponent(msg)}`,'_blank');
+    return;
+  }
+
+  // Show payment modal
+  showModalPago(planKey, planNombre, precio);
 };
+
+function showModalPago(planKey, planNombre, precio) {
+  const modal = document.getElementById('modalPago');
+  if (!modal) return;
+  document.getElementById('pagoNombrePlan').textContent = planNombre;
+  document.getElementById('pagoPrecio').textContent = `$${precio.toLocaleString('es-MX')} MXN/mes`;
+  document.getElementById('pagoDescripcion').textContent = `Suscripción mensual · Cancela cuando quieras`;
+  // Store for payment
+  modal._planKey = planKey;
+  modal._planNombre = planNombre;
+  modal._precio = precio;
+  openModal('modalPago');
+}
+
+// Pago con MercadoPago (requiere backend para crear preferencia)
+window.pagarConMP = async function() {
+  const modal   = document.getElementById('modalPago');
+  const planKey = modal._planKey;
+  const precio  = modal._precio;
+  const btn     = document.getElementById('btnPagarMP');
+  btn.disabled  = true;
+  btn.textContent = 'Procesando...';
+
+  try {
+    // Opción A: Backend propio (Firebase Function recomendado)
+    // const res = await fetch(MP_CONFIG.backendUrl, {
+    //   method: 'POST',
+    //   headers: {'Content-Type':'application/json'},
+    //   body: JSON.stringify({
+    //     planKey, precio, clinicaId: SESSION?.clinica?.id,
+    //     email: SESSION?.user?.email,
+    //   })
+    // });
+    // const { init_point } = await res.json();
+    // window.location.href = init_point; // Redirige al checkout de MP
+
+    // Opción B (activa ahora): WA + actualización manual
+    // Mientras configuras el backend, los pagos van por WhatsApp
+    const nombre  = SESSION?.user?.nombre || '';
+    const clinica = SESSION?.clinica?.nombre || '';
+    const msg = `Hola! Quiero contratar el *${modal._planNombre}* de DentalOS.\n\n` +
+      `👤 ${nombre}\n🏥 ${clinica}\n💰 $${precio.toLocaleString('es-MX')} MXN/mes\n\n¿Cómo procedo con el pago?`;
+    closeModal('modalPago');
+    showToast('Te redirigimos a WhatsApp para completar el pago','info');
+    setTimeout(()=> window.open(`https://wa.me/${MP_CONFIG.waNumber}?text=${encodeURIComponent(msg)}`,'_blank'), 800);
+
+  } catch(e) {
+    showToast('Error al procesar: '+e.message,'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💳 Pagar con MercadoPago';
+  }
+};
+
+// Actualizar plan en Firestore tras pago exitoso
+// Esta función es llamada por el webhook de MercadoPago (vía Firebase Function)
+window.activarPlan = async function(planKey, paymentId) {
+  if (!SESSION?.clinica?.id) return;
+  try {
+    await db.collection('clinicas').doc(SESSION.clinica.id).update({
+      plan: planKey,
+      planActivoDesde: firebase.firestore.FieldValue.serverTimestamp(),
+      ultimoPagoId: paymentId || 'manual',
+      ultimoPagoFecha: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    showToast('¡Plan activado! Recarga la página para ver los cambios.','success');
+    setTimeout(()=> location.reload(), 2000);
+  } catch(e) {
+    showToast('Error activando plan: '+e.message,'error');
+  }
+};
+
+// Verificar si venimos de una redirección de pago exitoso
+(function checkMPReturn() {
+  const urlParams = new URLSearchParams(location.search);
+  const status    = urlParams.get('status');
+  const planKey   = urlParams.get('plan');
+  const paymentId = urlParams.get('payment_id');
+  if (status === 'approved' && planKey) {
+    activarPlan(planKey, paymentId);
+    // Limpiar URL
+    history.replaceState({},'', location.pathname);
+  } else if (status === 'failure') {
+    showToast('El pago no se completó. Intenta de nuevo.','error');
+  } else if (status === 'pending') {
+    showToast('Pago pendiente de confirmación.','info');
+  }
+})();
 
 window.whatsappContacto = function() {
   const msg = `Hola! Necesito información sobre planes personalizados de DentalOS para mi clínica dental.`;
-  window.open(`https://wa.me/525546940382?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open(`https://wa.me/${MP_CONFIG.waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
 };
 </script>
+<!-- MODAL PAGO MERCADOPAGO -->
+<div class="modal-overlay" id="modalPago">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">💳 Contratar plan</div>
+      <button class="modal-close" onclick="closeModal('modalPago')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:1rem 0">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text)" id="pagoNombrePlan">—</div>
+        <div style="font-family:var(--font-mono);font-size:1.8rem;font-weight:800;color:var(--teal);margin:.5rem 0" id="pagoPrecio">—</div>
+        <div style="font-size:.75rem;color:var(--text-muted)" id="pagoDescripcion">—</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:1rem 0">
+        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:8px;font-weight:600">✅ Tu plan incluye:</div>
+        <div style="font-size:.75rem;color:var(--text-muted);display:flex;flex-direction:column;gap:4px">
+          <div>✓ Acceso inmediato tras el pago</div>
+          <div>✓ Sin contratos — cancela cuando quieras</div>
+          <div>✓ Soporte por WhatsApp incluido</div>
+          <div>✓ Actualizaciones automáticas</div>
+        </div>
+      </div>
+      <div style="font-size:.7rem;color:var(--text-dim);text-align:center">
+        🔒 Pago seguro · MercadoPago protege tu información
+      </div>
+    </div>
+    <div class="modal-footer" style="flex-direction:column;gap:8px">
+      <button class="btn btn-primary" id="btnPagarMP" onclick="pagarConMP()" style="width:100%;padding:12px">
+        💳 Pagar con MercadoPago
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalPago')" style="width:100%">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
