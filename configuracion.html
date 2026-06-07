@@ -502,7 +502,7 @@ initSession('any').then(async session => {
   document.getElementById('cf-especialidad').value= fiscal.especialidad|| '';
   document.getElementById('cf-leyenda').value     = fiscal.leyenda     || '';
   const fkEl = document.getElementById('cf-facturapiKey');
-  if(fkEl) fkEl.value = (fiscal.facturapiKey||data.facturapiKey||'');
+  if(fkEl) fkEl.value = (fiscal.facturapiKey||'');
   if (fiscal.regimen) document.getElementById('cf-regimen').value = fiscal.regimen;
 
   // Cuenta
@@ -685,6 +685,7 @@ window.guardarConfig = async function() {
       especialidad: document.getElementById('cf-especialidad').value.trim(),
       regimen:      document.getElementById('cf-regimen').value,
       leyenda:      document.getElementById('cf-leyenda').value.trim(),
+      facturapiKey: (document.getElementById('cf-facturapiKey')?.value||'').trim(),
     };
     const configData = { tema: selectedTema, color: selectedColor };
     const updates = {
@@ -698,7 +699,6 @@ window.guardarConfig = async function() {
       web:          document.getElementById('cf-web').value.trim(),
       fiscal, config: configData,
       actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-      facturapiKey: (document.getElementById('cf-facturapiKey')?.value||'').trim(),
     };
     // Logo — guardar opción seleccionada
     updates.logoOpcion = logoOpcionActiva;

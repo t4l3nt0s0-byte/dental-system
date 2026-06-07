@@ -360,7 +360,9 @@ async function generarCFDI(abonoId, btn) {
   // Check if Facturapi is configured
   try {
     const clinicaSnap = await db.collection('clinicas').doc(SESSION.clinica.id).get();
-    const facturapiKey = clinicaSnap.data().facturapiKey || '';
+    const clinicaData  = clinicaSnap.data();
+    const facturapiKey = (clinicaData.fiscal && clinicaData.fiscal.facturapiKey)
+                         || clinicaData.facturapiKey || '';
     if (facturapiKey) {
       document.getElementById('cfdiStatus').innerHTML =
         '✅ <strong>Facturapi conectado</strong> — Listo para emitir CFDI timbrado por el SAT';
