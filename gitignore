@@ -1,0 +1,37 @@
+# Sistema DentalOS — .gitignore
+
+# Firebase
+.firebase/
+firebase-debug.log
+.firebaserc
+
+# Entorno local
+.env
+.env.local
+*.env
+
+# Dependencias
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# Editor
+.vscode/
+.idea/
+*.sublime-project
+
+# Build (si usas en el futuro)
+dist/
+build/
+.next/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
