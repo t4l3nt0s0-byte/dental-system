@@ -1,3 +1,75 @@
+
+// ══════════════════════════════════════════════════════════════
+// PWA INSTALL PROMPT — invitar al usuario a instalar la app
+// Se muestra como banner discreto la primera vez que visita
+// ══════════════════════════════════════════════════════════════
+(function() {
+  var deferredPrompt = null;
+  var SHOWN_KEY = 'dentalos_install_shown';
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    // No mostrar si ya se mostró antes
+    if (localStorage.getItem(SHOWN_KEY)) return;
+    // Esperar 30 segundos para no ser invasivo
+    setTimeout(showInstallBanner, 30000);
+  });
+
+  window.addEventListener('appinstalled', function() {
+    localStorage.setItem(SHOWN_KEY, '1');
+    var banner = document.getElementById('pwaBanner');
+    if (banner) banner.remove();
+    if (typeof showToast === 'function') showToast('¡DentalOS instalado! Búscalo en tu pantalla de inicio', 'success');
+  });
+
+  window.showInstallBanner = function() {
+    if (!deferredPrompt) return;
+    if (document.getElementById('pwaBanner')) return;
+    var banner = document.createElement('div');
+    banner.id = 'pwaBanner';
+    banner.style.cssText = [
+      'position:fixed','bottom:16px','left:50%','transform:translateX(-50%)',
+      'background:#0D1822','border:1px solid rgba(0,194,168,.4)','border-radius:12px',
+      'padding:12px 16px','display:flex','align-items:center','gap:10px',
+      'z-index:9999','box-shadow:0 8px 24px rgba(0,0,0,.4)','max-width:360px','width:calc(100% - 32px)',
+      'animation:slideUp .3s ease'
+    ].join(';');
+    banner.innerHTML = [
+      '<span style="font-size:1.5rem;flex-shrink:0">📱</span>',
+      '<div style="flex:1">',
+        '<div style="font-size:.82rem;font-weight:700;color:#E8EAF0">Instalar DentalOS</div>',
+        '<div style="font-size:.72rem;color:#9BA3B0">Accede más rápido desde tu pantalla de inicio</div>',
+      '</div>',
+      '<button id="pwaInstallBtn" style="background:#00C2A8;color:#060D14;border:none;border-radius:8px;padding:7px 14px;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0">Instalar</button>',
+      '<button id="pwaDismissBtn" style="background:none;border:none;color:#9BA3B0;cursor:pointer;font-size:1rem;flex-shrink:0;padding:4px">✕</button>',
+    ].join('');
+
+    // Agregar animación
+    if (!document.getElementById('pwaStyle')) {
+      var style = document.createElement('style');
+      style.id = 'pwaStyle';
+      style.textContent = '@keyframes slideUp{from{transform:translateX(-50%) translateY(80px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}';
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(banner);
+
+    document.getElementById('pwaInstallBtn').onclick = function() {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(c) {
+        localStorage.setItem(SHOWN_KEY, '1');
+        banner.remove();
+        deferredPrompt = null;
+      });
+    };
+    document.getElementById('pwaDismissBtn').onclick = function() {
+      localStorage.setItem(SHOWN_KEY, '1');
+      banner.remove();
+    };
+  };
+})();
+
 // shared.js — DentalOS · Shared UI + Firebase helpers (no-module version for inline use)
 // This file is loaded as a regular script tag and exposes globals via window
 
