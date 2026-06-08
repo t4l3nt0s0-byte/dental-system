@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>DentalOS · Bienvenido</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -415,6 +416,168 @@ async function inviteUser() {
 }
 
 // ── PASO 5: Finalizar ─────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════
+// SEED DATA — datos de demostración para nuevos consultorios
+// Se crean al finalizar el onboarding. El admin puede borrarlos
+// desde Configuración → "Borrar datos de prueba"
+// ══════════════════════════════════════════════════════════════
+async function createSeedData(clinicaId) {
+  const db_c = db.collection('clinicas').doc(clinicaId);
+  const ts   = firebase.firestore.FieldValue.serverTimestamp();
+
+  // Fechas relativas al día de hoy
+  const today = new Date();
+  const fmt   = d => d.toISOString().split('T')[0];
+  const d     = (offset) => { const x=new Date(today); x.setDate(x.getDate()+offset); return fmt(x); };
+  const m     = (offset) => { const x=new Date(today); x.setDate(x.getDate()-offset); return fmt(x); };
+
+  try {
+    // ── 1. DOCTORES ─────────────────────────────────────────
+    const dr1Ref = await db_c.collection('doctores').add({
+      nombre:'Dr. Carlos Hernández Ruiz', especialidad:'Cirujano Dentista',
+      cedula:'5521847', color:'#00C2A8', tel:'5510000001',
+      activo:true, creadoEn:ts, _demo:true,
+    });
+    const dr2Ref = await db_c.collection('doctores').add({
+      nombre:'Dra. Sofía Ramírez Lara', especialidad:'Ortodoncista',
+      cedula:'7834291', color:'#4A9EFF', tel:'5510000002',
+      activo:true, creadoEn:ts, _demo:true,
+    });
+
+    // ── 2. PACIENTES ────────────────────────────────────────
+    const pxData = [
+      {nombre:'García López María',    tel:'5512345678',genero:'F',fnac:'1985-03-12',sangre:'O+',email:'maria.garcia@email.com',alergias:'Penicilina',padecimientos:'Ninguno'},
+      {nombre:'Martínez Torres Carlos',tel:'5523456789',genero:'M',fnac:'1978-07-24',sangre:'A+',email:'c.martinez@email.com',alergias:'Ninguna',padecimientos:'Ninguno'},
+      {nombre:'Rodríguez Sánchez Ana', tel:'5534567890',genero:'F',fnac:'1992-11-05',sangre:'B+',email:'ana.rodriguez@email.com',alergias:'Ninguna',padecimientos:'Ninguno'},
+      {nombre:'López Jiménez Roberto', tel:'5545678901',genero:'M',fnac:'1965-01-18',sangre:'AB+',email:'roberto.lopez@email.com',alergias:'Ninguna',padecimientos:'Diabetes tipo 2'},
+      {nombre:'Hernández Díaz Laura',  tel:'5556789012',genero:'F',fnac:'2001-09-30',sangre:'O-',email:'laura.hd@email.com',alergias:'Ninguna',padecimientos:'Ninguno'},
+    ];
+    const pxRefs = [];
+    const year = today.getFullYear();
+    for (let i=0; i<pxData.length; i++) {
+      const folio = `EXP-${year}-0000${i+1}`;
+      const ref   = await db_c.collection('pacientes').add({
+        ...pxData[i], folio, alta:m(30-i*5), activo:true,
+        creadoEn:ts, _demo:true,
+      });
+      pxRefs.push(ref);
+    }
+
+    // ── 3. TRATAMIENTOS ─────────────────────────────────────
+    const tratData = [
+      [{nombre:'Limpieza dental profunda',costo:800, pagado:800, saldo:0,   estado:'Completado',doctor:dr1Ref.id},
+       {nombre:'Blanqueamiento dental',   costo:3500,pagado:1500,saldo:2000,estado:'En proceso', doctor:dr1Ref.id}],
+      [{nombre:'Ortodoncia metálica',     costo:18000,pagado:6000,saldo:12000,estado:'En proceso',doctor:dr2Ref.id}],
+      [{nombre:'Extracción molar',        costo:1200,pagado:1200,saldo:0,   estado:'Completado',doctor:dr1Ref.id},
+       {nombre:'Corona cerámica',         costo:5500,pagado:2750,saldo:2750,estado:'En proceso', doctor:dr1Ref.id}],
+      [{nombre:'Implante dental',         costo:22000,pagado:11000,saldo:11000,estado:'En proceso',doctor:dr1Ref.id}],
+      [{nombre:'Selladores',              costo:600, pagado:600, saldo:0,   estado:'Completado',doctor:dr1Ref.id}],
+    ];
+    const tratRefs = [];
+    for (let i=0; i<pxRefs.length; i++) {
+      const pxRef   = pxRefs[i];
+      const pxNombre = pxData[i].nombre;
+      for (const t of tratData[i]) {
+        const tRef = await db_c.collection('tratamientos').add({
+          ...t, expId:pxRef.id, paciente:pxNombre, fecha:m(20-i*3),
+          creadoEn:ts, _demo:true,
+        });
+        tratRefs.push({ref:tRef, expId:pxRef.id, pxNombre});
+      }
+    }
+
+    // ── 4. ABONOS ────────────────────────────────────────────
+    const abonosData = [
+      {expId:pxRefs[0].id,paciente:pxData[0].nombre,monto:800, forma:'Efectivo',    tratamiento:'Limpieza dental',   fecha:m(25)},
+      {expId:pxRefs[1].id,paciente:pxData[1].nombre,monto:6000,forma:'Transferencia',tratamiento:'Ortodoncia metálica',fecha:m(20)},
+      {expId:pxRefs[2].id,paciente:pxData[2].nombre,monto:1200,forma:'Efectivo',    tratamiento:'Extracción molar',  fecha:m(15)},
+      {expId:pxRefs[3].id,paciente:pxData[3].nombre,monto:11000,forma:'Transferencia',tratamiento:'Implante dental', fecha:m(10)},
+      {expId:pxRefs[2].id,paciente:pxData[2].nombre,monto:2750,forma:'Tarjeta',     tratamiento:'Corona cerámica',  fecha:m(5)},
+    ];
+    for (const ab of abonosData) {
+      await db_c.collection('abonos').add({...ab, creadoEn:ts, _demo:true});
+    }
+
+    // ── 5. CITAS ─────────────────────────────────────────────
+    const citasHoy = [
+      {hora:'09:00',expId:pxRefs[0].id,paciente:pxData[0].nombre,tel:pxData[0].tel,tratamiento:'Limpieza dental',   estado:'Completado', doctor:'Dr. Carlos Hernández Ruiz',duracion:60},
+      {hora:'10:30',expId:pxRefs[1].id,paciente:pxData[1].nombre,tel:pxData[1].tel,tratamiento:'Revisión ortodoncia',estado:'En consulta',doctor:'Dra. Sofía Ramírez Lara', duracion:30},
+      {hora:'12:00',expId:pxRefs[2].id,paciente:pxData[2].nombre,tel:pxData[2].tel,tratamiento:'Corona cerámica',   estado:'Agendado',   doctor:'Dr. Carlos Hernández Ruiz',duracion:60},
+      {hora:'15:00',expId:pxRefs[3].id,paciente:pxData[3].nombre,tel:pxData[3].tel,tratamiento:'Consulta general',  estado:'Agendado',   doctor:'Dr. Carlos Hernández Ruiz',duracion:30},
+      {hora:'16:30',expId:pxRefs[4].id,paciente:pxData[4].nombre,tel:pxData[4].tel,tratamiento:'Selladores',        estado:'Agendado',   doctor:'Dr. Carlos Hernández Ruiz',duracion:45},
+    ];
+    for (const c of citasHoy) {
+      await db_c.collection('citas').add({...c, fecha:fmt(today), creadoEn:ts, _demo:true});
+    }
+    // Citas pasadas (para historial)
+    const citasPasadas = [
+      {hora:'09:00',expId:pxRefs[0].id,paciente:pxData[0].nombre,tel:pxData[0].tel,tratamiento:'Limpieza dental',     estado:'Completado',doctor:'Dr. Carlos Hernández Ruiz',duracion:60,fecha:m(25)},
+      {hora:'11:00',expId:pxRefs[1].id,paciente:pxData[1].nombre,tel:pxData[1].tel,tratamiento:'Instalación brackets',estado:'Completado',doctor:'Dra. Sofía Ramírez Lara', duracion:90,fecha:m(20)},
+      {hora:'10:00',expId:pxRefs[2].id,paciente:pxData[2].nombre,tel:pxData[2].tel,tratamiento:'Extracción molar',    estado:'Completado',doctor:'Dr. Carlos Hernández Ruiz',duracion:60,fecha:m(15)},
+    ];
+    for (const c of citasPasadas) {
+      await db_c.collection('citas').add({...c, creadoEn:ts, _demo:true});
+    }
+    // Citas futuras
+    const citasFuturas = [
+      {hora:'10:00',expId:pxRefs[1].id,paciente:pxData[1].nombre,tel:pxData[1].tel,tratamiento:'Ajuste ortodoncia',  estado:'Agendado',doctor:'Dra. Sofía Ramírez Lara', duracion:30,fecha:d(7)},
+      {hora:'11:30',expId:pxRefs[3].id,paciente:pxData[3].nombre,tel:pxData[3].tel,tratamiento:'Revisión implante',  estado:'Agendado',doctor:'Dr. Carlos Hernández Ruiz',duracion:60,fecha:d(14)},
+      {hora:'09:30',expId:pxRefs[0].id,paciente:pxData[0].nombre,tel:pxData[0].tel,tratamiento:'Blanqueamiento',     estado:'Agendado',doctor:'Dr. Carlos Hernández Ruiz',duracion:90,fecha:d(3)},
+    ];
+    for (const c of citasFuturas) {
+      await db_c.collection('citas').add({...c, creadoEn:ts, _demo:true});
+    }
+
+    // ── 6. CATÁLOGO ──────────────────────────────────────────
+    const catalogo = [
+      {tratamiento:'Limpieza dental',       precio:800,  categoria:'Preventivo',  duracion:60},
+      {tratamiento:'Blanqueamiento',        precio:3500, categoria:'Estético',    duracion:90},
+      {tratamiento:'Extracción simple',     precio:800,  categoria:'Cirugía',     duracion:45},
+      {tratamiento:'Extracción molar',      precio:1200, categoria:'Cirugía',     duracion:60},
+      {tratamiento:'Corona cerámica',       precio:5500, categoria:'Restaurativo',duracion:60},
+      {tratamiento:'Ortodoncia metálica',   precio:18000,categoria:'Ortodoncia',  duracion:90},
+      {tratamiento:'Ortodoncia invisible',  precio:35000,categoria:'Ortodoncia',  duracion:90},
+      {tratamiento:'Implante dental',       precio:22000,categoria:'Implantes',   duracion:120},
+      {tratamiento:'Selladores',            precio:300,  categoria:'Preventivo',  duracion:30},
+      {tratamiento:'Consulta general',      precio:500,  categoria:'Consulta',    duracion:30},
+    ];
+    for (const item of catalogo) {
+      await db_c.collection('catalogo').add({...item, activo:true, creadoEn:ts, _demo:true});
+    }
+
+    // ── 7. NOTAS CLÍNICAS ────────────────────────────────────
+    const notasData = [
+      {expId:pxRefs[0].id,texto:'Paciente con sensibilidad dental en sector anterior. Aplicar flúor en próxima visita.',autor:'Dr. Carlos Hernández Ruiz'},
+      {expId:pxRefs[1].id,texto:'Ortodoncia en buen progreso. Arco superior alineado. Iniciar corrección inferior.',autor:'Dra. Sofía Ramírez Lara'},
+      {expId:pxRefs[2].id,texto:'Post-extracción sin complicaciones. Cicatrización normal. Colocar corona en 6 semanas.',autor:'Dr. Carlos Hernández Ruiz'},
+      {expId:pxRefs[3].id,texto:'Verificar glucosa antes de procedimientos. Implante oseointegrado al 80%.',autor:'Dr. Carlos Hernández Ruiz'},
+      {expId:pxRefs[4].id,texto:'Primera visita preventiva. Selladores aplicados en molares 1-6 superior e inferior.',autor:'Dr. Carlos Hernández Ruiz'},
+    ];
+    for (const n of notasData) {
+      await db_c.collection('notas-clinicas').add({...n, fecha:fmt(today), creadoEn:ts, _demo:true});
+    }
+
+    // ── 8. INVENTARIO ────────────────────────────────────────
+    const inventario = [
+      {nombre:'Guantes de látex M',     categoria:'Insumos',  stock:200,minimo:50, costo:2.5,  unidad:'pieza'},
+      {nombre:'Cubrebocas quirúrgico',   categoria:'Insumos',  stock:150,minimo:50, costo:3.0,  unidad:'pieza'},
+      {nombre:'Anestesia lidocaína',     categoria:'Medicamento',stock:30,minimo:10,costo:45.0, unidad:'ampolleta'},
+      {nombre:'Composite A2',            categoria:'Material', stock:5,  minimo:2,  costo:280.0,unidad:'jeringa'},
+      {nombre:'Cepillo de profilaxis',   categoria:'Insumos',  stock:50, minimo:20, costo:8.0,  unidad:'pieza'},
+      {nombre:'Eyector de saliva',       categoria:'Insumos',  stock:100,minimo:30, costo:1.5,  unidad:'pieza'},
+    ];
+    for (const item of inventario) {
+      await db_c.collection('inventario').add({...item, activo:true, creadoEn:ts, _demo:true});
+    }
+
+    return { ok:true, pacientes:pxRefs.length, citas:citasHoy.length+citasPasadas.length+citasFuturas.length };
+  } catch(e) {
+    console.error('[Seed]', e);
+    return { ok:false, error:e.message };
+  }
+}
+
 async function finish() {
   // Update checklist icons
   ['doctor','cita','user'].forEach(k => {
@@ -429,6 +592,13 @@ async function finish() {
     await db.collection('clinicas').doc(SESSION.clinica.id)
       .update({ setupDone: true });
   } catch(e) {}
+  // Crear datos de demostración si el consultorio es nuevo
+  try {
+    const seedRes = await createSeedData(SESSION.clinica.id);
+    if (seedRes.ok) {
+      console.log('[Seed] Datos demo creados:', seedRes);
+    }
+  } catch(e) { console.warn('[Seed]', e.message); }
   window.location.href = 'index.html';
 }
 

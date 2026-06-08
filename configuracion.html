@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Configuración del Consultorio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -387,6 +388,16 @@
                   <button class="btn btn-ghost btn-sm" onclick="showSection('cuenta');document.getElementById('cf-pass').focus()">🔑 Cambiar contraseña (cierra todas las sesiones)</button>
                   <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="logout()">🚪 Cerrar esta sesión</button>
                 </div>
+              </div>
+
+              <!-- BORRAR DATOS DEMO -->
+              <div style="background:var(--surface);border:1px solid rgba(244,185,66,.3);border-radius:var(--r);padding:14px">
+                <div style="font-size:.82rem;font-weight:700;color:#F4B942;margin-bottom:4px">🧹 Borrar datos de demostración</div>
+                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:10px">
+                  Elimina todos los pacientes, citas, tratamientos y pagos de prueba creados automáticamente al registrarse. Tus datos reales no se ven afectados.
+                </div>
+                <button class="btn btn-sm" style="background:rgba(244,185,66,.12);color:#F4B942;border:1px solid rgba(244,185,66,.3)"
+                  onclick="borrarDatosDemo()">🗑️ Borrar datos de prueba</button>
               </div>
 
             </div>
@@ -1139,6 +1150,50 @@ async function desactivarSucursal(id, nombre){
     showToast('Sucursal desactivada','success');
     loadSucursales();
   } catch(e) { handleError(e, 'configuracion'); }
+}
+
+// ── BORRAR DATOS DE DEMOSTRACIÓN ───────────────────────────
+async function borrarDatosDemo() {
+  const ok = await confirmDialog(
+    '¿Borrar todos los datos de prueba?\n\n' +
+    'Se eliminarán los pacientes, citas, tratamientos, pagos e inventario de demostración.\n\n' +
+    'Tus datos reales (si los tienes) no se verán afectados.'
+  );
+  if (!ok) return;
+
+  const btn = document.querySelector('[onclick="borrarDatosDemo()"]');
+  if (btn) { btn.disabled=true; btn.textContent='⏳ Borrando...'; }
+
+  try {
+    const cId  = SESSION.clinica.id;
+    const base = db.collection('clinicas').doc(cId);
+    const cols = ['pacientes','citas','tratamientos','abonos','doctores',
+                  'catalogo','inventario','notas-clinicas'];
+    let total  = 0;
+
+    for (const col of cols) {
+      // Only delete docs with _demo:true flag
+      const snap = await base.collection(col).where('_demo','==',true).limit(200).get();
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      if (snap.docs.length > 0) {
+        await batch.commit();
+        total += snap.docs.length;
+      }
+    }
+
+    // Reset the seed counter so folios restart
+    await base.collection('_counters').doc('expedientes_' + new Date().getFullYear())
+      .delete().catch(()=>{});
+
+    if (btn) { btn.disabled=false; btn.textContent='🗑️ Borrar datos de prueba'; }
+    showToast(`${total} registros de prueba eliminados`, 'success');
+    audit('DELETE_DEMO_DATA', { total });
+
+  } catch(e) {
+    if (btn) { btn.disabled=false; btn.textContent='🗑️ Borrar datos de prueba'; }
+    handleError(e, 'borrarDatosDemo');
+  }
 }
 </script>
 

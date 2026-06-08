@@ -370,6 +370,10 @@ async function initSession(requiredPage) {
               setTimeout(function() {
                 if (typeof runDailyBackup === 'function') runDailyBackup();
               }, 5000);
+              // Detectar si hay datos demo y mostrar banner informativo
+              setTimeout(function() {
+                if (typeof showDemoBanner === 'function') showDemoBanner();
+              }, 2000);
 
               resolve(SESSION);
             })
@@ -713,6 +717,28 @@ window.migrateFolios = async function() {
   return { migrated, total:sinFolio.length };
 };
 
+
+// ── BANNER DATOS DEMO ──────────────────────────────────────
+window.showDemoBanner = async function() {
+  if (!SESSION || !SESSION.clinica) return;
+  // Only show on dashboard
+  if (window.CURRENT_PAGE !== 'index') return;
+  // Check if demo data exists (quick check)
+  try {
+    var snap = await db.collection('clinicas').doc(SESSION.clinica.id)
+      .collection('pacientes').where('_demo','==',true).limit(1).get();
+    if (snap.empty) return; // no demo data, no banner
+    // Show banner
+    var existing = document.getElementById('demoBanner');
+    if (existing) return;
+    var banner = document.createElement('div');
+    banner.id = 'demoBanner';
+    banner.style.cssText = 'background:rgba(244,185,66,.12);border:1px solid rgba(244,185,66,.3);border-radius:10px;padding:10px 16px;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.78rem;';
+    banner.innerHTML = '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:1rem">🧪</span><span style="color:#F4B942;font-weight:700">Datos de demostración activos</span><span style="color:var(--text-muted)">— Este es un consultorio de prueba con pacientes y citas de ejemplo</span></div><a href="configuracion.html#peligro" style="font-size:.72rem;color:#F4B942;white-space:nowrap;text-decoration:underline">Borrar datos demo →</a>';
+    var content = document.getElementById('mainContent') || document.querySelector('.content');
+    if (content) content.insertAdjacentElement('afterbegin', banner);
+  } catch(e) { /* silencioso */ }
+};
 async function logout() {
   // Auditar cierre de sesión antes de salir
   audit('LOGOUT', {}).catch(()=>{});
