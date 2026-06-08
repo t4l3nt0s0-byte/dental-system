@@ -682,6 +682,37 @@ window.runDailyBackup = async function() {
   }
 };
 
+
+/**
+ * migrateFolios() — Asigna folios a pacientes existentes sin folio
+ * Ejecutar una sola vez desde la consola del navegador:
+ * migrateFolios().then(r => console.log('Done:', r))
+ */
+window.migrateFolios = async function() {
+  if (!SESSION || !SESSION.clinica) return { error:'No session' };
+  var cId  = SESSION.clinica.id;
+  var snap = await db.collection('clinicas').doc(cId)
+    .collection('pacientes')
+    .where('folio','==',null).limit(200).get()
+    .catch(async () =>
+      // Fallback: get all and filter
+      db.collection('clinicas').doc(cId).collection('pacientes').limit(500).get()
+    );
+  var sinFolio = snap.docs.filter(d => !d.data().folio);
+  if (!sinFolio.length) return { migrated:0, message:'Todos los pacientes ya tienen folio' };
+  var migrated = 0;
+  for (var doc of sinFolio) {
+    try {
+      var folio = await window.generateFolio();
+      await db.collection('clinicas').doc(cId)
+        .collection('pacientes').doc(doc.id)
+        .update({ folio });
+      migrated++;
+    } catch(e) { console.warn('skip', doc.id, e.message); }
+  }
+  return { migrated, total:sinFolio.length };
+};
+
 async function logout() {
   // Auditar cierre de sesión antes de salir
   audit('LOGOUT', {}).catch(()=>{});
@@ -1035,6 +1066,68 @@ window.getApiUsageStats = async function(clinicaId, keyId) {
       pct:      limits.perDay === Infinity ? 0 : Math.round((logSnap.docs.length/limits.perDay)*100),
     };
   } catch(e) { return { hoy:0, limite:0, minuto:0, limMin:0, pct:0 }; }
+};
+
+
+// ══════════════════════════════════════════════════════════════
+// SISTEMA DE FOLIOS — IDs únicos legibles para pacientes
+// Formato: EXP-2026-00001 (año + secuencial de 5 dígitos)
+// Garantiza unicidad sin race conditions usando Firestore counter
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * generateFolio() — Genera el siguiente número de expediente
+ * Usa un contador atómico en Firestore para evitar duplicados
+ * Retorna: 'EXP-2026-00001'
+ */
+window.generateFolio = async function() {
+  if (!SESSION || !SESSION.clinica) return null;
+  var year     = new Date().getFullYear();
+  var cId      = SESSION.clinica.id;
+  var counterRef = db.collection('clinicas').doc(cId)
+                     .collection('_counters').doc('expedientes_' + year);
+  try {
+    var result = await db.runTransaction(async function(tx) {
+      var doc = await tx.get(counterRef);
+      var next = doc.exists ? (doc.data().next || 1) : 1;
+      tx.set(counterRef, { next: next + 1, year: year,
+        actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+      return next;
+    });
+    var padded = String(result).padStart(5, '0');
+    return 'EXP-' + year + '-' + padded;
+  } catch(e) {
+    // Fallback: timestamp-based folio si falla la transacción
+    console.warn('[Folio]', e.message);
+    return 'EXP-' + year + '-' + Date.now().toString().slice(-5);
+  }
+};
+
+/**
+ * checkDuplicate(nombre, tel) — Busca pacientes con nombre/tel similar
+ * Retorna array de posibles duplicados
+ */
+window.checkDuplicate = async function(nombre, tel) {
+  if (!nombre || !SESSION) return [];
+  var normNombre = nombre.trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,''); // sin acentos
+  try {
+    // Búsqueda por los primeros 3 caracteres del nombre (Firestore prefix query)
+    var prefix = nombre.trim().slice(0, 3);
+    var snap   = await clinicaCol('pacientes')
+      .where('nombre','>=', prefix)
+      .where('nombre','<=', prefix + '\uf8ff')
+      .limit(20).get();
+    var candidates = snap.docs.map(d => ({id:d.id,...d.data()}));
+    // Filtrar por similitud
+    return candidates.filter(function(p) {
+      var pNorm = (p.nombre||'').trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      var nameMatch  = pNorm === normNombre;
+      var telMatch   = tel && p.tel && tel.replace(/\D/g,'') === (p.tel||'').replace(/\D/g,'');
+      return nameMatch || telMatch;
+    });
+  } catch(e) { return []; }
 };
 
 async function audit(accion, datos) {

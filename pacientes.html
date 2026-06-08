@@ -240,7 +240,7 @@ function renderGrid() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const g = document.getElementById('filterGenero').value;
   const filtered = allPacientes.filter(p =>
-    (!q || p.nombre?.toLowerCase().includes(q) || p.tel?.includes(q) || p.expediente?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q)) &&
+    (!q || p.nombre?.toLowerCase().includes(q) || p.tel?.includes(q) || p.expediente?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q) || p.folio?.toLowerCase().includes(q)) &&
     (!g || p.genero === g)
   );
   const grid = document.getElementById('pxGrid');
@@ -256,7 +256,7 @@ function renderGrid() {
         <div class="px-avatar">${initials}</div>
         <div>
           <div class="px-name">${esc(p.nombre)||'Sin nombre'}</div>
-          <div class="px-exp">${p.expediente||p.id}</div>
+          <div class="px-exp">${p.folio ? `<span style="color:var(--teal);font-weight:700">${esc(p.folio)}</span>` : (p.expediente||p.id.slice(0,8))}</div>
         </div>
       </div>
       <div class="px-row"><span class="icon">👤</span><span>${p.genero||'—'} · ${edad} años</span></div>
@@ -370,6 +370,29 @@ async function savePaciente() {
     return;
   }
   const edad = fnac ? Math.floor((new Date()-new Date(fnac))/31557600000) : null;
+  // Generar folio único al crear (no al editar)
+  let folio = null;
+  if (!editId) {
+    // Verificar duplicados antes de crear
+    const dupes = await checkDuplicate(nombre, document.getElementById('f-tel').value.trim()).catch(()=>[]);
+    if (dupes.length > 0) {
+      const dupe = dupes[0];
+      const confirmCreate = await confirmDialog(
+        `⚠️ Ya existe un paciente similar:\n\n` +
+        `Folio: ${dupe.folio || dupe.id.slice(0,8)}\n` +
+        `Nombre: ${dupe.nombre}\n` +
+        `Tel: ${dupe.tel || '—'}\n\n` +
+        `¿Deseas crear un nuevo expediente de todas formas?`
+      );
+      if (!confirmCreate) {
+        btn.disabled = false;
+        btn.textContent = editId ? '💾 Actualizar' : '💾 Guardar paciente';
+        return;
+      }
+    }
+    folio = await generateFolio().catch(() => null);
+  }
+
   const data = {
     nombre,
     fnac, edad,
@@ -388,6 +411,7 @@ async function savePaciente() {
     sangre: document.getElementById('f-sangre').value,
     observaciones: document.getElementById('f-obs').value.trim(),
     referido: document.getElementById('f-referido').value,
+    ...(folio ? { folio } : {}),  // folio solo al crear
   };
   try {
     if (editId) {

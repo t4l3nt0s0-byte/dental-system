@@ -435,7 +435,12 @@ function renderPerfil(px) {
   const edad = px.fnac ? Math.floor((new Date()-new Date(px.fnac))/31557600000) : px.edad||'—';
   document.getElementById('pAvatar').textContent = initials;
   document.getElementById('pNombre').textContent = px.nombre||'Sin nombre';
-  document.getElementById('pExp').textContent = px.expediente||PX_ID;
+  // Show folio if available, fallback to short ID
+  const folioEl = document.getElementById('pExp');
+  if (folioEl) {
+    folioEl.textContent = px.folio || px.expediente || ('EXP-'+PX_ID.slice(-8).toUpperCase());
+    if (px.folio) folioEl.style.color = 'var(--teal)';
+  }
   // Peso
   const pesoStr = px.peso ? px.peso+' kg' : '—';
   // Tel familiar
