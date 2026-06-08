@@ -2,6 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DentalOS">
+<link rel="apple-touch-icon" href="favicon.svg">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Abonos & Pagos</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -99,6 +106,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'abonos';
 let allAbonos = [], allPacientes = [], allTrat = [], editId = null;
@@ -298,7 +306,7 @@ async function saveAbono() {
     if (editId) {
       await fsUpdate('abonos', editId, data);
     } else {
-      await fsCreate('abonos', data);
+      await DS.abonos.create(data);
       // Update tratamiento saldo
       if(typeof audit==='function') audit('CREATE_ABONO',{monto:data.monto,paciente:data.paciente||''})
       if (trat) {
@@ -332,7 +340,7 @@ async function deleteAbono(id) {
         await fsUpdate('tratamientos', a.tratId, {abonado:nuevoAbonado, saldo:nuevoSaldo, estado:nuevoEstado});
       }
     }
-    await fsDelete('abonos', id);
+    await DS.abonos.delete(id);
     showToast('Pago eliminado','success');
     if(typeof audit==='function') audit('DELETE_ABONO',{id:id||''});
     await loadAbonos();
@@ -350,6 +358,22 @@ function exportCSV() {
   const el=document.createElement('a');
   el.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   el.download=`abonos_${todayISO()}.csv`; el.click();
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>

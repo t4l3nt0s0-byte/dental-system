@@ -2,6 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DentalOS">
+<link rel="apple-touch-icon" href="favicon.svg">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Expedientes</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -162,6 +169,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'pacientes';
 let allPacientes = [], editId = null;
@@ -203,7 +211,7 @@ async function loadPacientes(reset = true) {
   if (reset) { allPacientes = []; _pxCursor = null; }
   try {
     // Sin orderBy en la query — evita índice compuesto, ordenamos en cliente
-    const { docs, next } = await fsGetPage('pacientes', _pxCursor, PAGE_SIZE, null);
+    const { docs, next } = await DS.pacientes.getPaged(_pxCursor, PAGE_SIZE);
     const sorted = docs.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
     allPacientes = reset ? sorted : [...allPacientes, ...sorted].sort(
       (a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es')
@@ -415,14 +423,14 @@ async function savePaciente() {
   };
   try {
     if (editId) {
-      await fsUpdate('pacientes', editId, data);
+      await DS.pacientes.update(editId, data);
       showToast('Paciente actualizado','success');
     if(typeof audit==='function') audit('UPDATE_PACIENTE',{nombre:document.getElementById('f-nombre')?.value||''});
     } else {
       const count = allPacientes.length + 1;
       data.expediente = 'P-' + String(count).padStart(3,'0');
       data.alta = new Date().toLocaleDateString('es-MX');
-      await fsCreate('pacientes', data);
+      await DS.pacientes.create(data);
       showToast('Paciente registrado','success');
     if(typeof audit==='function') audit('CREATE_PACIENTE',{nombre:document.getElementById('f-nombre')?.value||''});
     }
@@ -553,6 +561,22 @@ function exportCSV() {
   a.download = `pacientes_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   showToast('Exportación completada','success');
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>

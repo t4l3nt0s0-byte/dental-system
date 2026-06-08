@@ -2,6 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DentalOS">
+<link rel="apple-touch-icon" href="favicon.svg">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Agenda</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -143,6 +150,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'agenda';
 let allCitas = [], allPacientes = [], allCatalogo = [];
@@ -213,18 +221,18 @@ async function loadCitas() {
     allCitas = snap.docs.map(d=>({id:d.id,...d.data()}));
   } catch(e) {
     // Fallback si no hay índice compuesto
-    allCitas = await fsGetAll('citas');
+    allCitas = await DS.citas.getAll().catch(()=>[]);
   }
 }
 async function loadPacientes() {
   // Cargar con caché — agenda solo necesita nombres para el selector
-  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc').limit(500));
+  allPacientes = await DS.pacientes.getAll(r=>r.limit(500)).catch(()=>[]);
   const sel = document.getElementById('f-paciente');
   sel.innerHTML = '<option value="">Seleccionar paciente...</option><option value="_nuevo">+ Paciente sin expediente</option>' +
     allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
 }
 async function loadCatalogo() {
-  allCatalogo = await fsGetAll('catalogo', r => r.orderBy('tratamiento','asc'));
+  allCatalogo = await DS.catalogo.getAll().catch(()=>[]);
   const sel = document.getElementById('f-tratamiento');
   sel.innerHTML = '<option value="">Sin especificar</option>' +
     allCatalogo.map(c=>`<option value="${c.tratamiento}">${c.tratamiento}</option>`).join('');
@@ -419,6 +427,22 @@ async function deleteCita(id) {
     renderDay(selectedDate);
     renderMonthStats();
   } catch(e) { handleError(e, 'agenda'); }
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>
