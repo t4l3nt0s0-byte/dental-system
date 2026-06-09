@@ -1,7 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DentalOS">
+<link rel="apple-touch-icon" href="favicon.svg">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentalOS · Planes & Precios</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -148,8 +156,37 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'planes';
+
+// ══════════════════════════════════════════════════════════════
+// MERCADOPAGO CHECKOUT PRO — Configuración
+// ─────────────────────────────────────────────────────────────
+// PASO 1: Reemplaza TU_PUBLIC_KEY con tu llave pública de MP:
+//   https://www.mercadopago.com.mx/settings/account/credentials
+//
+// PASO 2: Reemplaza 5215546940382 con tu número de WhatsApp:
+//   Formato: 5215546940382 (52 + 10 dígitos sin espacios)
+//
+// PASO 3: Cuando tengas Firebase Blaze activo, descomenta
+//   el bloque de Cloud Function en contratarPlan()
+// ══════════════════════════════════════════════════════════════
+const MP_CONFIG = {
+  publicKey:   'TEST-443de3cf-b8ed-4893-94d5-fdfb2ec1bdb5',
+  waNumber:    '5215546940382',
+  backendUrl:  '', // Activa cuando deploys la Cloud Function con Firebase Blaze
+};
+
+// Precios en MXN — modifica si cambias tus planes
+const PRECIOS_MP = {
+  basico:       { monto:299,   nombre:'Plan Básico',       id:'basico' },
+  profesional:  { monto:599,   nombre:'Plan Profesional',  id:'profesional' },
+  premium:      { monto:1199,  nombre:'Plan Premium',       id:'premium' },
+  'multi-3':    { monto:1999,  nombre:'Plan Multi 3',       id:'multi-3' },
+  'multi-10':   { monto:3499,  nombre:'Plan Multi 10',      id:'multi-10' },
+  enterprise:   { monto:0,     nombre:'Plan Enterprise',    id:'enterprise' },
+};
 
 const PLANES_DATA = [
   {
@@ -325,7 +362,6 @@ window.// ═══════════════════════�
 
 
 contratarPlan = async function(planKey, planNombre, precio) {
-  const plan = PRECIOS_MP[planKey] || {};
 
   // Enterprise → siempre WA (precio personalizado)
   if (planKey === 'enterprise' || precio === 0) {
@@ -334,8 +370,143 @@ contratarPlan = async function(planKey, planNombre, precio) {
     return;
   }
 
-  // Show payment modal
+  // Verificar que las credenciales estén configuradas
+  if (!MP_CONFIG.publicKey || MP_CONFIG.publicKey === 'TU_PUBLIC_KEY') {
+    // Sin credenciales → redirigir a WA para pago manual
+    const nombre  = SESSION?.user?.nombre || '';
+    const clinica = SESSION?.clinica?.nombre || '';
+    const msg = `Hola! Quiero contratar el *${planNombre}* de DentalOS.\n\n👤 ${nombre}\n🏥 ${clinica}\n💰 $${precio.toLocaleString('es-MX')} MXN/mes\n\n¿Cómo procedo con el pago?`;
+    window.open(`https://wa.me/${MP_CONFIG.waNumber}?text=${encodeURIComponent(msg)}`,'_blank');
+    return;
+  }
+
   showModalPago(planKey, planNombre, precio);
+};
+
+function showModalPago(planKey, planNombre, precio) {
+  const modal = document.getElementById('modalPago');
+  if (!modal) return;
+  document.getElementById('pagoNombrePlan').textContent = planNombre;
+  document.getElementById('pagoPrecio').textContent = `$${precio.toLocaleString('es-MX')} MXN/mes`;
+  document.getElementById('pagoDescripcion').textContent = `Suscripción mensual · Cancela cuando quieras`;
+  modal._planKey   = planKey;
+  modal._planNombre = planNombre;
+  modal._precio    = precio;
+  openModal('modalPago');
+}
+
+// ── PAGO CON CHECKOUT PRO ──────────────────────────────────
+window.pagarConMP = async function() {
+  const modal    = document.getElementById('modalPago');
+  const planKey  = modal._planKey;
+  const precio   = modal._precio;
+  const planNombre = modal._planNombre;
+  const btn      = document.getElementById('btnPagarMP');
+  if (!btn) return;
+  btn.disabled   = true;
+  btn.textContent = '⏳ Procesando...';
+
+  try {
+    const nombre  = SESSION?.user?.nombre || '';
+    const clinica = SESSION?.clinica?.nombre || '';
+    const email   = SESSION?.user?.email    || '';
+    const cId     = SESSION?.clinica?.id    || '';
+
+    // ══════════════════════════════════════════════════════
+    // OPCIÓN A — Con Firebase Function (PRODUCCIÓN)
+    // Descomenta esto cuando tengas Firebase Blaze activo
+    // y hayas desplegado la Cloud Function
+    // ══════════════════════════════════════════════════════
+    if (MP_CONFIG.backendUrl) {
+      const res = await fetch(MP_CONFIG.backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planKey, precio,
+          clinicaId: cId,
+          email, nombre, clinica,
+          // URLs de retorno — ajusta a tu dominio
+          successUrl: `${location.origin}${location.pathname}?status=approved&plan=${planKey}`,
+          failureUrl: `${location.origin}${location.pathname}?status=failure`,
+          pendingUrl: `${location.origin}${location.pathname}?status=pending`,
+        }),
+      });
+      if (!res.ok) throw new Error(`Backend error: ${res.status}`);
+      const data = await res.json();
+      if (data.init_point) {
+        // Guardar intención de pago en Firestore antes de redirigir
+        await db.collection('clinicas').doc(cId).update({
+          pagoEnProceso: planKey,
+          pagoIniciadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+        }).catch(() => {});
+        window.location.href = data.init_point;
+        return;
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // OPCIÓN B — WhatsApp manual (funciona sin backend)
+    // Se usa automáticamente si backendUrl está vacío
+    // ══════════════════════════════════════════════════════
+    const msg = `Hola! Quiero contratar el *${planNombre}* de DentalOS.\n\n` +
+      `👤 ${nombre}\n🏥 ${clinica}\n📧 ${email}\n💰 $${precio.toLocaleString('es-MX')} MXN/mes\n\n` +
+      `Por favor indícame cómo proceder con el pago.`;
+    closeModal('modalPago');
+    showToast('Te redirigimos a WhatsApp para completar el pago','info');
+    setTimeout(() => window.open(`https://wa.me/${MP_CONFIG.waNumber}?text=${encodeURIComponent(msg)}`,'_blank'), 500);
+
+  } catch(e) {
+    showToast('Error al procesar el pago: ' + e.message, 'error');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '💳 Pagar con MercadoPago';
+  }
+};
+
+// ── ACTIVAR PLAN TRAS PAGO EXITOSO ─────────────────────────
+// Llamada desde el webhook (Cloud Function) O desde checkMPReturn
+window.activarPlan = async function(planKey, paymentId) {
+  if (!SESSION?.clinica?.id) return;
+  try {
+    await db.collection('clinicas').doc(SESSION.clinica.id).update({
+      plan:              planKey,
+      planActivoDesde:   firebase.firestore.FieldValue.serverTimestamp(),
+      ultimoPagoId:      paymentId || 'manual',
+      ultimoPagoFecha:   firebase.firestore.FieldValue.serverTimestamp(),
+      pagoEnProceso:     null,
+    });
+    // Actualizar sesión local
+    if (SESSION.clinica) SESSION.clinica.plan = planKey;
+    audit('PLAN_ACTIVADO', { plan: planKey, paymentId: paymentId || 'manual' });
+    showToast('¡Plan ' + planKey + ' activado correctamente!','success');
+    setTimeout(() => location.reload(), 2000);
+  } catch(e) {
+    handleError(e, 'activarPlan');
+  }
+};
+
+// ── VERIFICAR RETORNO DE MERCADOPAGO ───────────────────────
+// MP redirige a planes.html?status=approved&plan=basico&payment_id=xxx
+(function checkMPReturn() {
+  const params    = new URLSearchParams(window.location.search);
+  const status    = params.get('status');
+  const planKey   = params.get('plan');
+  const paymentId = params.get('payment_id');
+  if (!status) return;
+  // Limpiar URL inmediatamente
+  history.replaceState({}, '', location.pathname);
+  if (status === 'approved' && planKey) {
+    activarPlan(planKey, paymentId);
+  } else if (status === 'failure') {
+    showToast('El pago no se completó. Intenta de nuevo o contáctanos por WhatsApp.', 'error');
+  } else if (status === 'pending') {
+    showToast('Pago pendiente de confirmación. Te notificaremos por email.', 'info');
+  }
+})();
+
+window.whatsappContacto = function() {
+  const msg = `Hola! Necesito información sobre planes de DentalOS para mi clínica dental.`;
+  window.open(`https://wa.me/${MP_CONFIG.waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
 };
 
 function showModalPago(planKey, planNombre, precio) {
@@ -426,10 +597,6 @@ window.activarPlan = async function(planKey, paymentId) {
   }
 })();
 
-window.whatsappContacto = function() {
-  const msg = `Hola! Necesito información sobre planes personalizados de DentalOS para mi clínica dental.`;
-  window.open(`https://wa.me/${MP_CONFIG.waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
-};
 </script>
 <!-- MODAL PAGO MERCADOPAGO -->
 <div class="modal-overlay" id="modalPago">
@@ -466,5 +633,21 @@ window.whatsappContacto = function() {
   </div>
 </div>
 
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
+</script>
 </body>
 </html>
