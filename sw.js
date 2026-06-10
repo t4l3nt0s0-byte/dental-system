@@ -1,11 +1,11 @@
 // ══════════════════════════════════════════════════════════════
-// DENTALOS — SERVICE WORKER
+// HERSANTYCH — SERVICE WORKER
 // Estrategia: App Shell + Cache First para recursos estáticos
 //             Network First para datos de Firebase
 //             Offline fallback cuando no hay red
 // ══════════════════════════════════════════════════════════════
 
-const VERSION     = 'dentalos-v1.0';
+const VERSION     = 'hersantych-v1.1';
 const CACHE_SHELL = VERSION + '-shell';
 const CACHE_PAGES = VERSION + '-pages';
 
@@ -68,7 +68,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(keys =>
       Promise.all(
         keys
-          .filter(key => key.startsWith('dentalos-') && !key.startsWith(VERSION))
+          .filter(key => key.startsWith('hersantych-') && !key.startsWith(VERSION))
           .map(key => {
             console.log('[SW] Deleting old cache:', key);
             return caches.delete(key);
@@ -157,18 +157,18 @@ self.addEventListener('push', event => {
   try {
     const data = event.data.json();
     event.waitUntil(
-      self.registration.showNotification(data.title || 'DentalOS', {
+      self.registration.showNotification(data.title || 'Hersantych', {
         body:    data.body    || '',
         icon:    data.icon    || '/dental-system/favicon.svg',
         badge:   data.badge   || '/dental-system/favicon.svg',
-        tag:     data.tag     || 'dentalos-notif',
+        tag:     data.tag     || 'hersantych-notif',
         data:    data.url     || '/dental-system/index.html',
         actions: data.actions || [],
         vibrate: [200, 100, 200],
       })
     );
   } catch(e) {
-    self.registration.showNotification('DentalOS', { body: event.data.text() });
+    self.registration.showNotification('Hersantych', { body: event.data.text() });
   }
 });
 

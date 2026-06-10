@@ -1,9 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#060D14"/>
-  <!-- Muela estilizada -->
-  <path d="M20 18 C20 14 24 12 28 12 C30 12 31 13 32 14 C33 13 34 12 36 12 C40 12 44 14 44 18 C44 22 42 24 41 26 C40 29 40 32 39 36 C38 40 37 44 35 46 C34 48 33 48 32 47 C31 48 30 48 29 46 C27 44 26 40 25 36 C24 32 24 29 23 26 C22 24 20 22 20 18Z" fill="#00C2A8"/>
-  <!-- Highlight superior -->
-  <path d="M27 14 C29 13 31 13 32 14 C31 15 29 15 27 14Z" fill="rgba(255,255,255,0.3)"/>
-  <!-- Línea central sutil -->
-  <line x1="32" y1="16" x2="32" y2="38" stroke="rgba(0,0,0,0.15)" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M20 18 C20 14 24 12 28 12 C30 12 31 13 32 14 C33 13 34 12 36 12 C40 12 44 14 44 18 C44 22 42 26 41 30 C40 36 39 44 37 50 C36 53 34 54 32 54 C30 54 28 53 27 50 C25 44 24 36 23 30 C22 26 20 22 20 18Z" fill="#00C2A8"/>
+  <line x1="32" y1="18" x2="32" y2="42" stroke="#060D14" stroke-width="2" stroke-dasharray="3,2"/>
+  <ellipse cx="27" cy="17" rx="4" ry="2.5" fill="rgba(255,255,255,0.2)"/>
 </svg>
