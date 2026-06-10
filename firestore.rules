@@ -2,40 +2,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ═══════════════════════════════════════════════════════════
-    // DENTALOS — RBAC COMPLETO
-    // Roles: owner > director > admin > doctor > recepcion > asistente
-    // Un solo get() por evaluación — sin get() anidados
-    // ═══════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════
+    // HERSANTYCH — FIRESTORE RULES v2.0
+    // Protección en 3 capas:
+    //   1. Autenticación obligatoria
+    //   2. Pertenencia a la clínica (tenantId)
+    //   3. Validaciones de negocio (saldos, límites, campos)
+    // ═══════════════════════════════════════════════════════
 
-    function authed() {
-      return request.auth != null;
-    }
+    // ── Helpers base ───────────────────────────────────────
+    function authed()    { return request.auth != null; }
+    function uid()       { return request.auth.uid; }
+    function incoming()  { return request.resource.data; }
+    function existing()  { return resource.data; }
 
-    // Leer doc del usuario actual (1 get() por regla — límite de Firestore)
+    // ── Leer datos del usuario actual (1 get por regla) ───
     function me() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
     }
 
-    // ── Helpers de rol ─────────────────────────────────────────
-    function isOwner()    { return authed() && me().rol == 'owner'; }
-    function isDirector() { return authed() && me().rol == 'director'; }
-    function isAdmin()    { return authed() && me().rol == 'admin'; }
-    function isDoctor()   { return authed() && me().rol == 'doctor'; }
-    function isSuperUser(){ return authed() && (me().rol == 'owner' || me().rol == 'director' || me().rol == 'admin'); }
+    // ── Roles ─────────────────────────────────────────────
+    function isOwner()     { return authed() && me().rol == 'owner'; }
+    function isDirector()  { return authed() && me().rol == 'director'; }
+    function isAdmin()     { return authed() && me().rol == 'admin'; }
+    function isDoctor()    { return authed() && me().rol == 'doctor'; }
+    function isSuperUser() {
+      return authed() && me().rol in ['owner','director','admin'];
+    }
 
-    // ── Pertenencia a clínica ──────────────────────────────────
-    // Sin get() anidado — usa campos del doc del usuario directamente
+    // ── Pertenencia a clínica ─────────────────────────────
     function belongsToClinica(clinicaId) {
       let d = me();
       return authed() && (
-        d.clinicaId     == clinicaId ||   // clínica base
-        d.clinicaActiva == clinicaId ||   // clínica activa (multi-sucursal)
-        d.orgId         == clinicaId      // propietario del org (orgId = clinicaId raíz)
+        d.clinicaId     == clinicaId ||
+        d.clinicaActiva == clinicaId ||
+        d.orgId         == clinicaId
       );
     }
 
-    // ── Puede administrar esta clínica ──────────────────────────
     function canAdminClinica(clinicaId) {
       let d = me();
       return authed() && (
@@ -45,135 +49,230 @@ service cloud.firestore {
       );
     }
 
-    // ══════════════════════════════════════════════════════════
-    // COLECCIONES GLOBALES
-    // ══════════════════════════════════════════════════════════
+    // ── Validadores de campos ─────────────────────────────
+    // Garantizan que el dato sea del tipo correcto aunque el frontend falle
 
-    // ── Usuarios ───────────────────────────────────────────────
-    // Lectura: cualquier usuario autenticado puede leer (para el selector de doctores, etc.)
-    // Escritura: solo admin+ puede crear/editar/eliminar
-    match /usuarios/{uid} {
+    function validString(val, maxLen) {
+      return val is string && val.size() > 0 && val.size() <= maxLen;
+    }
+
+    function validMonto(val) {
+      // Monto debe ser número positivo y no mayor a $999,999
+      return val is number && val > 0 && val <= 999999;
+    }
+
+    function validFecha(val) {
+      // Formato YYYY-MM-DD
+      return val is string && val.size() == 10;
+    }
+
+    function validEstadoCita() {
+      return incoming().estado in ['Agendado','En consulta','Completado','Cancelado','No asistió'];
+    }
+
+    function validEstadoTrat() {
+      return incoming().estado in ['Pendiente','En proceso','Completado','Cancelado'];
+    }
+
+    // ── Plan y límites ─────────────────────────────────────
+    function getPlan(clinicaId) {
+      return get(/databases/$(database)/documents/clinicas/$(clinicaId)).data.plan;
+    }
+
+    function planAllows(clinicaId, feature) {
+      let plan = getPlan(clinicaId);
+      // enterprise y premium pueden todo
+      if (plan in ['premium','enterprise','multi-3','multi-10']) { return true; }
+      // profesional: sin límite en pacientes pero sin algunas features
+      if (plan == 'profesional') { return feature != 'api_unlimited'; }
+      // basico: sin odontograma avanzado ni API
+      if (plan == 'basico') { return feature in ['citas','pacientes','abonos','tratamientos','catalogo']; }
+      // trial: acceso completo pero limitado en tiempo
+      return true;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // COLECCIONES GLOBALES
+    // ══════════════════════════════════════════════════════
+
+    match /usuarios/{userId} {
       allow read:   if authed();
       allow create: if authed() && (
-        request.auth.uid == uid ||   // auto-registro
-        isSuperUser()                // admin+ crea empleados
+        request.auth.uid == userId || isSuperUser()
       );
       allow update: if authed() && (
-        request.auth.uid == uid ||   // propio perfil
-        isSuperUser()                // admin+ edita
+        request.auth.uid == userId || isSuperUser()
       );
       allow delete: if isSuperUser();
     }
 
-    // ── Organizaciones ──────────────────────────────────────────
     match /organizaciones/{orgId} {
-      allow read:   if authed() && me().orgId == orgId;
-      allow write:  if isOwner() && me().orgId == orgId;
+      allow read:  if authed() && me().orgId == orgId;
+      allow write: if isOwner() && me().orgId == orgId;
     }
 
-    // ── Tokens del portal del paciente ─────────────────────────
     match /_tokens/{tokenId} {
-      allow read:   if true;  // público — el token ya es la autenticación
+      allow read:   if true;
       allow create: if authed();
       allow delete: if authed();
     }
 
-    // ── Global anónimo ──────────────────────────────────────────
-    match /_calificaciones_globales/{docId} {
-      allow create: if authed();
-      allow read:   if false;
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // CLÍNICAS — datos multi-nivel
-    // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════
+    // CLÍNICAS
+    // ══════════════════════════════════════════════════════
     match /clinicas/{clinicaId} {
-
-      // Doc de la clínica: leer si pertenece, editar si es admin+
       allow read:   if belongsToClinica(clinicaId);
       allow create: if authed();
-      allow update: if canAdminClinica(clinicaId);
+      allow update: if canAdminClinica(clinicaId) && (
+        // No se puede cambiar el plan directamente desde el cliente
+        // El plan solo lo cambia el webhook de MercadoPago (sistema)
+        !('plan' in incoming().diff(existing()).affectedKeys()) ||
+        isOwner()
+      );
       allow delete: if isOwner();
 
-      // ── Sub-colecciones operativas ─────────────────────────
-      // Todos los miembros de la clínica pueden leer y escribir
+      // ── PACIENTES ───────────────────────────────────────
       match /pacientes/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
+        allow read: if belongsToClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId) &&
+          validString(incoming().nombre, 120) &&
+          incoming().keys().hasAll(['nombre']) &&
+          // No se puede crear con saldo negativo
+          (!('saldo' in incoming()) || incoming().saldo >= 0);
+        allow update: if belongsToClinica(clinicaId) &&
+          // nombre obligatorio y válido
+          (!('nombre' in incoming()) || validString(incoming().nombre, 120));
+        allow delete: if canAdminClinica(clinicaId);
       }
+
+      // ── CITAS ────────────────────────────────────────────
       match /citas/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
+        allow read: if belongsToClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId) &&
+          incoming().keys().hasAll(['fecha','hora']) &&
+          validFecha(incoming().fecha) &&
+          validString(incoming().hora, 5) &&
+          // Estado válido al crear
+          (!('estado' in incoming()) || incoming().estado in ['Agendado','En consulta']);
+        allow update: if belongsToClinica(clinicaId) &&
+          (!('estado' in incoming()) || validEstadoCita());
+        allow delete: if belongsToClinica(clinicaId);
       }
-      match /tratamientos/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
+
+      // ── ABONOS ───────────────────────────────────────────
       match /abonos/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
+        allow read: if belongsToClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId) &&
+          // Monto obligatorio y válido
+          incoming().keys().hasAll(['monto','expId']) &&
+          validMonto(incoming().monto) &&
+          // Forma de pago válida
+          (!('forma' in incoming()) ||
+           incoming().forma in ['Efectivo','Tarjeta','Transferencia','Cheque','Otro']);
+        allow update: if canAdminClinica(clinicaId);
+        // Solo admin+ puede eliminar pagos (auditoría)
+        allow delete: if canAdminClinica(clinicaId);
       }
-      match /cotizaciones/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
+
+      // ── TRATAMIENTOS ─────────────────────────────────────
+      match /tratamientos/{docId} {
+        allow read: if belongsToClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId) &&
+          incoming().keys().hasAll(['nombre','expId']) &&
+          validString(incoming().nombre, 200) &&
+          // Costo debe ser positivo si se incluye
+          (!('costo' in incoming()) || (incoming().costo is number && incoming().costo >= 0)) &&
+          // Pagado no puede superar el costo al crear
+          (!('pagado' in incoming()) || !('costo' in incoming()) ||
+           incoming().pagado <= incoming().costo);
+        allow update: if belongsToClinica(clinicaId) &&
+          (!('estado' in incoming()) || validEstadoTrat()) &&
+          // Pagado nunca puede superar costo (previene el bug de $50,600)
+          (!('pagado' in incoming()) || !('costo' in incoming()) ||
+           incoming().pagado <= incoming().costo * 1.1); // 10% tolerancia para cargos/IVA
+        allow delete: if canAdminClinica(clinicaId);
       }
+
+      // ── CATÁLOGO ─────────────────────────────────────────
       match /catalogo/{docId} {
         allow read:  if belongsToClinica(clinicaId);
-        allow write: if canAdminClinica(clinicaId);
+        allow write: if canAdminClinica(clinicaId) &&
+          (!('precio' in incoming()) ||
+           (incoming().precio is number && incoming().precio >= 0 && incoming().precio <= 999999));
       }
+
+      // ── DOCTORES ─────────────────────────────────────────
       match /doctores/{docId} {
         allow read:  if belongsToClinica(clinicaId);
         allow write: if canAdminClinica(clinicaId);
       }
 
-      // ── Sub-colecciones clínicas ───────────────────────────
+      // ── INVENTARIO ───────────────────────────────────────
+      match /inventario/{docId} {
+        allow read:  if belongsToClinica(clinicaId);
+        allow write: if canAdminClinica(clinicaId) &&
+          (!('stock' in incoming()) || (incoming().stock is number && incoming().stock >= 0));
+      }
+
+      // ── COLECCIONES CLÍNICAS (doctor + recepción) ────────
       match /odontogramas/{pxId} {
         allow read, write: if belongsToClinica(clinicaId);
         match /historial/{hId} {
           allow read, write: if belongsToClinica(clinicaId);
         }
       }
-      match /rx/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
-      match /recetas/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
-      match /notas-clinicas/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
-
-      // ── Sub-colecciones financieras ────────────────────────
-      match /cortes/{docId} {
-        allow read:  if belongsToClinica(clinicaId);
-        allow write: if canAdminClinica(clinicaId);
-      }
-      match /recibos/{docId} {
-        allow read, write: if belongsToClinica(clinicaId);
-      }
-      match /inventario/{docId} {
-        allow read:  if belongsToClinica(clinicaId);
-        allow write: if canAdminClinica(clinicaId);
-      }
+      match /rx/{docId}             { allow read, write: if belongsToClinica(clinicaId); }
+      match /notas-clinicas/{docId} { allow read, write: if belongsToClinica(clinicaId); }
+      match /cotizaciones/{docId}   { allow read, write: if belongsToClinica(clinicaId); }
+      match /recibos/{docId}        { allow read, write: if belongsToClinica(clinicaId); }
       match /ofertas/{docId} {
         allow read:  if belongsToClinica(clinicaId);
         allow write: if canAdminClinica(clinicaId);
       }
 
-      // ── Sub-colecciones del sistema (admin+ solo) ──────────
+      // ── COLECCIONES FINANCIERAS (admin+ solo) ─────────────
+      match /cortes/{docId} {
+        allow read:  if belongsToClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId);
+        allow update, delete: if canAdminClinica(clinicaId);
+      }
+
+      // ── SISTEMA ───────────────────────────────────────────
       match /apiKeys/{keyId} {
         allow read, write: if canAdminClinica(clinicaId);
       }
-      match /auditoria/{docId} {
-        allow read:   if canAdminClinica(clinicaId);
-        allow create: if belongsToClinica(clinicaId); // cualquiera puede generar eventos
-        allow update, delete: if false; // inmutables
+      match /analytics/{docId} {
+        // Solo lectura desde cliente — escritura solo por Cloud Functions (sistema)
+        allow read:  if belongsToClinica(clinicaId);
+        allow write: if false; // Solo Cloud Functions escriben aquí
+        match /{subDoc} { allow read: if belongsToClinica(clinicaId); allow write: if false; }
       }
-      match /backups/{backupId} {
+      match /auditoria/{docId} {
+        allow read:            if canAdminClinica(clinicaId);
+        allow create:          if belongsToClinica(clinicaId);
+        allow update, delete:  if false; // INMUTABLE
+      }
+      match /backups/{docId} {
         allow read:   if canAdminClinica(clinicaId);
         allow create: if belongsToClinica(clinicaId);
-        allow update, delete: if false; // inmutables
+        allow update, delete: if false;
       }
-      match /tokens/{tokenId} {
+      match /apiLogs/{docId} {
+        allow read:   if canAdminClinica(clinicaId);
+        allow create: if belongsToClinica(clinicaId);
+        allow update, delete: if false;
+      }
+      match /apiRateLimits/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /_counters/{docId} {
+        allow read, write: if belongsToClinica(clinicaId);
+      }
+      match /tokens/{docId} {
         allow read, write: if canAdminClinica(clinicaId);
       }
 
-      // ── Fallback para otras subcolecciones ─────────────────
+      // ── Fallback (otras subcolecciones futuras) ────────────
       match /{collection}/{docId} {
         allow read, write: if belongsToClinica(clinicaId);
       }

@@ -1,8 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Métricas</title>
+<meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Métricas</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
@@ -52,7 +69,7 @@
 @media(max-width:1000px){.kpi-grid{grid-template-columns:1fr 1fr}.dash-grid,.dash-grid-3{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -180,6 +197,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'metricas';
 let ALL_CITAS=[], ALL_ABONOS=[], ALL_PACIENTES=[], ALL_TRATS=[], ALL_COTIZACIONES=[];
@@ -804,13 +822,46 @@ function renderChartEstados(){
 initSession('metricas').then(async session=>{
   if(!session) return;
   const {clinica}=session;
-  const safeGet=async(col)=>{try{return await fsGetAll(col);}catch(e){return[];}};
-  const [citas,abonos,pacientes,trats,cotizaciones]=await Promise.all([
-    safeGet('citas'),safeGet('abonos'),safeGet('pacientes'),
-    safeGet('tratamientos'),safeGet('cotizaciones'),
-  ]);
+  const safeGet=async(col,q)=>{try{return await fsGetAll(col,q);}catch(e){return[]}};
+  // ── Leer analytics precalculados si existen (Cloud Function los escribe) ──
+  // Si no existen → fallback a cálculo directo con rango de fechas (no colección completa)
+  const mesISO  = new Date().toISOString().slice(0,7); // '2026-06'
+  const mesAnt  = (()=>{const d=new Date();d.setMonth(d.getMonth()-1);return d.toISOString().slice(0,7);})();
+  let analyticsDoc = null;
+  try {
+    const aSnap = await db.collection('clinicas').doc(clinica.id)
+      .collection('analytics').doc('monthly_' + mesISO).get();
+    if (aSnap.exists) analyticsDoc = aSnap.data();
+  } catch(e) {}
+
+  let citas,abonos,pacientes,trats,cotizaciones;
+
+  if (analyticsDoc) {
+    // ✅ PATH RÁPIDO — leer 1 documento precalculado (1 read vs 500+)
+    // Los KPIs ya están calculados, solo necesitamos listas para las gráficas
+    citas        = analyticsDoc._citas       || [];
+    abonos       = analyticsDoc._abonos      || [];
+    pacientes    = analyticsDoc._pacientes   || [];
+    trats        = analyticsDoc._trats       || [];
+    cotizaciones = analyticsDoc._cotizaciones|| [];
+    metaMensual  = analyticsDoc.metaMensual  || 0;
+  } else {
+    // ⚡ PATH FALLBACK — filtrar por rango de fechas (NO carga toda la colección)
+    const desde = mesISO + '-01';
+    const hasta = mesISO + '-31';
+    const desdeAnt = mesAnt + '-01';
+    const hastaAnt = mesAnt + '-31';
+    [citas, abonos, pacientes, trats, cotizaciones] = await Promise.all([
+      safeGet('citas',        r=>r.where('fecha','>=',desde).where('fecha','<=',hasta)),
+      safeGet('abonos',       r=>r.where('fecha','>=',desde).where('fecha','<=',hasta)),
+      safeGet('pacientes',    r=>r.limit(300)),
+      safeGet('tratamientos', r=>r.limit(300)),
+      safeGet('cotizaciones', r=>r.limit(100)),
+    ]);
+    try{const cSnap=await db.collection('clinicas').doc(clinica.id).get();metaMensual=cSnap.data()?.metaMensual||0;}catch(e){}
+  }
+
   ALL_CITAS=citas;ALL_ABONOS=abonos;ALL_PACIENTES=pacientes;ALL_TRATS=trats;ALL_COTIZACIONES=cotizaciones;
-  try{const cSnap=await db.collection('clinicas').doc(clinica.id).get();metaMensual=cSnap.data()?.metaMensual||0;}catch(e){}
 
   // Mostrar período
   const d=new Date();
@@ -836,6 +887,22 @@ initSession('metricas').then(async session=>{
   try{renderChartHoras();}catch(e){console.warn(e);}
   try{renderChartEstados();}catch(e){console.warn(e);}
 });
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
 </script>
 </body>
 </html>

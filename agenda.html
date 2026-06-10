@@ -2,15 +2,24 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00C2A8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DentalOS">
-<link rel="apple-touch-icon" href="favicon.svg">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Agenda</title>
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Agenda</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -52,7 +61,7 @@
 @media(max-width:900px){.agenda-layout{grid-template-columns:1fr}.cal-wrap{position:static}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -293,12 +302,12 @@ function renderDay(iso) {
         <div class="cita-chips">
           <span class="badge ${estadoClass[c.estado]||'badge-blue'}">${c.estado||'Agendado'}</span>
           ${c.rx==='Sí'?'<span class="badge badge-purple">📷 RX</span>':''}
-          ${c.tel?`<span class="badge badge-blue" style="cursor:pointer" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te recordamos tu cita el ${iso} a las ${c.hora} en DentalOS. ¿Confirmas tu asistencia?')">💬 ${c.tel}</span>`:''}
+          ${c.tel?`<span class="badge badge-blue" style="cursor:pointer" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te recordamos tu cita el ${iso} a las ${c.hora} en Hersantych. ¿Confirmas tu asistencia?')">💬 ${c.tel}</span>`:''}
         </div>
       </div>
       <div class="cita-actions">
         <button class="btn btn-ghost btn-sm btn-icon" onclick="editCita('${c.id}')" title="Editar">✏️</button>
-        ${c.tel?`<button class="btn btn-ghost btn-sm btn-icon" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te confirmamos tu cita mañana a las ${c.hora} en DentalOS. ¡Te esperamos!')" title="WhatsApp">💬</button>`:''}
+        ${c.tel?`<button class="btn btn-ghost btn-sm btn-icon" onclick="whatsapp('${c.tel}','Hola ${(c.paciente||'').split(' ')[0]}, te confirmamos tu cita mañana a las ${c.hora} en Hersantych. ¡Te esperamos!')" title="WhatsApp">💬</button>`:''}
         <button class="btn btn-ghost btn-sm btn-icon" style="color:var(--red)" onclick="deleteCita('${c.id}')" title="Eliminar">🗑️</button>
       </div>
     </div>`).join('');
@@ -331,7 +340,7 @@ function updateWAPreview() {
   let nombre = '';
   if (expId && expId !== '_nuevo') { const px=allPacientes.find(p=>p.id===expId); nombre=px?.nombre?.split(' ')[0]||''; }
   else nombre = document.getElementById('f-nombre-libre')?.value?.split(' ')[0]||'Paciente';
-  const msg = `Hola ${nombre}, te confirmamos tu cita el ${fecha} a las ${hora}${trat?' para '+trat:''} en DentalOS. ¿Confirmas tu asistencia?`;
+  const msg = `Hola ${nombre}, te confirmamos tu cita el ${fecha} a las ${hora}${trat?' para '+trat:''} en Hersantych. ¿Confirmas tu asistencia?`;
   document.getElementById('whatsappPreview').textContent = tel ? '💬 ' + msg : '';
   const btnWA = document.getElementById('btnWaSend');
   btnWA.style.display = tel ? 'inline-flex' : 'none';
@@ -401,7 +410,46 @@ async function saveCita() {
     rx: document.getElementById('f-rx').value,
   };
   const btn = document.getElementById('btnSaveCita');
-  btn.disabled=true; btn.textContent='Guardando...';
+  btn.disabled=true; btn.textContent='Verificando...'
+
+  // ── Validar citas dobles ─────────────────────────────────
+  // Verificar si el doctor ya tiene cita en el mismo horario
+  const doctorSel = document.getElementById('f-doctor')?.value || '';
+  if (!editId && fecha && hora && doctorSel) {
+    try {
+      const citasDelDia = allCitas.filter(c =>
+        c.fecha === fecha &&
+        c.doctor === doctorSel &&
+        c.estado !== 'Cancelado'
+      );
+      // Calculate time overlap: does new cita overlap with any existing?
+      const horaMin    = parseInt(hora.replace(':',''));
+      const durMin     = parseInt(document.getElementById('f-duracion').value)||60;
+      const horaFinMin = horaMin + durMin;
+
+      const conflicto = citasDelDia.find(c => {
+        const cMin    = parseInt((c.hora||'00:00').replace(':',''));
+        const cFin    = cMin + (c.duracion||60);
+        // Overlap: new starts before existing ends AND new ends after existing starts
+        return horaMin < cFin && horaFinMin > cMin;
+      });
+
+      if (conflicto) {
+        const ok = await confirmDialog(
+          '⚠️ Conflicto de agenda\n\n' +
+          `${doctorSel} ya tiene:\n` +
+          `  ${conflicto.hora} · ${conflicto.paciente||'Paciente'} · ${conflicto.tratamiento||''}\n\n` +
+          '¿Deseas guardar de todas formas?'
+        );
+        if (!ok) {
+          btn.disabled=false; btn.textContent='Guardar cita';
+          return;
+        }
+      }
+    } catch(e) { /* si falla la validación, permitir guardar */ }
+  }
+
+  btn.textContent='Guardando...';
   try {
     if(editId) await fsUpdate('citas',editId,data);
     else await fsCreate('citas',data);
