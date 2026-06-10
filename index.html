@@ -2,8 +2,25 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Dashboard</title>
+<style>
+/* Critical CSS — instant background, no flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade content only — sidebar stays visible immediately */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+body.loading .sidebar{opacity:1}
+.main{margin-left:0}
+@media(min-width:768px){.main{margin-left:240px}}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
@@ -223,7 +240,7 @@
 </style>
 
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -245,7 +262,7 @@
   </div>
   <div class="content" id="mainContent">
   <!-- Banner de pausa del doctor -->
-  <div id="pausaBanner" style="display:none;background:linear-gradient(135deg,rgba(244,185,66,.15),rgba(244,185,66,.05));border:1px solid rgba(244,185,66,.3);border-radius:var(--r);padding:12px 18px;margin-bottom:14px;font-size:.85rem;font-weight:600;color:var(--gold);display:flex;align-items:center;justify-content:space-between">
+  <div id="pausaBanner" style="display:none;background:linear-gradient(135deg,rgba(244,185,66,.15),rgba(244,185,66,.05));border:1px solid rgba(244,185,66,.3);border-radius:var(--r);padding:12px 18px;margin-bottom:14px;font-size:.85rem;font-weight:600;color:var(--gold);align-items:center;justify-content:space-between">
     <span id="pausaBannerTxt">▶️ Listo para el siguiente paciente</span>
     <button onclick="document.getElementById('pausaBanner').style.display='none'" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;padding:0">✕</button>
   </div>
@@ -346,6 +363,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'index';
 let ALL_CITAS=[], ALL_ABONOS=[], ALL_PACIENTES=[], ALL_TRATS=[], ALL_COTIZACIONES=[], ALL_DOCTORES=[];
@@ -461,6 +479,8 @@ initSession('any').then(async session=>{
   } catch(e) { metaMensual=0; }
 
   try {
+    document.body.classList.remove('loading');
+    document.body.classList.add('loaded');
     renderDashboard(clinica,user);
   } catch(e) {
     console.error('Error en renderDashboard:', e);
@@ -493,7 +513,7 @@ function renderDashboard(clinica,user){
   <!-- GREETING -->
   <div class="greeting">
     <div class="greeting-title">${greeting}, ${nombre} ${emoji}</div>
-    <div class="greeting-sub">${clinica.nombre||'DentalOS'}</div>
+    <div class="greeting-sub">${clinica.nombre||'Hersantych'}</div>
   </div>
 
   <!-- MÉTRICAS DEL DÍA -->
@@ -1812,7 +1832,7 @@ window.confirmarFinCita = confirmarFinCita;
 document.addEventListener('visibilitychange', async ()=>{
   if(document.visibilityState==='visible'){
     try{
-      const px = await fsGetAll('pacientes');
+      const px = await fsGetAll('pacientes',r=>r.limit(300));
       if(px&&px.length) ALL_PACIENTES=px;
       // Re-renderizar solo En Consulta (que usa datos de paciente)
       if(typeof renderEnConsulta==='function') renderEnConsulta();
@@ -1822,6 +1842,22 @@ document.addEventListener('visibilitychange', async ()=>{
   }
 });
 
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
 </script>
 </body>
 </html>

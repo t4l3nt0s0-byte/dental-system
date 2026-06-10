@@ -338,6 +338,14 @@ async function initSession(requiredPage) {
   });
 
   return new Promise(function(resolve) {
+    // Show body immediately if Firebase already has a cached session
+    // This prevents the black flash on page-to-page navigation
+    if (auth.currentUser) {
+      if (document.body) {
+        document.body.classList.remove('loading');
+        document.body.classList.add('loaded');
+      }
+    }
     var done = false;
     var unsubscribe = auth.onAuthStateChanged(function(user) {
       if (done) return;
@@ -357,7 +365,7 @@ async function initSession(requiredPage) {
       db.collection('usuarios').doc(user.uid).get()
         .then(function(userSnap) {
           // Sin datos de usuario: sesión de Auth sin registro Firestore
-          if (!userSnap.exists) { resolve(null); return; }
+          if (!userSnap.exists) { if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');} resolve(null); return; }
 
           var userData = userSnap.data();
           if (userData.activo === false) {
@@ -368,13 +376,13 @@ async function initSession(requiredPage) {
           // ── Multi-sucursal: owner/director usan clinicaActiva o su clinicaId base ──
           var rol = userData.rol || 'recepcion';
           var clinicaId = userData.clinicaActiva || userData.clinicaId;
-          if (!clinicaId) { resolve(null); return; }
+          if (!clinicaId) { if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');} resolve(null); return; }
           // orgId: si no está seteado, usar clinicaId como raíz de la organización
           var orgId = userData.orgId || userData.clinicaId || clinicaId;
 
           db.collection('clinicas').doc(clinicaId).get()
             .then(function(clinicaSnap) {
-              if (!clinicaSnap.exists) { resolve(null); return; }
+              if (!clinicaSnap.exists) { if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');} resolve(null); return; }
 
               var clinicaData = Object.assign({ id: clinicaId }, clinicaSnap.data());
 
@@ -447,15 +455,24 @@ async function initSession(requiredPage) {
                 if (typeof showDemoBanner === 'function') showDemoBanner();
               }, 2000);
 
+              // Fade in body after auth + data is ready
+              if (document.body) {
+                document.body.classList.remove('loading');
+                document.body.classList.add('loaded');
+              }
+              // Dispatch ready event (clears fallback timer)
+              document.dispatchEvent(new Event('hersantych:ready'));
               resolve(SESSION);
             })
             .catch(function(e) {
               console.warn('initSession clinica:', e.message);
+              if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');}
               resolve(null);
             });
         })
         .catch(function(e) {
           console.warn('initSession usuario:', e.message);
+          if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');}
           resolve(null);
         });
     });
@@ -1494,6 +1511,23 @@ window.ROLES   = ROLES;
 window.db      = db;
 window.auth    = auth;
 window.initSession = initSession;
+
+// ── FALLBACK: garantiza que el body siempre sea visible ──────
+// Si initSession tarda más de 600ms o falla silenciosamente,
+// el body se hace visible de todas formas (evita pantalla negra infinita)
+window.addEventListener('DOMContentLoaded', function() {
+  // Fallback timer: máximo 600ms de pantalla oculta
+  var _fadeTimer = setTimeout(function() {
+    if (document.body) {
+      document.body.classList.remove('loading');
+      document.body.classList.add('loaded');
+    }
+  }, 300);
+  // Limpiar el timer si initSession ya hizo el fade antes
+  document.addEventListener('hersantych:ready', function() {
+    clearTimeout(_fadeTimer);
+  });
+});
 window.logout  = logout;
 window.clinicaCol = clinicaCol;
 window.clinicaDoc = clinicaDoc;
