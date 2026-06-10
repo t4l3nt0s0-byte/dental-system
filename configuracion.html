@@ -2,8 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Configuración del Consultorio</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Configuración del Consultorio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -135,7 +141,7 @@
                 <div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#060D14" id="checkDefault">✓</div>
                 <div style="font-size:2.8rem;margin-bottom:8px">🦷</div>
                 <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:3px">Ícono predeterminado</div>
-                <div style="font-size:.68rem;color:var(--text-muted)">El ícono de muela de DentalOS</div>
+                <div style="font-size:.68rem;color:var(--text-muted)">El ícono de muela de Hersantych</div>
               </div>
 
               <!-- OPCIÓN B: Logo personalizado -->
@@ -168,7 +174,7 @@
             <!-- NOMBRE -->
             <div class="form-group">
               <label class="form-label">Nombre del consultorio *</label>
-              <input class="form-input" id="cf-nombre" placeholder="DentalOS" oninput="markDirty()">
+              <input class="form-input" id="cf-nombre" placeholder="Hersantych" oninput="markDirty()">
             </div>
             <div class="form-group">
               <label class="form-label">Eslogan / descripción corta</label>
@@ -280,7 +286,7 @@
           </div>
           <div class="section-card">
             <div class="section-title">💎 Plan & Suscripción</div>
-            <div class="section-sub">Gestiona tu plan de DentalOS.</div>
+            <div class="section-sub">Gestiona tu plan de Hersantych.</div>
             <div id="planInfo" style="margin-bottom:14px;font-size:.82rem;color:var(--text-muted)"></div>
             <a href="planes.html" class="btn btn-primary">💎 Ver planes y precios</a>
           </div>
@@ -446,6 +452,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'configuracion';
 
@@ -814,19 +821,19 @@ window.exportarTodo = function() {
     showToast('Exportando datos...','info');
     try {
       const [pacientes,tratamientos,abonos,citas,catalogo,inventario,recibos,cotizaciones] = await Promise.all([
-        fsGetAll('pacientes'),
-        fsGetAll('tratamientos'),
-        fsGetAll('abonos'),
-        fsGetAll('citas'),
-        fsGetAll('catalogo'),
-        fsGetAll('inventario'),
-        fsGetAll('recibos'),
-        fsGetAll('cotizaciones'),
+        fsGetAll('pacientes',    r=>r.limit(500)),
+        fsGetAll('tratamientos', r=>r.limit(500)),
+        fsGetAll('abonos',       r=>r.limit(1000)),
+        fsGetAll('citas',        r=>r.limit(1000)),
+        fsGetAll('catalogo',     r=>r.limit(200)),
+        fsGetAll('inventario',   r=>r.limit(200)),
+        fsGetAll('recibos',      r=>r.limit(500)),
+        fsGetAll('cotizaciones',r=>r.limit(200)),
       ]);
       // Intentar también rx y notas clínicas
       let rx=[], notas=[];
-      try { rx    = await fsGetAll('rx'); } catch(e){}
-      try { notas = await fsGetAll('notas-clinicas'); } catch(e){}
+      try { rx    = await fsGetAll('rx',r=>r.limit(200)); } catch(e){}
+      try { notas = await fsGetAll('notas-clinicas',r=>r.limit(200)); } catch(e){}
 
       const backup = {
         version: '2.0',
@@ -877,14 +884,14 @@ async function ejecutarRestauracion(file) {
     const text = await file.text();
     const backup = JSON.parse(text);
     if (!backup.pacientes && !backup.catalogo) {
-      addLog('❌ Archivo inválido — no es un backup de DentalOS','var(--red)'); return;
+      addLog('❌ Archivo inválido — no es un backup de Hersantych','var(--red)'); return;
     }
     addLog(`📋 Backup: <strong>${backup.clinica||'—'}</strong> · ${backup.exportadoEl?.slice(0,10)||''} · v${backup.version||'1.0'}`,'var(--teal)');
     addLog(`📊 Contiene: ${backup.pacientes?.length||0} pacientes · ${backup.tratamientos?.length||0} trats · ${backup.abonos?.length||0} abonos · ${backup.catalogo?.length||0} catálogo`);
     addLog('—————————————————————');
 
     let totOk=0, totSkip=0, totErr=0;
-    const existing = await fsGetAll('pacientes');
+    const existing = await fsGetAll('pacientes',r=>r.limit(500));
     const existNames = new Set(existing.map(p=>(p.nombre||'').toUpperCase().trim()));
 
     // Restaurar pacientes
@@ -906,7 +913,7 @@ async function ejecutarRestauracion(file) {
     if (backup.catalogo?.length) {
       addLog(`📚 Restaurando ${backup.catalogo.length} items del catálogo...`);
       let ok=0;
-      const existCat = await fsGetAll('catalogo');
+      const existCat = await fsGetAll('catalogo',r=>r.limit(200));
       const existTrats = new Set(existCat.map(c=>(c.tratamiento||'').toLowerCase()));
       for (const c of backup.catalogo) {
         if (!c.tratamiento || existTrats.has(c.tratamiento.toLowerCase())) continue;
@@ -956,7 +963,7 @@ const DOC_COLORS = ['#00C2A8','#4A9EFF','#F4B942','#A78BFA','#34D399','#FF6B6B',
 let allDoctores = [], editDoctorId = null, selectedDocColor = '#00C2A8';
 
 async function loadDoctores(){
-  allDoctores = await fsGetAll('doctores');
+  allDoctores = await fsGetAll('doctores',r=>r.limit(50));
   renderDoctoresList();
   renderDocColorGrid();
 }
@@ -1206,7 +1213,7 @@ async function borrarDatosDemo() {
     </div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Nombre del consultorio *</label>
-        <input class="form-input" id="suc-nombre" placeholder="Ej. DentalOS Norte"></div>
+        <input class="form-input" id="suc-nombre" placeholder="Ej. Hersantych Norte"></div>
       <div class="form-group"><label class="form-label">Ciudad / Ubicación</label>
         <input class="form-input" id="suc-ciudad" placeholder="Ciudad de México"></div>
       <div class="form-group"><label class="form-label">Dirección</label>
@@ -1228,5 +1235,21 @@ async function borrarDatosDemo() {
   </div>
 </div>
 
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
+</script>
 </body>
 </html>

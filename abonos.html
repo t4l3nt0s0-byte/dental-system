@@ -127,7 +127,7 @@ initSession('any').then(async session => {
 });
 
 async function loadAbonos() {
-  allAbonos = await fsGetAll('abonos');
+  allAbonos = await fsGetAll('abonos',r=>r.limit(500));
   renderTable();
   renderSummary();
 }
@@ -138,7 +138,7 @@ async function loadPacientes() {
     allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
 }
 async function loadTrat() {
-  allTrat = await fsGetAll('tratamientos');
+  allTrat = await fsGetAll('tratamientos',r=>r.limit(200));
 }
 
 window.loadTratsByPx = function() {

@@ -1,8 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Reportes</title>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Reportes</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -112,6 +119,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'reportes';
@@ -140,12 +148,16 @@ async function genReporte(tipo) {
   document.getElementById('previewTitle').textContent = `${titles[tipo]||tipo} · ${desde} a ${hasta}`;
   document.getElementById('btnCSVPreview').onclick = ()=>exportCSV(tipo);
 
-  // Load data
+  // ── Carga filtrada por rango de fechas — NO carga toda la colección ──
+  // Con fecha, Firestore solo lee el período seleccionado (~90% menos reads)
+  const desdeISO = desde || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const hastaISO = hasta || new Date().toISOString().split('T')[0];
+
   let [trat, abonos, pxList, citas] = await Promise.all([
-    fsGetAll('tratamientos'),
-    fsGetAll('abonos'),
-    fsGetAll('pacientes', r=>r.orderBy('nombre','asc')),
-    fsGetAll('citas'),
+    fsGetAll('tratamientos', r=>r.limit(500)),
+    fsGetAll('abonos', r=>r.where('fecha','>=',desdeISO).where('fecha','<=',hastaISO)),
+    fsGetAll('pacientes', r=>r.limit(500)),
+    fsGetAll('citas',   r=>r.where('fecha','>=',desdeISO).where('fecha','<=',hastaISO)),
   ]);
 
   // Filter by date where applicable
@@ -157,7 +169,7 @@ async function genReporte(tipo) {
   let html = '';
   const headerHtml = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center">
-      <div><div style="font-weight:700;font-size:.88rem">${clinicaInfo?.nombre||'Hersantych Dental'}</div><div style="font-size:.72rem;color:var(--text-muted)">${titles[tipo]} · ${desde} al ${hasta}</div></div>
+      <div><div style="font-weight:700;font-size:.88rem">${clinicaInfo?.nombre||'Hersantych'}</div><div style="font-size:.72rem;color:var(--text-muted)">${titles[tipo]} · ${desde} al ${hasta}</div></div>
       <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim)">Generado: ${todayISO()}</div>
     </div>`;
 
@@ -192,7 +204,7 @@ async function genReporte(tipo) {
       <thead><tr><th>Paciente</th><th>Tratamiento</th><th>Costo total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th>Teléfono</th></tr></thead>
       <tbody>${conAdeudo.map(t=>{
         const px=pxList.find(p=>p.id===t.expId);
-        return`<tr><td style="font-weight:600;color:var(--text)">${t.paciente||'—'}</td><td>${t.tratamiento||'—'}</td><td style="font-family:var(--font-mono)">${fmtMXN(t.costo)}</td><td style="font-family:var(--font-mono);color:var(--green)">${fmtMXN(t.abonado)}</td><td style="font-family:var(--font-mono);color:var(--red);font-weight:700">${fmtMXN(t.saldo)}</td><td><span class="badge badge-gold" style="font-size:.65rem">${t.estado||'—'}</span></td><td>${px?.tel?`<button class="btn btn-ghost btn-sm" onclick="whatsapp('${px.tel}','Hola ${t.paciente?.split(' ')[0]||''}, te recordamos que tienes un saldo pendiente de ${fmtMXN(t.saldo)} en Hersantych Dental.')">💬</button>`:'—'}</td></tr>`;
+        return`<tr><td style="font-weight:600;color:var(--text)">${t.paciente||'—'}</td><td>${t.tratamiento||'—'}</td><td style="font-family:var(--font-mono)">${fmtMXN(t.costo)}</td><td style="font-family:var(--font-mono);color:var(--green)">${fmtMXN(t.abonado)}</td><td style="font-family:var(--font-mono);color:var(--red);font-weight:700">${fmtMXN(t.saldo)}</td><td><span class="badge badge-gold" style="font-size:.65rem">${t.estado||'—'}</span></td><td>${px?.tel?`<button class="btn btn-ghost btn-sm" onclick="whatsapp('${px.tel}','Hola ${t.paciente?.split(' ')[0]||''}, te recordamos que tienes un saldo pendiente de ${fmtMXN(t.saldo)} en Hersantych.')">💬</button>`:'—'}</td></tr>`;
       }).join('')}</tbody>
     </table></div>`;
   }
@@ -233,8 +245,8 @@ async function exportCSV(tipo) {
   const desde = document.getElementById('fechaDesde').value;
   const hasta  = document.getElementById('fechaHasta').value;
   let [trat,abonos,pxList,citas] = await Promise.all([
-    fsGetAll('tratamientos'),fsGetAll('abonos'),
-    fsGetAll('pacientes',r=>r.orderBy('nombre','asc')),fsGetAll('citas'),
+    fsGetAll('tratamientos',r=>r.limit(500)),fsGetAll('abonos',r=>r.limit(1000)),
+    fsGetAll('pacientes',r=>r.orderBy('nombre','asc')),fsGetAll('citas',r=>r.limit(1000)),
   ]);
   const abonosPeriodo = abonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
   let headers=[], rows=[];
@@ -259,6 +271,22 @@ async function exportCSV(tipo) {
   a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download=`reporte_${tipo}_${todayISO()}.csv`;a.click();
   showToast('Reporte exportado','success');
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>

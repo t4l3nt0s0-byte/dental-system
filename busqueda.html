@@ -1,8 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Búsqueda Global</title>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Búsqueda Global</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -78,6 +85,7 @@ mark{background:var(--teal-dim);color:var(--teal);border-radius:2px;padding:0 2p
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'busqueda';
 let allData = { pacientes:[], tratamientos:[], abonos:[], citas:[], catalogo:[] };
@@ -112,7 +120,7 @@ initSession('any').then(async session => {
 async function loadAll() {
   const [px, trat, abonos, citas, cat] = await Promise.all([
     fsGetAll('pacientes', r => r.orderBy('nombre','asc')),
-    fsGetAll('tratamientos'),
+    fsGetAll('tratamientos',r=>r.limit(200)),
     fsGetAll('abonos', r => r.orderBy('creadoEn','desc').limit(500)),
     fsGetAll('citas', r => r.orderBy('creadoEn','desc').limit(200)),
     fsGetAll('catalogo', r => r.orderBy('tratamiento','asc')),
@@ -134,7 +142,13 @@ function onSearch() {
     document.getElementById('resultsArea').innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Escribe para buscar</div></div>`;
     return;
   }
-  searchTimer = setTimeout(() => doSearch(q), 200);
+  // Mínimo 3 caracteres — evita queries costosas por 1-2 letras
+  if (q.length < 3) {
+    document.getElementById('resultsArea').innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Escribe al menos 3 caracteres</div></div>`;
+    return;
+  }
+  // Debounce 500ms — no busca en cada tecla
+  searchTimer = setTimeout(() => doSearch(q), 500);
 }
 
 function highlight(text, q) {
@@ -294,6 +308,22 @@ function renderRecentSearches() {
 }
 
 window.onSearch = onSearch;
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
 </script>
 </body>
 </html>

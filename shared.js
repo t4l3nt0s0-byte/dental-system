@@ -1133,6 +1133,19 @@ window.checkRateLimit = async function(clinicaId, keyId) {
           day: limits.perDay - dayCount - 1,
         }
       };
+    // Cleanup old rate limit windows (1% of requests)
+    if (Math.random() < 0.01) {
+      var yesterday = new Date();
+      yesterday.setDate(yesterday.getDate()-2);
+      var oldWindow = yesterday.toISOString().slice(0,10);
+      db.collection('clinicas').doc(clinicaId)
+        .collection('apiRateLimits')
+        .where('day','<',oldWindow)
+        .limit(5).get()
+        .then(function(snap){
+          snap.docs.forEach(function(d){ d.ref.delete(); });
+        }).catch(function(){});
+    }
     });
     return result;
   } catch(e) {
@@ -1152,7 +1165,20 @@ window.logApiRequest = async function(clinicaId, keyId, endpoint, status) {
         keyId, endpoint, status,
         ts:     firebase.firestore.FieldValue.serverTimestamp(),
         day:    new Date().toISOString().slice(0,10),
+        _ttl:   new Date(Date.now() + 30*24*60*60*1000).toISOString(), // expires in 30 days
       });
+    // Cleanup old logs (1 of 10 requests = ~10%)
+    if (Math.random() < 0.10) {
+      var cutoff30 = new Date();
+      cutoff30.setDate(cutoff30.getDate() - 30);
+      db.collection('clinicas').doc(clinicaId)
+        .collection('apiLogs')
+        .where('ts','<', firebase.firestore.Timestamp.fromDate(cutoff30))
+        .limit(10).get()
+        .then(function(snap) {
+          snap.docs.forEach(function(d) { d.ref.delete(); });
+        }).catch(function(){});
+    }
   } catch(e) { /* silencioso */ }
 };
 
@@ -1263,6 +1289,20 @@ async function audit(accion, datos) {
     db.collection('clinicas').doc(clinica)
       .collection('auditoria').add(registro)
       .catch(function(e) { console.warn('[Audit]', e.message); });
+
+    // TTL: borrar logs de más de 90 días (1 de cada 20 escrituras = ~5%)
+    // Evita que la colección crezca indefinidamente sin costo de leer
+    if (Math.random() < 0.05) {
+      var cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      db.collection('clinicas').doc(clinica)
+        .collection('auditoria')
+        .where('ts', '<', firebase.firestore.Timestamp.fromDate(cutoff))
+        .limit(20).get()
+        .then(function(snap) {
+          snap.docs.forEach(function(d) { d.ref.delete(); });
+        }).catch(function() {});
+    }
   } catch(e) {
     console.warn('[Audit failed]', e.message);
   }
