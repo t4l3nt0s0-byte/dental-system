@@ -5,7 +5,7 @@
 // ══════════════════════════════════════════════════════════════
 (function() {
   var deferredPrompt = null;
-  var SHOWN_KEY = 'dentalos_install_shown';
+  var SHOWN_KEY = 'hersantych_install_shown';
 
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
@@ -20,7 +20,7 @@
     localStorage.setItem(SHOWN_KEY, '1');
     var banner = document.getElementById('pwaBanner');
     if (banner) banner.remove();
-    if (typeof showToast === 'function') showToast('¡DentalOS instalado! Búscalo en tu pantalla de inicio', 'success');
+    if (typeof showToast === 'function') showToast('¡Hersantych instalado! Búscalo en tu pantalla de inicio', 'success');
   });
 
   window.showInstallBanner = function() {
@@ -38,7 +38,7 @@
     banner.innerHTML = [
       '<span style="font-size:1.5rem;flex-shrink:0">📱</span>',
       '<div style="flex:1">',
-        '<div style="font-size:.82rem;font-weight:700;color:#E8EAF0">Instalar DentalOS</div>',
+        '<div style="font-size:.82rem;font-weight:700;color:#E8EAF0">Instalar Hersantych</div>',
         '<div style="font-size:.72rem;color:#9BA3B0">Accede más rápido desde tu pantalla de inicio</div>',
       '</div>',
       '<button id="pwaInstallBtn" style="background:#00C2A8;color:#060D14;border:none;border-radius:8px;padding:7px 14px;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0">Instalar</button>',
@@ -70,7 +70,7 @@
   };
 })();
 
-// shared.js — DentalOS · Shared UI + Firebase helpers (no-module version for inline use)
+// shared.js — Hersantych · Shared UI + Firebase helpers (no-module version for inline use)
 // This file is loaded as a regular script tag and exposes globals via window
 
 // ── Firebase CDN (loaded from HTML) ──────────────────────────
@@ -435,7 +435,7 @@ async function initSession(requiredPage) {
               if (typeof setFavicon === 'function') setFavicon();
               // Update page <title> dynamically with clinic name — SaaS requirement
               if (clinicaData && clinicaData.nombre && document.title) {
-                document.title = document.title.replace('DentalOS', clinicaData.nombre);
+                document.title = document.title.replace('Hersantych', clinicaData.nombre);
               }
               if (typeof showTrialBannerIfNeeded === 'function') showTrialBannerIfNeeded();
               // Backup diario silencioso — no bloquea la carga
@@ -516,7 +516,14 @@ const PAGE_PERM_MAP = {
   'importar-datos': 'importar',
   'usuarios':       'usuarios',
   'configuracion':  'configuracion',
-  'planes':         'planes',         // solo admin
+  'planes':         'planes',         // solo admin (suscripción)
+  // Páginas accesibles pero no en sidebar principal:
+  'busqueda':       'busqueda',       // vía atajo o header search
+  'recibo':         'recibo',         // vía abonos → ver recibo
+  'estado-cuenta':  'estado-cuenta',  // vía expediente → finanzas
+  'catalogo':       'catalogo',       // vía tratamientos → precios
+  'expediente':     'expediente',     // vía pacientes → abrir expediente
+  'ofertas':        'ofertas',        // plan profesional+
   'api':            'api',             // admin + owner
   'auditoria':      'auditoria',       // admin + owner
   'grupo':          'multisucursal',   // solo owner/director
@@ -544,7 +551,7 @@ function userCanAccess(page) {
   }
 
   // Roles de sucursal (doctor, recepcion, asistente): verificar permisos asignados
-  var ADMIN_ONLY = ['planes','configuracion','usuarios','importar-datos','grupo','sucursales','api','auditoria'];
+  var ADMIN_ONLY = ['planes','configuracion','usuarios','importar-datos','grupo','sucursales','api','auditoria','metricas','reportes'];
   if (ADMIN_ONLY.indexOf(page) !== -1) return false;
 
   var perm = PAGE_PERM_MAP[page];
@@ -587,45 +594,54 @@ function renderSidebar() {
         ? `<img src="${clinica.logoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:#fff;padding:3px;flex-shrink:0">`
         : '<div class="logo-icon">🦷</div>'}
       <div style="min-width:0">
-        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'DentalOS'}</div>
+        <div class="logo-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${clinica.nombre || 'Hersantych'}</div>
         <div class="logo-sub">${clinica.eslogan || 'Sistema integral'}</div>
       </div>
     </div>
   </div>
+  <!-- Búsqueda rápida global -->
+  <div style="padding:0 12px 10px;border-bottom:1px solid var(--border);margin-bottom:4px">
+    <button onclick="window.location.href='busqueda.html'"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+             padding:7px 12px;color:var(--text-muted);font-size:.78rem;cursor:pointer;
+             display:flex;align-items:center;gap:8px;font-family:var(--font-main);text-align:left">
+      🔍 Buscar paciente, cita...
+    </button>
+  </div>
   <nav class="sidebar-nav">
-    <div class="nav-section">Principal</div>
-    ${navItem('index','📊','Dashboard','any')}
-    ${navItem('agenda','📅','Agenda de Citas','any')}
-    ${navItem('pacientes','👤','Expedientes','any')}
-    ${navItem('expediente','📋','Expediente Completo','any')}
+
+    <div class="nav-section">Operación</div>
+    ${navItem('index',        '📊','Dashboard',        'any')}
+    ${navItem('agenda',       '📅','Agenda',            'any')}
+    ${navItem('pacientes',    '👤','Pacientes',         'any')}
+    ${navItem('tratamientos', '🦷','Tratamientos',      'any')}
+    ${navItem('abonos',       '💰','Pagos',             'any')}
+    ${navItem('cotizacion',   '📝','Cotizaciones',      'any')}
+
     <div class="nav-section">Clínica</div>
-    ${navItem('tratamientos','🦷','Tratamientos','any')}
-    ${navItem('abonos','💰','Abonos & Pagos','any')}
-    ${navItem('catalogo','📚','Catálogo & Precios','any')}
-    ${navItem('cotizacion','📝','Cotizaciones','any')}
-    ${navItem('corte-caja','🧾','Corte de Caja','any')}
-    <div class="nav-section">Avanzado</div>
-    ${navItem('odontograma','🦷','Odontograma','odontograma')}
-    ${navItem('inventario','💊','Inventario','inventario')}
-    ${navItem('recetas','📋','Recetas Médicas','any')}
-    ${navItem('ofertas','🎁','Ofertas & Promos','ofertas')}
-    ${navItem('metricas','📈','Métricas','metricas')}
-    ${navItem('reportes','📊','Reportes','reportes')}
-    ${(rol === 'owner' || rol === 'director') ? `<div class="nav-section">Grupo</div>
-    ${navItem('grupo','🏢','Dashboard del grupo','multisucursal')}` : ''}
+    ${navItem('odontograma',  '🦷','Odontograma',       'odontograma')}
+    ${navItem('recetas',      '💊','Recetas médicas',   'any')}
+    ${navItem('inventario',   '📦','Inventario',        'inventario')}
+
+    <div class="nav-section">Administración</div>
+    ${navItem('corte-caja',   '🧾','Corte de caja',     'any')}
+    ${navItem('metricas',     '📈','Métricas',          'metricas')}
+    ${navItem('reportes',     '📊','Reportes',          'reportes')}
+    ${navItem('recordatorios','💬','Recordatorios WA',  'any')}
+
+    ${(rol === 'owner' || rol === 'director') ? `
+    <div class="nav-section">Grupo</div>
+    ${navItem('grupo',        '🏢','Dashboard del grupo','multisucursal')}
+    ` : ''}
+
     <div class="nav-section">Sistema</div>
-    ${navItem('usuarios','👥','Usuarios & Roles','usuarios')}
-    ${navItem('api','🔌','API pública','api')}
-    ${navItem('auditoria','🔍','Auditoría','auditoria')}
-    ${navItem('recibo','🧾','Recibo de Pago','any')}
-    ${navItem('estado-cuenta','📄','Estado de Cuenta','any')}
-    ${navItem('recordatorios','💬','Recordatorios WA','any')}
-    ${navItem('importar-datos','📥','Importar desde Excel','any')}
-    ${navItem('busqueda','🔍','Búsqueda Global','any')}
-    ${navItem('planes','💎','Planes & Precios','any')}
-    ${navItem('configuracion','⚙️','Descubre','any')}
-  </nav>
-  <div class="sidebar-footer">
+    ${navItem('usuarios',     '👥','Usuarios & Roles',  'usuarios')}
+    ${navItem('configuracion','⚙️','Configuración',     'configuracion')}
+    ${navItem('api',          '🔌','Integraciones',     'api')}
+    ${navItem('auditoria',    '🔍','Auditoría',         'auditoria')}
+    ${navItem('planes',       '💎','Suscripción',       'any')}
+
+  </nav>  <div class="sidebar-footer">
     <div class="clinic-name">${clinica.nombre || 'Consultorio'}</div>
     <div class="clinic-info">${user.nombre || user.email} · ${ROLES[user.rol]?.label || 'Usuario'}</div>
     ${(rol === 'owner' || rol === 'director') ? '<div style="font-size:.58rem;color:var(--teal);font-weight:700;letter-spacing:.06em;margin-top:2px">🔑 Acceso multi-sucursal</div>' : ''}
@@ -708,7 +724,7 @@ window.runDailyBackup = async function() {
   if (!SESSION || !SESSION.clinica) return;
   var today    = todayISO();
   var cId      = SESSION.clinica.id;
-  var backupKey = 'dentalos_backup_' + cId + '_' + today;
+  var backupKey = 'hersantych_backup_' + cId + '_' + today;
 
   // Solo una vez al día por sesión
   if (localStorage.getItem(backupKey)) return;
@@ -907,7 +923,7 @@ function handleError(e, context) {
   const page    = window.CURRENT_PAGE || location.pathname;
 
   // Log estructurado — en producción esto iría a un servicio de monitoring
-  console.error(`[DentalOS] ${page} | ${uid} | ${code}`, e);
+  console.error(`[Hersantych] ${page} | ${uid} | ${code}`, e);
 
   // Mostrar al usuario
   if (typeof showToast === 'function') {

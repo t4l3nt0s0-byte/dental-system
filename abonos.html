@@ -7,10 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DentalOS">
-<link rel="apple-touch-icon" href="favicon.svg">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Abonos & Pagos</title>
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Abonos & Pagos</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -287,6 +286,19 @@ async function saveAbono() {
   const tratId = document.getElementById('f-tratamiento').value;
   const monto = parseFloat(document.getElementById('f-monto').value)||0;
   if (!expId || !tratId || !monto) { showToast('Completa todos los campos requeridos','error'); return; }
+  if (monto <= 0) { showToast('El monto debe ser mayor a cero','error'); return; }
+  if (monto > 999999) { showToast('Monto inusualmente alto. Verifica antes de guardar.','error'); return; }
+  // Validar que el abono no supere el saldo pendiente del tratamiento
+  const trat = allTrats.find(t=>t.id===tratId);
+  if (trat && !editId) {
+    const saldoActual = Number(trat.saldo||trat.costo||0);
+    if (monto > saldoActual && saldoActual > 0) {
+      const ok = await confirmDialog(
+        `⚠️ El abono ($${monto.toLocaleString('es-MX')}) supera el saldo pendiente ($${saldoActual.toLocaleString('es-MX')}).\n\n¿Es un anticipo o saldo a favor? Si no, verifica el monto.`
+      );
+      if (!ok) return;
+    }
+  }
   const px = allPacientes.find(p=>p.id===expId);
   const trat = allTrat.find(t=>t.id===tratId);
   const aplicaIva = document.getElementById('f-iva').value === 'si';
