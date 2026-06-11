@@ -387,7 +387,10 @@ const DURACIONES = ['1 día','2 días','3 días','4 días','5 días','6 días','
 
 // ── INICIALIZAR ──────────────────────────────────────
 initSession('any').then(async session => {
-  if(!session) return;
+    if(!session){
+    document.body.innerHTML='<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center;font-family:sans-serif"><div style="text-align:center;padding:40px;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:16px">⚠️</div><div style="font-size:1rem;font-weight:500;color:#E8EAF0;margin-bottom:8px">No se pudo cargar la sesión</div><div style="font-size:.85rem;margin-bottom:20px">Verifica tu conexión a internet</div><a href=\"login.html\" style=\"background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700\">Volver al inicio</a></div></div>';
+    return;
+  }
   CLINICA = session.clinica;
 
   const [pxs, docs, inv] = await Promise.all([

@@ -417,7 +417,14 @@ const gridColor  = 'rgba(255,255,255,.05)';
 const textColor  = 'rgba(232,240,248,.4)';
 
 initSession('any').then(async session=>{
-  if(!session) return;
+  if(!session){
+    // Fallo de sesión — mostrar mensaje en lugar de spinner infinito
+    const sp = document.getElementById('loadingSpinner')||document.querySelector('.loading-spinner,.spinner,[class*="spinner"]');
+    if(sp) sp.style.display='none';
+    const main = document.getElementById('mainContent')||document.querySelector('.content');
+    if(main) main.innerHTML='<div style="text-align:center;padding:60px 20px;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:16px">⚠️</div><div style="font-size:1rem;font-weight:500;color:#E8EAF0;margin-bottom:8px">No se pudo cargar la sesión</div><div style="font-size:.85rem;margin-bottom:20px">Verifica tu conexión o vuelve a iniciar sesión</div><a href="login.html" style="background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Volver al inicio</a></div>';
+    return;
+  }
   const {clinica,user}=session;
   isAdmin = user.rol==='admin';
 
@@ -1665,11 +1672,10 @@ window.confirmarFinCita = confirmarFinCita;
 // Recargar pacientes cuando el usuario regresa a esta pestaña
 // (ej: editó un expediente en otra pestaña y vuelve)
 document.addEventListener('visibilitychange', async ()=>{
-  if(document.visibilityState==='visible'){
+  if(document.visibilityState==='visible' && SESSION && SESSION.clinica){
     try{
       const px = await fsGetAll('pacientes',r=>r.limit(300));
       if(px&&px.length) ALL_PACIENTES=px;
-      // Re-renderizar solo En Consulta (que usa datos de paciente)
       if(typeof renderEnConsulta==='function') renderEnConsulta();
       if(typeof renderEstadoDoctores==='function') renderEstadoDoctores();
       if(typeof renderMetricasDia==='function') renderMetricasDia();

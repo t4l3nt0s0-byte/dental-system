@@ -387,6 +387,8 @@ async function initSession(requiredPage) {
           db.collection('organizations').doc(clinicaId).get()
             .then(async function(clinicaSnap) {
               if (!clinicaSnap.exists) {
+                console.error('[initSession] organizations/' + clinicaId + ' NOT FOUND. Check Firestore Rules and migration.');
+                if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');}
                 resolve(null); return;
               }
               var clinicaData = Object.assign({ id: clinicaId }, clinicaSnap.data());
@@ -466,7 +468,8 @@ async function initSession(requiredPage) {
               resolve(SESSION);
             })
             .catch(function(e) {
-              console.warn('initSession clinica:', e.message);
+              console.error('[initSession] organizations/ read FAILED:', e.code, e.message);
+              console.error('[initSession] This usually means Firestore Rules block the read. Publish new rules.');
               resolve(null);
             });
         })
