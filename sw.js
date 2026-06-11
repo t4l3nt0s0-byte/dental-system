@@ -5,7 +5,7 @@
 //             Offline fallback cuando no hay red
 // ══════════════════════════════════════════════════════════════
 
-const VERSION     = 'hersantych-v1.1';
+const VERSION     = 'hersantych-v2.0'; // migration to organizations/
 const CACHE_SHELL = VERSION + '-shell';
 const CACHE_PAGES = VERSION + '-pages';
 
@@ -15,6 +15,7 @@ const SHELL_FILES = [
   '/dental-system/',
   '/dental-system/index.html',
   '/dental-system/shared.js',
+  '/dental-system/dataService.js',
   '/dental-system/shared.css',
   '/dental-system/favicon.svg',
   '/dental-system/manifest.json',

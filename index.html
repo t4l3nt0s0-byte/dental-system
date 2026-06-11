@@ -438,12 +438,10 @@ initSession('any').then(async session=>{
   const today = todayISO();
   const mesActualStr = today.slice(0,7);          // ej: "2026-06"
   const mesAnteriorStr = (()=>{ const d=new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
-  const base  = db.collection('clinicas').doc(clinica.id);
-
-  // Helper: query segura con fallback vacío
+  // Helper: query segura — usa clinicaCol() que maneja organizations/ automáticamente
   const q = async (col, buildQuery) => {
     try {
-      const ref  = buildQuery ? buildQuery(base.collection(col)) : base.collection(col);
+      const ref  = buildQuery ? buildQuery(clinicaCol(col)) : clinicaCol(col);
       const snap = await ref.get();
       return snap.docs.map(d=>({id:d.id,...d.data()}));
     } catch(e) {
@@ -474,7 +472,7 @@ initSession('any').then(async session=>{
 
   // Meta mensual
   try {
-    const cSnap=await db.collection('clinicas').doc(clinica.id).get();
+    const cSnap=await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).get();
     metaMensual=cSnap.data()?.metaMensual||0;
   } catch(e) { metaMensual=0; }
 
@@ -1139,7 +1137,7 @@ window.guardarMeta=async function(){
   const val=parseInt(document.getElementById('metaInput').value)||0;
   if(val<1000){showToast('La meta mínima es $1,000 MXN','error');return;}
   try{
-    await db.collection('clinicas').doc(SESSION.clinica.id).update({metaMensual:val});
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).update({metaMensual:val});
     metaMensual=val;
     closeModal('modalMeta');
     renderMeta();
