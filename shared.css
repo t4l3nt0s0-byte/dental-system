@@ -73,6 +73,9 @@ body, .sidebar, .topbar, .main, .content,
 
 html { scroll-behavior: smooth; }
 
+/* Instant background before any CSS loads */
+html { background: #060D14; }
+
 body {
   font-family: var(--font-body);
   background: var(--bg);

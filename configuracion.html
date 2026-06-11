@@ -3,14 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <style>
-/* Critical CSS — instant background, prevents flash */
-:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
-html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
-/* Fade the content area, not the whole body */
-body.loading .content{opacity:0}
-body.loaded .content{opacity:1;transition:opacity .2s ease}
-/* Keep sidebar visible immediately */
-body.loading .sidebar{opacity:1}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}
+@media(min-width:768px){.main{margin-left:240px}}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00C2A8">
@@ -90,7 +84,7 @@ body.loading .sidebar{opacity:1}
 @media(max-width:900px){.config-layout{grid-template-columns:1fr}.config-nav{position:static;display:flex;overflow-x:auto;border-radius:var(--r)}.config-nav-item{flex-shrink:0;border-left:none;border-bottom:3px solid transparent}.config-nav-item.active{border-left:none;border-bottom-color:var(--teal)}.info-grid{grid-template-columns:1fr}}
 </style>
 </head>
-<body class="loading">
+<body>
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
