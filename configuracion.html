@@ -772,8 +772,8 @@ function applyTheme(tema, color) {
   }
 
   // ③ Guardar en localStorage
-  localStorage.setItem('dental_tema',  tema);
-  localStorage.setItem('dental_color', c);
+  safeSet('dental_tema', tema);
+  safeSet('dental_color', c);
 }
 
 
@@ -957,8 +957,8 @@ async function ejecutarRestauracion(file) {
 
 // ── APLICAR TEMA GUARDADO AL INICIO ──────────────────────
 (function() {
-  const t = localStorage.getItem('dental_tema');
-  const c = localStorage.getItem('dental_color');
+  const t = safeGet('dental_tema');
+  const c = safeGet('dental_color');
   if (t || c) applyTheme(t||'dark', c||'#00C2A8');
 })();
 

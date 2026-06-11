@@ -11,13 +11,13 @@
     e.preventDefault();
     deferredPrompt = e;
     // No mostrar si ya se mostró antes
-    if (localStorage.getItem(SHOWN_KEY)) return;
+    if (safeGet(SHOWN_KEY)) return;
     // Esperar 30 segundos para no ser invasivo
     setTimeout(showInstallBanner, 30000);
   });
 
   window.addEventListener('appinstalled', function() {
-    localStorage.setItem(SHOWN_KEY, '1');
+    safeSet(SHOWN_KEY, '1');
     var banner = document.getElementById('pwaBanner');
     if (banner) banner.remove();
     if (typeof showToast === 'function') showToast('¡Hersantych instalado! Búscalo en tu pantalla de inicio', 'success');
@@ -58,13 +58,13 @@
     document.getElementById('pwaInstallBtn').onclick = function() {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(function(c) {
-        localStorage.setItem(SHOWN_KEY, '1');
+        safeSet(SHOWN_KEY, '1');
         banner.remove();
         deferredPrompt = null;
       });
     };
     document.getElementById('pwaDismissBtn').onclick = function() {
-      localStorage.setItem(SHOWN_KEY, '1');
+      safeSet(SHOWN_KEY, '1');
       banner.remove();
     };
   };
@@ -78,6 +78,18 @@
 // <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 // <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 // <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+
+// ── Safe storage — localStorage may be blocked by browser privacy settings ──
+var _memStore = {}; // fallback in-memory storage
+function safeGet(key) {
+  try { return safeGet(key); }
+  catch(e) { return _memStore[key] || null; }
+}
+function safeSet(key, val) {
+  try { safeSet(key, val); }
+  catch(e) { _memStore[key] = val; }
+}
 
 var FIREBASE_CONFIG = {
   apiKey:"AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",
@@ -160,8 +172,8 @@ const TRIAL_FEATURES = ['agenda','pacientes','tratamientos','abonos','cotizacion
 
 // Aplicar tema guardado inmediatamente al cargar la página
 (function applyStoredTheme() {
-  const t = localStorage.getItem('dental_tema');
-  const c = localStorage.getItem('dental_color');
+  const t = safeGet('dental_tema');
+  const c = safeGet('dental_color');
   if (!t && !c) return;
 
   // Suprimir transiciones para cambio instantáneo sin pasme
@@ -291,12 +303,12 @@ function showTrialBannerIfNeeded() {
 // Cambia tema con data-theme en <html> — el CSS hace el resto
 // Instantáneo: un solo setAttribute, sin loops JS
 function applyTema(tema, colorPrimario) {
-  var t = tema || localStorage.getItem('dental_tema') || 'dark';
-  var c = colorPrimario || localStorage.getItem('dental_color') || '';
+  var t = tema || safeGet('dental_tema') || 'dark';
+  var c = colorPrimario || safeGet('dental_color') || '';
 
   // Guardar preferencia
-  localStorage.setItem('dental_tema', t);
-  if (c) localStorage.setItem('dental_color', c);
+  safeSet('dental_tema', t);
+  if (c) safeSet('dental_color', c);
 
   // ① Cambiar tema — INSTANTÁNEO (el CSS hace todo)
   document.documentElement.setAttribute('data-theme', t);
@@ -315,8 +327,8 @@ window.applyTema = applyTema;
 
 // Aplicar tema ANTES de que el navegador pinte nada (evita FOUC)
 (function(){
-  var t = localStorage.getItem('dental_tema') || 'dark';
-  var c = localStorage.getItem('dental_color') || '';
+  var t = safeGet('dental_tema') || 'dark';
+  var c = safeGet('dental_color') || '';
   document.documentElement.setAttribute('data-theme', t);
   if (c && /^#[0-9A-Fa-f]{6}$/.test(c)) {
     var r = parseInt(c.slice(1,3),16);
@@ -731,7 +743,7 @@ window.runDailyBackup = async function() {
   var backupKey = 'hersantych_backup_' + cId + '_' + today;
 
   // Solo una vez al día por sesión
-  if (localStorage.getItem(backupKey)) return;
+  if (safeGet(backupKey)) return;
 
   try {
     // Recopilar datos críticos del día
@@ -761,7 +773,7 @@ window.runDailyBackup = async function() {
       .collection('backups').doc(today).set(summary);
 
     // Marcar como hecho hoy
-    localStorage.setItem(backupKey, '1');
+    safeSet(backupKey, '1');
 
     // Limpiar backups de más de 30 días (silent)
     var cutoff = new Date();

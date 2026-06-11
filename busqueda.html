@@ -95,7 +95,7 @@ window.CURRENT_PAGE = 'busqueda';
 let allData = { pacientes:[], tratamientos:[], abonos:[], citas:[], catalogo:[] };
 let activeFilter = 'all';
 let searchTimer = null;
-let recentSearches = JSON.parse(localStorage.getItem('dental_recent_searches')||'[]');
+let recentSearches = JSON.parse(safeGet('dental_recent_searches')||'[]');
 
 // Shortcut key /
 document.addEventListener('keydown', e => {
@@ -299,7 +299,7 @@ function renderResults(results, q) {
 
 function addRecentSearch(q) {
   recentSearches = [q, ...recentSearches.filter(s=>s!==q)].slice(0,8);
-  localStorage.setItem('dental_recent_searches', JSON.stringify(recentSearches));
+  safeSet('dental_recent_searches', JSON.stringify(recentSearches));
   renderRecentSearches();
 }
 
