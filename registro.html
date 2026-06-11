@@ -1,9 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DentalOS · Crear cuenta</title>
+<title>Hersantych · Crear cuenta</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -244,7 +251,7 @@ select.input{cursor:pointer}
   <!-- Success -->
   <div class="success" id="successWrap">
     <div class="success-icon">🎉</div>
-    <div class="success-title">¡Bienvenido a DentalOS!</div>
+    <div class="success-title">¡Bienvenido a Hersantych!</div>
     <div class="success-sub">
       Tu cuenta fue creada exitosamente.<br>
       Tienes <strong style="color:var(--teal)">7 días de prueba gratuita</strong>.<br><br>
@@ -352,7 +359,7 @@ async function registrar() {
     var trialEnd = new Date(Date.now() + 7*24*60*60*1000);
 
     // 2. Crear clínica
-    await dentalDB.collection('clinicas').doc(cId).set({
+    await dentalDB.collection('organizations').doc(cId).set({
       nombre: clinica, ciudad: ciudad, telefono: tel,
       plan: 'trial', planDeseado: planSel,
       trialEnd: firebase.firestore.Timestamp.fromDate(trialEnd),
@@ -388,7 +395,7 @@ async function registrar() {
     ];
     var batch = dentalDB.batch();
     items.forEach(function(i) {
-      var ref = dentalDB.collection('clinicas').doc(cId).collection('catalogo')
+      var ref = dentalDB.collection('organizations').doc(cId).collection('branches').doc(cId).collection('catalog')
                         .doc(i[0].toLowerCase());
       batch.set(ref, {
         tratamiento: i[0], desc: i[1],
@@ -426,6 +433,22 @@ async function registrar() {
 document.addEventListener('keydown', function(e) {
   if(e.key === 'Enter') registrar();
 });
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
 </script>
 </body>
 </html>

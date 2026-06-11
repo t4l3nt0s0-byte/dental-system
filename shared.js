@@ -380,7 +380,7 @@ async function initSession(requiredPage) {
           // orgId: si no está seteado, usar clinicaId como raíz de la organización
           var orgId = userData.orgId || userData.clinicaId || clinicaId;
 
-          db.collection('clinicas').doc(clinicaId).get()
+          db.collection('organizations').doc(clinicaId).get()
             .then(function(clinicaSnap) {
               if (!clinicaSnap.exists) { if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');} resolve(null); return; }
 
@@ -727,7 +727,7 @@ window.getOrgClinics = async function() {
   var orgId = SESSION && SESSION.user && SESSION.user.orgId;
   if (!orgId) return [];
   try {
-    var snap = await db.collection('clinicas').where('orgId','==',orgId).get();
+    var snap = await db.collection('organizations').where('orgId','==',orgId).get();
     return snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
   } catch(e) { return []; }
 };
@@ -770,7 +770,7 @@ window.runDailyBackup = async function() {
     };
 
     // Guardar backup del día
-    await db.collection('clinicas').doc(cId)
+    await db.collection('organizations').doc(cId)
       .collection('backups').doc(today).set(summary);
 
     // Marcar como hecho hoy
@@ -780,7 +780,7 @@ window.runDailyBackup = async function() {
     var cutoff = new Date();
     cutoff.setDate(cutoff.getDate()-30);
     var cutoffStr = cutoff.toISOString().split('T')[0];
-    db.collection('clinicas').doc(cId).collection('backups')
+    db.collection('organizations').doc(cId).collection('backups')
       .where('fecha','<',cutoffStr).get()
       .then(function(old) {
         old.docs.forEach(function(d) { d.ref.delete(); });
@@ -800,12 +800,12 @@ window.runDailyBackup = async function() {
 window.migrateFolios = async function() {
   if (!SESSION || !SESSION.clinica) return { error:'No session' };
   var cId  = SESSION.clinica.id;
-  var snap = await db.collection('clinicas').doc(cId)
-    .collection('pacientes')
+  var snap = await db.collection('organizations').doc(cId)
+    .collection('branches').doc(cId).collection('patients')
     .where('folio','==',null).limit(200).get()
     .catch(async () =>
       // Fallback: get all and filter
-      db.collection('clinicas').doc(cId).collection('pacientes').limit(500).get()
+      db.collection('organizations').doc(cId).collection('branches').doc(cId).collection('patients').limit(500).get()
     );
   var sinFolio = snap.docs.filter(d => !d.data().folio);
   if (!sinFolio.length) return { migrated:0, message:'Todos los pacientes ya tienen folio' };
@@ -813,8 +813,8 @@ window.migrateFolios = async function() {
   for (var doc of sinFolio) {
     try {
       var folio = await window.generateFolio();
-      await db.collection('clinicas').doc(cId)
-        .collection('pacientes').doc(doc.id)
+      await db.collection('organizations').doc(cId)
+        .collection('branches').doc(cId).collection('patients').doc(doc.id)
         .update({ folio });
       migrated++;
     } catch(e) { console.warn('skip', doc.id, e.message); }
@@ -830,8 +830,7 @@ window.showDemoBanner = async function() {
   if (window.CURRENT_PAGE !== 'index') return;
   // Check if demo data exists (quick check)
   try {
-    var snap = await db.collection('clinicas').doc(SESSION.clinica.id)
-      .collection('pacientes').where('_demo','==',true).limit(1).get();
+    var snap = await clinicaCol('patients').where('_demo','==',true).limit(1).get();
     if (snap.empty) return; // no demo data, no banner
     // Show banner
     var existing = document.getElementById('demoBanner');
@@ -857,11 +856,101 @@ async function logout() {
 }
 
 // ── FIRESTORE HELPERS ────────────────────────────────────────
-function clinicaCol(col) {
-  return db.collection('clinicas').doc(SESSION.clinica.id).collection(col);
+// ══════════════════════════════════════════════════════════════
+// HERSANTYCH — ACCESO A DATOS v2.0
+// Estructura: organizations/{orgId}/branches/{branchId}/...
+//
+// orgId    = SESSION.clinica.orgId  (organización/dueño)
+// branchId = SESSION.clinica.id     (sucursal activa)
+//
+// Colecciones nivel SUCURSAL (branch-level):
+//   patients, appointments, payments, treatments, quotes,
+//   receipts, inventory, odontograms, prescriptions,
+//   clinicalNotes, cashClosings
+//
+// Colecciones nivel ORGANIZACIÓN (org-level):
+//   catalog, doctors, users, auditLogs, analytics,
+//   apiKeys, apiLogs, apiRateLimits, _counters, backups
+// ══════════════════════════════════════════════════════════════
+
+// Mapeo de nombres legacy → nuevos nombres
+var COL_MAP = {
+  // Branch-level (datos clínicos y financieros por sucursal)
+  'pacientes':       'patients',
+  'citas':           'appointments',
+  'abonos':          'payments',
+  'tratamientos':    'treatments',
+  'cotizaciones':    'quotes',
+  'recibos':         'receipts',
+  'inventario':      'inventory',
+  'odontogramas':    'odontograms',
+  'rx':              'prescriptions',
+  'notas-clinicas':  'clinicalNotes',
+  'cortes':          'cashClosings',
+  // Org-level (datos compartidos entre sucursales)
+  'catalogo':        'catalog',
+  'doctores':        'doctors',
+  'auditoria':       'auditLogs',
+  'ofertas':         'promotions',
+};
+
+// Colecciones que viven a nivel organización (no sucursal)
+var ORG_LEVEL_COLS = [
+  'catalog', 'catalogo',
+  'doctors', 'doctores',
+  'auditLogs', 'auditoria',
+  'analytics',
+  'apiKeys', 'apiLogs', 'apiRateLimits',
+  '_counters', 'backups',
+  'promotions', 'ofertas',
+];
+
+function getOrgId() {
+  if (!SESSION || !SESSION.clinica) return null;
+  return SESSION.clinica.orgId || SESSION.clinica.id;
 }
+
+function getBranchId() {
+  if (!SESSION || !SESSION.clinica) return null;
+  return SESSION.clinica.id;
+}
+
+function resolveColName(col) {
+  return COL_MAP[col] || col;
+}
+
+function isOrgLevel(col) {
+  var resolved = resolveColName(col);
+  return ORG_LEVEL_COLS.indexOf(col) !== -1 ||
+         ORG_LEVEL_COLS.indexOf(resolved) !== -1;
+}
+
+function orgRef() {
+  var orgId = getOrgId();
+  if (!orgId) throw new Error('No orgId in session');
+  return db.collection('organizations').doc(orgId);
+}
+
+function branchRef() {
+  var orgId    = getOrgId();
+  var branchId = getBranchId();
+  if (!orgId || !branchId) throw new Error('No orgId/branchId in session');
+  return db.collection('organizations').doc(orgId)
+           .collection('branches').doc(branchId);
+}
+
+// clinicaCol(col) — accede a la colección correcta según el tipo
+// Automáticamente elige org-level vs branch-level
+function clinicaCol(col) {
+  var resolved = resolveColName(col);
+  if (isOrgLevel(col)) {
+    return orgRef().collection(resolved);
+  }
+  return branchRef().collection(resolved);
+}
+
 function clinicaDoc(col, id) {
-  return db.collection('clinicas').doc(SESSION.clinica.id).collection(col).doc(id);
+  return clinicaCol(col).doc(id);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1113,7 +1202,7 @@ window.checkRateLimit = async function(clinicaId, keyId) {
   var minWindow = now.toISOString().slice(0,16).replace('T','-').replace(':','-'); // '2026-06-07-10-30'
   var dayWindow = now.toISOString().slice(0,10);                                   // '2026-06-07'
 
-  var limRef = db.collection('clinicas').doc(clinicaId).collection('apiRateLimits').doc(keyId);
+  var limRef = db.collection('organizations').doc(clinicaId).collection('apiRateLimits').doc(keyId);
 
   try {
     var result = await db.runTransaction(async function(tx) {
@@ -1155,7 +1244,7 @@ window.checkRateLimit = async function(clinicaId, keyId) {
       var yesterday = new Date();
       yesterday.setDate(yesterday.getDate()-2);
       var oldWindow = yesterday.toISOString().slice(0,10);
-      db.collection('clinicas').doc(clinicaId)
+      db.collection('organizations').doc(clinicaId)
         .collection('apiRateLimits')
         .where('day','<',oldWindow)
         .limit(5).get()
@@ -1177,7 +1266,7 @@ window.checkRateLimit = async function(clinicaId, keyId) {
  */
 window.logApiRequest = async function(clinicaId, keyId, endpoint, status) {
   try {
-    await db.collection('clinicas').doc(clinicaId)
+    await db.collection('organizations').doc(clinicaId)
       .collection('apiLogs').add({
         keyId, endpoint, status,
         ts:     firebase.firestore.FieldValue.serverTimestamp(),
@@ -1188,7 +1277,7 @@ window.logApiRequest = async function(clinicaId, keyId, endpoint, status) {
     if (Math.random() < 0.10) {
       var cutoff30 = new Date();
       cutoff30.setDate(cutoff30.getDate() - 30);
-      db.collection('clinicas').doc(clinicaId)
+      db.collection('organizations').doc(clinicaId)
         .collection('apiLogs')
         .where('ts','<', firebase.firestore.Timestamp.fromDate(cutoff30))
         .limit(10).get()
@@ -1205,9 +1294,9 @@ window.logApiRequest = async function(clinicaId, keyId, endpoint, status) {
 window.getApiUsageStats = async function(clinicaId, keyId) {
   try {
     var today    = new Date().toISOString().slice(0,10);
-    var limSnap  = await db.collection('clinicas').doc(clinicaId)
+    var limSnap  = await db.collection('organizations').doc(clinicaId)
       .collection('apiRateLimits').doc(keyId).get();
-    var logSnap  = await db.collection('clinicas').doc(clinicaId)
+    var logSnap  = await db.collection('organizations').doc(clinicaId)
       .collection('apiLogs').where('keyId','==',keyId).where('day','==',today).get();
 
     var limData  = limSnap.exists ? limSnap.data() : {};
@@ -1241,7 +1330,7 @@ window.generateFolio = async function() {
   if (!SESSION || !SESSION.clinica) return null;
   var year     = new Date().getFullYear();
   var cId      = SESSION.clinica.id;
-  var counterRef = db.collection('clinicas').doc(cId)
+  var counterRef = db.collection('organizations').doc(cId)
                      .collection('_counters').doc('expedientes_' + year);
   try {
     var result = await db.runTransaction(async function(tx) {
@@ -1303,8 +1392,7 @@ async function audit(accion, datos) {
       ts:       firebase.firestore.FieldValue.serverTimestamp(),
     };
     // Fire-and-forget — no bloquear la UI por la auditoría
-    db.collection('clinicas').doc(clinica)
-      .collection('auditoria').add(registro)
+    orgRef().collection('auditLogs').add(registro)
       .catch(function(e) { console.warn('[Audit]', e.message); });
 
     // TTL: borrar logs de más de 90 días (1 de cada 20 escrituras = ~5%)
@@ -1312,8 +1400,7 @@ async function audit(accion, datos) {
     if (Math.random() < 0.05) {
       var cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 90);
-      db.collection('clinicas').doc(clinica)
-        .collection('auditoria')
+      orgRef().collection('auditLogs')
         .where('ts', '<', firebase.firestore.Timestamp.fromDate(cutoff))
         .limit(20).get()
         .then(function(snap) {
@@ -1330,11 +1417,13 @@ window.audit = audit;
 var _origFsCreate = fsCreate;
 async function fsCreate(col, data) {
   cacheInvalidate(col);
-  var ref = await clinicaCol(col).add({
-    ...data,
-    creadoEn:     firebase.firestore.FieldValue.serverTimestamp(),
-    actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()
-  });
+  var cleanData = typeof sanitizeData === 'function' ? sanitizeData(data) : data;
+  var ref = await clinicaCol(col).add(Object.assign({}, cleanData, {
+    orgId:         getOrgId(),
+    branchId:      getBranchId(),
+    creadoEn:      firebase.firestore.FieldValue.serverTimestamp(),
+    actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
   // Auditar creaciones importantes
   var auditCols = ['pacientes','citas','abonos','tratamientos','doctores','usuarios','rx'];
   if (auditCols.indexOf(col) !== -1) {
@@ -1376,9 +1465,15 @@ async function fsGet(col, id) {
 }
 
 async function fsCreate(col, data) {
-  cacheInvalidate(col); // invalidar cache al escribir
-  const ref = await clinicaCol(col).add({ ...data, creadoEn: firebase.firestore.FieldValue.serverTimestamp(), actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
-  return ref.id;
+  cacheInvalidate(col);
+  var cleanData = sanitizeData ? sanitizeData(data) : data;
+  var ref = await clinicaCol(col).add(Object.assign({}, cleanData, {
+    orgId:         getOrgId(),
+    branchId:      getBranchId(),
+    creadoEn:      firebase.firestore.FieldValue.serverTimestamp(),
+    actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
+  return ref;
 }
 
 async function fsUpdate(col, id, data) {

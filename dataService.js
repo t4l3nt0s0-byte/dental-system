@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-// DENTALOS — dataService.js
+// HERSANTYCH — dataService.js
 // Capa única de acceso a datos. Ninguna página llama Firestore
 // directamente — todas pasan por aquí.
 //
@@ -42,11 +42,12 @@ function cacheClear(col) {
 }
 
 // ── Base Firestore helper ──────────────────────────────────
+// Delegate to clinicaCol from shared.js which handles orgs/branches mapping
 function col(name) {
-  if (!global.db || !global.SESSION || !global.SESSION.clinica) {
-    throw new Error('dataService: Firebase no inicializado o sesión no activa');
+  if (!global.clinicaCol) {
+    throw new Error('dataService: clinicaCol no disponible — carga shared.js primero');
   }
-  return global.db.collection('clinicas').doc(global.SESSION.clinica.id).collection(name);
+  return global.clinicaCol(name);
 }
 function toDoc(snap) { return snap.exists ? Object.assign({ id: snap.id }, snap.data()) : null; }
 function toDocs(snap) { return snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); }); }
@@ -326,14 +327,14 @@ var DS = {
   clinica: {
     get: async function() {
       if (!global.SESSION || !global.SESSION.clinica) return null;
-      var snap = await global.db.collection('clinicas')
-        .doc(global.SESSION.clinica.id).get();
+      var snap = await global.db.collection('organizations')
+        .doc(global.SESSION.clinica.orgId || global.SESSION.clinica.id).get();
       return toDoc(snap);
     },
     update: async function(data) {
       if (!global.SESSION || !global.SESSION.clinica) return;
       var cleanData = global.sanitizeData ? global.sanitizeData(data) : data;
-      await global.db.collection('clinicas').doc(global.SESSION.clinica.id)
+      await global.db.collection('organizations').doc(global.SESSION.clinica.orgId || global.SESSION.clinica.id)
         .update(Object.assign({}, cleanData, {
           actualizadoEn: global.firebase.firestore.FieldValue.serverTimestamp(),
         }));
@@ -350,10 +351,7 @@ var DS = {
       })();
       // Intentar leer doc precalculado
       try {
-        var snap = await global.db.collection('clinicas')
-          .doc(global.SESSION.clinica.id)
-          .collection('analytics').doc('monthly')
-          .collection(mesISO).doc('resumen').get();
+        var snap = await global.clinicaCol('analytics').doc('monthly_' + mesISO).get();
         if (snap.exists) return toDoc(snap);
       } catch(e) {}
       // Fallback: calcular desde los datos
