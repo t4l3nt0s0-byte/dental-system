@@ -74,23 +74,6 @@ service cloud.firestore {
       return incoming().estado in ['Pendiente','En proceso','Completado','Cancelado'];
     }
 
-    // ── Plan y límites ─────────────────────────────────────
-    function getPlan(clinicaId) {
-      return get(/databases/$(database)/documents/clinicas/$(clinicaId)).data.plan;
-    }
-
-    function planAllows(clinicaId, feature) {
-      let plan = getPlan(clinicaId);
-      // enterprise y premium pueden todo
-      if (plan in ['premium','enterprise','multi-3','multi-10']) { return true; }
-      // profesional: sin límite en pacientes pero sin algunas features
-      if (plan == 'profesional') { return feature != 'api_unlimited'; }
-      // basico: sin odontograma avanzado ni API
-      if (plan == 'basico') { return feature in ['citas','pacientes','abonos','tratamientos','catalogo']; }
-      // trial: acceso completo pero limitado en tiempo
-      return true;
-    }
-
     // ══════════════════════════════════════════════════════
     // COLECCIONES GLOBALES
     // ══════════════════════════════════════════════════════
