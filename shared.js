@@ -369,7 +369,11 @@ async function initSession(requiredPage) {
       db.collection('usuarios').doc(user.uid).get()
         .then(function(userSnap) {
           // Sin datos de usuario: sesión de Auth sin registro Firestore
-          if (!userSnap.exists) { resolve(null); return; }
+          if (!userSnap.exists) {
+            console.error('[initSession] FALLO: doc usuarios/' + user.uid + ' no encontrado');
+            console.error('[initSession] UID=' + user.uid + ' Email=' + (user.email||'?'));
+            resolve(null); return;
+          }
 
           var userData = userSnap.data();
           if (userData.activo === false) {
@@ -380,7 +384,11 @@ async function initSession(requiredPage) {
           // ── Multi-sucursal: owner/director usan clinicaActiva o su clinicaId base ──
           var rol = userData.rol || 'recepcion';
           var clinicaId = userData.clinicaActiva || userData.clinicaId;
-          if (!clinicaId) { resolve(null); return; }
+          if (!clinicaId) {
+            console.error('[initSession] FALLO: usuario ' + user.uid + ' no tiene clinicaId ni clinicaActiva en su documento');
+            console.error('[initSession] userData:', JSON.stringify({rol: userData.rol, clinicaId: userData.clinicaId, clinicaActiva: userData.clinicaActiva}));
+            resolve(null); return;
+          }
           // orgId: si no está seteado, usar clinicaId como raíz de la organización
           var orgId = userData.orgId || userData.clinicaId || clinicaId;
 
@@ -468,8 +476,11 @@ async function initSession(requiredPage) {
               resolve(SESSION);
             })
             .catch(function(e) {
-              console.error('[initSession] organizations/ read FAILED:', e.code, e.message);
-              console.error('[initSession] This usually means Firestore Rules block the read. Publish new rules.');
+              console.error('[initSession] Firestore read FAILED:', e.code, e.message);
+              console.error('[initSession] Posibles causas:');
+              console.error('  1. Las Firestore Rules no han sido publicadas');
+              console.error('  2. El documento organizations/' + clinicaId + ' no existe');
+              console.error('  3. Error de red o Firebase no disponible');
               resolve(null);
             });
         })
