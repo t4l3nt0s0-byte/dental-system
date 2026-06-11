@@ -1,8 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Cotizaciones</title>
+<meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Cotizaciones</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -54,7 +71,7 @@
 @media(max-width:1100px){.cot-layout{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -138,7 +155,7 @@
         <div class="preview-card" id="previewCard">
           <div class="preview-header">
             <div id="pvLogo" class="preview-logo">🦷</div>
-            <div class="preview-clinic" id="pvClinica">Hersantych Dental</div>
+            <div class="preview-clinic" id="pvClinica">Hersantych</div>
             <div class="preview-sub" id="pvSub">Sistema de Administración</div>
           </div>
           <div class="preview-body">
@@ -171,7 +188,7 @@
             </div>
             <div class="preview-validity" id="pvVigencia">Cotización válida por 15 días</div>
           </div>
-          <div class="preview-footer" id="pvFooter">Hersantych Dental · Gracias por su preferencia</div>
+          <div class="preview-footer" id="pvFooter">Hersantych · Gracias por su preferencia</div>
         </div>
         <div class="preview-actions">
           <button class="btn btn-primary" style="flex:1" onclick="imprimirCot()">🖨️ Imprimir / PDF</button>
@@ -186,6 +203,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'cotizacion';
@@ -196,12 +214,12 @@ initSession('any').then(async session => {
   if (!session) return;
   const { clinica } = session;
   // Cargar logo desde Firestore
-  const cSnap = await db.collection('clinicas').doc(clinica.id).get();
+  const cSnap = await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).get();
   clinicaLogoBase64 = cSnap.data()?.logoBase64 || null;
-  document.getElementById('pvClinica').textContent = clinica.nombre || 'Hersantych Dental';
+  document.getElementById('pvClinica').textContent = clinica.nombre || 'Hersantych';
   const subPartsArr = [clinica.eslogan, clinica.telefono ? 'Tel: '+clinica.telefono : ''].filter(Boolean);
   document.getElementById('pvSub').textContent = subPartsArr.join(' · ') || 'Sistema de Administración';
-  document.getElementById('pvFooter').textContent = `${clinica.nombre||'Hersantych Dental'} · ${clinica.direccion||''} · ${clinica.eslogan||'Gracias por su preferencia'}`;
+  document.getElementById('pvFooter').textContent = `${clinica.nombre||'Hersantych'} · ${clinica.direccion||''} · ${clinica.eslogan||'Gracias por su preferencia'}`;
   // Actualizar logo en preview
   updateLogoPreview();
   // Mostrar toggle de logo solo si existe logo
@@ -368,7 +386,7 @@ async function guardarCot() {
     showToast('Cotización guardada','success');
     cotNum++;
     document.getElementById('pvNumero').textContent = '#COT-'+String(cotNum).padStart(3,'0');
-  } catch(e){ showToast('Error: '+e.message,'error'); }
+  } catch(e) { handleError(e, 'cotizacion'); }
 }
 
 // imprimirCot definida en print-helper.js
@@ -389,6 +407,22 @@ window.toggleLogoCot = function(chk) {
   mostrarLogoCot = chk.checked;
   updateLogoPreview();
 };
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
 </script>
 </body>
 </html>

@@ -2,8 +2,24 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Expediente Completo</title>
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Expediente Completo</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -93,7 +109,7 @@
 @media(max-width:900px){.exp-layout{grid-template-columns:1fr}.exp-sidebar{position:static}.fin-grid{grid-template-columns:1fr 1fr}.tabs{gap:4px}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -361,6 +377,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'expediente';
 let PX_ID = null, PX_DATA = null, editRxId = null, editNotaId = null;
@@ -379,7 +396,7 @@ initSession('expediente').then(async session => {
   if (!PX_ID) {
     // Mostrar selector
     document.getElementById('selectorWrap').style.display = 'block';
-    const pxListRaw = await fsGetAll('pacientes');
+    const pxListRaw = await fsGetAll('pacientes',r=>r.limit(300));
     const pxList = pxListRaw.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
     const sel = document.getElementById('selectorPx');
     sel.innerHTML = '<option value="">Seleccionar paciente...</option>' +
@@ -409,7 +426,7 @@ async function loadExpediente() {
     fsGetAll('tratamientos', r=>r.where('expId','==',PX_ID)),
     fsGetAll('abonos', r=>r.where('expId','==',PX_ID)),
     fsGetAll('citas', r=>r.where('expId','==',PX_ID)),
-    db.collection('clinicas').doc(SESSION.clinica.id).collection('odontogramas').doc(PX_ID).get().then(s=>s.exists?s.data():null),
+    clinicaCol('odontogramas').doc(PX_ID).get().then(s=>s.exists?s.data():null),
     fsGetAll('rx', r=>r.where('expId','==',PX_ID)),
     fsGetAll('notas-clinicas', r=>r.where('expId','==',PX_ID)),
   ]);
@@ -427,7 +444,7 @@ async function loadExpediente() {
   renderRX(rxList);
   renderNotas(notas);
 
-  document.title = `Expediente · ${esc(px.nombre)||'Paciente'} · DentalOS`;
+  document.title = `Expediente · ${esc(px.nombre)||'Paciente'} · Hersantych`;
 }
 
 function renderPerfil(px) {
@@ -483,7 +500,7 @@ function renderBotones(px) {
   const btnPortalEl = document.getElementById('btnPortal');
   if(btnPortalEl) btnPortalEl.onclick = ()=>generarLinkPortal(px);
   if (px.tel) {
-    document.getElementById('btnWA').onclick = ()=>whatsapp(px.tel, `Hola ${px.nombre?.split(' ')[0]||''}, le contactamos de DentalOS.`);
+    document.getElementById('btnWA').onclick = ()=>whatsapp(px.tel, `Hola ${px.nombre?.split(' ')[0]||''}, le contactamos de Hersantych.`);
   } else {
     document.getElementById('btnWA').disabled = true;
     document.getElementById('btnWA').style.opacity = '.4';
@@ -496,8 +513,7 @@ async function renderRecetas(){
   if(!el) return;
   el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:.8rem">Cargando recetas...</div>';
   try{
-    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
-                         .collection('rx')
+    const snap = await clinicaCol('rx')
                          .where('expId','==',PX_ID)
                          .get();
     if(snap.empty){
@@ -894,5 +910,21 @@ ${link}`);
   </div>
 </div>
 
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
+</script>
 </body>
 </html>

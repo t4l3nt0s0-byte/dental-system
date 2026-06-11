@@ -1,8 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DentalOS · Corte de Caja</title>
+<meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Corte de Caja</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -34,7 +51,7 @@
 @media(max-width:900px){.corte-layout{grid-template-columns:1fr}.forma-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -80,7 +97,7 @@
         <div class="ticket" id="ticketPreview">
           <div class="ticket-header">
             <div class="ticket-logo">🦷</div>
-            <div class="ticket-clinic" id="tkClinica">DentalOS</div>
+            <div class="ticket-clinic" id="tkClinica">Hersantych</div>
             <div style="font-size:.68rem;color:rgba(255,255,255,.5)" id="tkSub"></div>
           </div>
           <div class="ticket-body">
@@ -95,7 +112,7 @@
             <div class="ticket-row total"><span>TOTAL DEL DÍA</span><span id="tkTotal">$0.00</span></div>
             <div class="ticket-row total" style="color:#666;font-size:.78rem"><span>Con IVA (16%)</span><span id="tkIvaTotal">$0.00</span></div>
           </div>
-          <div class="ticket-footer" id="tkFooter">DentalOS · Gracias por su visita</div>
+          <div class="ticket-footer" id="tkFooter">Hersantych · Gracias por su visita</div>
         </div>
         <!-- Historial de cortes guardados -->
         <div style="margin-top:16px">
@@ -111,6 +128,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'corte-caja';
@@ -119,9 +137,9 @@ let abonosDia = [], clinicaData = null;
 initSession('any').then(async session => {
   if (!session) return;
   clinicaData = session.clinica;
-  document.getElementById('tkClinica').textContent = clinicaData.nombre||'DentalOS';
+  document.getElementById('tkClinica').textContent = clinicaData.nombre||'Hersantych';
   document.getElementById('tkSub').textContent = clinicaData.telefono||'';
-  document.getElementById('tkFooter').textContent = `${clinicaData.nombre||'DentalOS'} · Gracias por su visita`;
+  document.getElementById('tkFooter').textContent = `${clinicaData.nombre||'Hersantych'} · Gracias por su visita`;
 
   document.getElementById('fechaCorte').value = todayISO();
   updateLabel();
@@ -359,7 +377,7 @@ async function generarCFDI(abonoId, btn) {
 
   // Check if Facturapi is configured
   try {
-    const clinicaSnap = await db.collection('clinicas').doc(SESSION.clinica.id).get();
+    const clinicaSnap = await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).get();
     const clinicaData  = clinicaSnap.data();
     const facturapiKey = (clinicaData.fiscal && clinicaData.fiscal.facturapiKey)
                          || clinicaData.facturapiKey || '';
@@ -399,7 +417,7 @@ async function emitirCFDI() {
     // });
     // const { cfdi_id, pdf_url, xml_url } = res.data;
     // Actualizar abono con datos del CFDI
-    // await db.collection('clinicas').doc(SESSION.clinica.id)
+    // await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id)
     //         .collection('abonos').doc(_cfdiAbonoId)
     //         .update({ cfdi: true, cfdi_id, pdf_url, xml_url, cfdi_rfc: rfc });
 
@@ -409,8 +427,7 @@ async function emitirCFDI() {
       c=>{ const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });
 
     // Marcar abono como facturado
-    await db.collection('clinicas').doc(SESSION.clinica.id)
-      .collection('abonos').doc(_cfdiAbonoId)
+    await clinicaCol('abonos').doc(_cfdiAbonoId)
       .update({
         cfdi: true, cfdi_folio: folio, cfdi_uuid: uuid,
         cfdi_rfc: rfc, cfdi_nombre: nombre,
@@ -444,5 +461,21 @@ async function emitirCFDI() {
 }
 </script>
 
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
+</script>
 </body>
 </html>

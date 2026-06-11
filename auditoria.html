@@ -1,9 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DentalOS · Auditoría</title>
+<title>Hersantych · Auditoría</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -37,7 +54,7 @@
 @media(max-width:700px){.stats-grid{grid-template-columns:1fr 1fr}.audit-table td:nth-child(4){display:none}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -118,6 +135,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'auditoria';
 
@@ -142,8 +160,7 @@ async function loadAudit(reset = false) {
     const dias   = parseInt(document.getElementById('filtroRango').value) || 30;
     const desde  = new Date();
     desde.setDate(desde.getDate() - dias);
-    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
-      .collection('auditoria')
+    const snap = await clinicaCol('auditoria')
       .where('ts','>=', firebase.firestore.Timestamp.fromDate(desde))
       .orderBy('ts','desc')
       .limit(500)
@@ -156,8 +173,7 @@ async function loadAudit(reset = false) {
   } catch(e) {
     // Fallback: load without date filter if index missing
     try {
-      const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
-        .collection('auditoria')
+      const snap = await clinicaCol('auditoria')
         .orderBy('ts','desc')
         .limit(500)
         .get();
@@ -264,10 +280,10 @@ function renderTable() {
       <td style="font-family:var(--font-mono);font-size:.72rem;white-space:nowrap;color:var(--text-muted)">${ts}</td>
       <td><span class="action-badge ${badgeCls}">${accionShort}</span></td>
       <td style="font-size:.78rem">
-        <div style="font-weight:600;color:var(--text)">${log.userName||'—'}</div>
+        <div style="font-weight:600;color:var(--text)">${esc(log.userName)||'—'}</div>
         <div style="font-size:.65rem;color:var(--text-dim)">${log.uid?.slice(0,8)||''}...</div>
       </td>
-      <td style="font-size:.72rem;color:var(--text-muted)">${log.pagina||'—'}</td>
+      <td style="font-size:.72rem;color:var(--text-muted)">${esc(log.pagina)||'—'}</td>
       <td style="font-size:.72rem;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${datosStr}</td>
     </tr>`;
   }).join('');
@@ -306,8 +322,8 @@ function showDetalle(log) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">Usuario</div>
-          <div style="font-size:.82rem;font-weight:600;color:var(--text)">${log.userName||'—'}</div>
-          <div style="font-size:.68rem;color:var(--text-dim);font-family:var(--font-mono)">${log.uid||''}</div>
+          <div style="font-size:.82rem;font-weight:600;color:var(--text)">${esc(log.userName)||'—'}</div>
+          <div style="font-size:.68rem;color:var(--text-dim);font-family:var(--font-mono)">${esc(log.uid)||''}</div>
         </div>
         <div>
           <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">Fecha y hora</div>
@@ -315,7 +331,7 @@ function showDetalle(log) {
         </div>
         <div>
           <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">Página</div>
-          <div style="font-size:.82rem;color:var(--text)">${log.pagina||'—'}</div>
+          <div style="font-size:.82rem;color:var(--text)">${esc(log.pagina)||'—'}</div>
         </div>
         <div>
           <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px">IP</div>
@@ -366,6 +382,22 @@ function fmtTs(ts) {
       hour:'2-digit',minute:'2-digit',second:'2-digit'
     });
   } catch(e){ return '—'; }
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>

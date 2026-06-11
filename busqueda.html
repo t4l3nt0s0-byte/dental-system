@@ -2,13 +2,23 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00C2A8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hersantych">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hersantych · Búsqueda Global</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -44,7 +54,7 @@ mark{background:var(--teal-dim);color:var(--teal);border-radius:2px;padding:0 2p
 .recent-chip:hover{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.3)}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">

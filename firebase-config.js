@@ -1,5 +1,5 @@
 // ============================================================
-// firebase-config.js — Hersantych Dental · Core Firebase Setup
+// firebase-config.js — Hersantych · Core Firebase Setup
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";

@@ -2,13 +2,23 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00C2A8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hersantych">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hersantych · Configuración del Consultorio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -80,7 +90,7 @@
 @media(max-width:900px){.config-layout{grid-template-columns:1fr}.config-nav{position:static;display:flex;overflow-x:auto;border-radius:var(--r)}.config-nav-item{flex-shrink:0;border-left:none;border-bottom:3px solid transparent}.config-nav-item.active{border-left:none;border-bottom-color:var(--teal)}.info-grid{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -480,7 +490,7 @@ initSession('any').then(async session => {
   }
 
   // Cargar datos fiscales y config
-  const cSnap = await db.collection('clinicas').doc(clinica.id).get();
+  const cSnap = await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).get();
   const data  = cSnap.data() || {};
   const fiscal = data.fiscal || {};
   const config = data.config || {};
@@ -728,7 +738,7 @@ window.guardarConfig = async function() {
       updates.logoBase64 = logoBase64;
     }
 
-    await db.collection('clinicas').doc(SESSION.clinica.id).update(updates);
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).update(updates);
 
     // Actualizar nombre del usuario si cambió
     const miNombre = document.getElementById('cf-miNombre').value.trim();
@@ -1092,7 +1102,7 @@ async function loadSucursales(){
     const orgId = SESSION.user.orgId || SESSION.clinica.id;
     let clinicas = [];
     try{
-      const snap = await db.collection('clinicas').where('orgId','==',orgId).get();
+      const snap = await db.collection('organizations').where('orgId','==',orgId).get();
       clinicas = snap.docs.map(d=>({id:d.id,...d.data()}));
     }catch(e){
       clinicas = [Object.assign({id:SESSION.clinica.id},SESSION.clinica)];
@@ -1131,14 +1141,14 @@ async function crearNuevaSucursal(){
     // Verificar límite de sucursales del plan
     const maxSuc  = planObj.maxSucursales || 1;
     if(maxSuc !== Infinity){
-      const snap = await db.collection('clinicas').where('orgId','==',orgId).get();
+      const snap = await db.collection('organizations').where('orgId','==',orgId).get();
       if(snap.docs.length >= maxSuc){
         showToast('Tu plan permite máximo '+maxSuc+' sucursal(es). Actualiza a un plan multi-sucursal.','error');
         return;
       }
     }
     const newId = 'clinica_'+orgId+'_'+Date.now();
-    await db.collection('clinicas').doc(newId).set({
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).set({
       nombre, ciudad, direccion:dir, telefono:tel, plan,
       orgId, adminUid: SESSION.user.uid, activo: true, tema: 'dark',
       creadoEn: firebase.firestore.FieldValue.serverTimestamp()
@@ -1153,7 +1163,7 @@ async function desactivarSucursal(id, nombre){
   const ok = await confirmDialog('¿Desactivar la sucursal "'+nombre+'"? Los datos no se eliminan.');
   if(!ok) return;
   try{
-    await db.collection('clinicas').doc(id).update({activo:false});
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).update({activo:false});
     showToast('Sucursal desactivada','success');
     loadSucursales();
   } catch(e) { handleError(e, 'configuracion'); }
@@ -1173,14 +1183,13 @@ async function borrarDatosDemo() {
 
   try {
     const cId  = SESSION.clinica.id;
-    const base = db.collection('clinicas').doc(cId);
-    const cols = ['pacientes','citas','tratamientos','abonos','doctores',
+        const cols = ['pacientes','citas','tratamientos','abonos','doctores',
                   'catalogo','inventario','notas-clinicas'];
     let total  = 0;
 
     for (const col of cols) {
       // Only delete docs with _demo:true flag
-      const snap = await base.collection(col).where('_demo','==',true).limit(200).get();
+      const snap = await clinicaCol(col).where('_demo','==',true).limit(200).get();
       const batch = db.batch();
       snap.docs.forEach(d => batch.delete(d.ref));
       if (snap.docs.length > 0) {
@@ -1190,7 +1199,7 @@ async function borrarDatosDemo() {
     }
 
     // Reset the seed counter so folios restart
-    await base.collection('_counters').doc('expedientes_' + new Date().getFullYear())
+    await clinicaCol('_counters').doc('expedientes_' + new Date().getFullYear())
       .delete().catch(()=>{});
 
     if (btn) { btn.disabled=false; btn.textContent='🗑️ Borrar datos de prueba'; }

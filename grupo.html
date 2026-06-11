@@ -1,9 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DentalOS · Dashboard del Grupo</title>
+<title>Hersantych · Dashboard del Grupo</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -46,7 +63,7 @@
 @media(max-width:600px){.grp-kpi-grid{grid-template-columns:1fr 1fr};.suc-grid{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -134,6 +151,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'grupo';
 
@@ -157,7 +175,7 @@ async function loadAllData(){
     const orgId = SESSION.user.orgId || SESSION.clinica.id;
     let snap;
     try {
-      snap = await db.collection('clinicas').where('orgId','==',orgId).get();
+      snap = await db.collection('organizations').where('orgId','==',orgId).get();
     } catch(e) {
       // Fallback: si solo hay una clínica (sin orgId aún)
       snap = { docs: [{ id: SESSION.clinica.id, data: ()=>SESSION.clinica }] };
@@ -194,12 +212,11 @@ async function loadAllData(){
 async function loadClinicaData(clinica) {
   const id = clinica.id;
   try {
-    const base = db.collection('clinicas').doc(id);
-    const [citasSnap, abonosSnap, pxSnap, docSnap] = await Promise.all([
-      base.collection('citas').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
-      base.collection('abonos').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
-      base.collection('pacientes').get().catch(()=>({docs:[]})),
-      base.collection('doctores').get().catch(()=>({docs:[]})),
+        const [citasSnap, abonosSnap, pxSnap, docSnap] = await Promise.all([
+      clinicaCol('citas').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
+      clinicaCol('abonos').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
+      clinicaCol('pacientes').get().catch(()=>({docs:[]})),
+      clinicaCol('doctores').get().catch(()=>({docs:[]})),
     ]);
     const ingresosHoy = abonosSnap.docs.reduce((s,d)=>s+(d.data().monto||0),0);
     const citasHoy    = citasSnap.docs.length;
@@ -241,8 +258,8 @@ function renderSucursales(filtroId='') {
       <div class="suc-card-head">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div>
-            <div class="suc-card-name">${c.nombre||'Sucursal'}</div>
-            <div class="suc-card-loc">📍 ${c.ciudad||'—'} ${c.direccion?'· '+c.direccion:''}</div>
+            <div class="suc-card-name">${esc(c.nombre)||'Sucursal'}</div>
+            <div class="suc-card-loc">📍 ${esc(c.ciudad)||'—'} ${c.direccion?'· '+c.direccion:''}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
             <span class="badge-plan" style="background:${planColor}22;color:${planColor};border:1px solid ${planColor}44">${planNombre}</span>
@@ -277,7 +294,7 @@ function renderRanking() {
     const medals=['🥇','🥈','🥉'];
     return `<div class="ranking-row">
       <span class="ranking-num">${medals[i]||('#'+(i+1))}</span>
-      <span style="font-size:.82rem;font-weight:600;min-width:140px;color:var(--text)">${c.nombre||c.id}</span>
+      <span style="font-size:.82rem;font-weight:600;min-width:140px;color:var(--text)">${esc(c.nombre)||c.id}</span>
       <div class="ranking-bar-wrap"><div class="ranking-bar" style="width:${pct}%"></div></div>
       <span style="font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--teal);min-width:80px;text-align:right">${fmtMXN(d.ingresosHoy||0)}</span>
     </div>`;
@@ -303,7 +320,7 @@ function renderDoctores() {
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:8px">
         <div style="width:28px;height:28px;border-radius:50%;background:${r.doc.color||'var(--teal)'};display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#fff;flex-shrink:0">${ini}</div>
-        <div><div style="font-size:.82rem;font-weight:600">${r.doc.nombre||'—'}</div><div style="font-size:.65rem;color:var(--text-dim)">${r.doc.especialidad||'Dentista'}</div></div>
+        <div><div style="font-size:.82rem;font-weight:600">${esc(r.doc.nombre)||'—'}</div><div style="font-size:.65rem;color:var(--text-dim)">${r.doc.especialidad||'Dentista'}</div></div>
       </div></td>
       <td style="font-size:.78rem">${r.clinica}</td>
       <td style="text-align:center;font-family:var(--font-mono);font-size:.8rem">—</td>
@@ -347,6 +364,22 @@ function showGTab(name) {
 }
 function onSucursalChange(id) {
   renderSucursales(id);
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>
