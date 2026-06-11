@@ -2,9 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DentalOS · Bienvenido</title>
+<title>Hersantych · Bienvenido</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -43,7 +49,7 @@
     <!-- Header -->
     <div style="text-align:center;margin-bottom:2rem">
       <div style="font-size:2.5rem;margin-bottom:.5rem">🦷</div>
-      <div style="font-family:var(--font-display);font-size:1.8rem;font-style:italic;color:var(--teal)" id="welcomeName">Bienvenido a DentalOS</div>
+      <div style="font-family:var(--font-display);font-size:1.8rem;font-style:italic;color:var(--teal)" id="welcomeName">Bienvenido a Hersantych</div>
       <div style="font-size:.85rem;color:var(--text-muted);margin-top:.25rem">Configuremos tu consultorio en 5 minutos</div>
     </div>
 
@@ -266,6 +272,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'setup';
 
@@ -310,7 +317,7 @@ async function saveClinica() {
   const nombre = document.getElementById('s1-nombre').value.trim();
   if (!nombre) { showToast('El nombre del consultorio es obligatorio','error'); return false; }
   try {
-    await db.collection('clinicas').doc(SESSION.clinica.id).update({
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).update({
       nombre,
       eslogan:  document.getElementById('s1-slogan').value.trim(),
       ciudad:   document.getElementById('s1-ciudad').value.trim(),
@@ -423,7 +430,7 @@ async function inviteUser() {
 // desde Configuración → "Borrar datos de prueba"
 // ══════════════════════════════════════════════════════════════
 async function createSeedData(clinicaId) {
-  const db_c = db.collection('clinicas').doc(clinicaId);
+  const db_c = db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id);
   const ts   = firebase.firestore.FieldValue.serverTimestamp();
 
   // Fechas relativas al día de hoy
@@ -589,7 +596,7 @@ async function finish() {
   });
   // Mark setup as done
   try {
-    await db.collection('clinicas').doc(SESSION.clinica.id)
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id)
       .update({ setupDone: true });
   } catch(e) {}
   // Crear datos de demostración si el consultorio es nuevo
@@ -604,6 +611,22 @@ async function finish() {
 
 // Override goStep for step 2 to save clinica first
 const _origGoStep = goStep;
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
+}
 </script>
 </body>
 </html>

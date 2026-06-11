@@ -2,9 +2,17 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<link rel="apple-touch-icon" href="favicon.svg">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="description" content="Portal del paciente — consulta tus citas, adeudos y recetas">
-<title>Mi Portal · DentalOS</title>
+<title>Mi Portal · Hersantych</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -122,14 +130,13 @@ const wrap     = document.getElementById('portalWrap');
     const { clinicaId, pxId } = tokenData;
 
     // 2. Load all data in parallel
-    const base = db.collection('clinicas').doc(clinicaId);
-    const [clinicaSnap, pxSnap, citasSnap, abonosSnap, tratSnap, rxSnap] = await Promise.all([
+        const [clinicaSnap, pxSnap, citasSnap, abonosSnap, tratSnap, rxSnap] = await Promise.all([
       base.get(),
-      base.collection('pacientes').doc(pxId).get(),
-      base.collection('citas').where('expId','==',pxId).orderBy('fecha','desc').limit(20).get(),
-      base.collection('abonos').where('expId','==',pxId).orderBy('creadoEn','desc').limit(50).get().catch(()=>({docs:[]})),
-      base.collection('tratamientos').where('expId','==',pxId).get().catch(()=>({docs:[]})),
-      base.collection('rx').where('expId','==',pxId).orderBy('creadoEn','desc').limit(5).get().catch(()=>({docs:[]})),
+      clinicaCol('pacientes').doc(pxId).get(),
+      clinicaCol('citas').where('expId','==',pxId).orderBy('fecha','desc').limit(20).get(),
+      clinicaCol('abonos').where('expId','==',pxId).orderBy('creadoEn','desc').limit(50).get().catch(()=>({docs:[]})),
+      clinicaCol('tratamientos').where('expId','==',pxId).get().catch(()=>({docs:[]})),
+      clinicaCol('rx').where('expId','==',pxId).orderBy('creadoEn','desc').limit(5).get().catch(()=>({docs:[]})),
     ]);
 
     if (!pxSnap.exists || !clinicaSnap.exists) { showError('Paciente no encontrado','No se encontraron tus datos. Contacta a tu consultorio.'); return; }
@@ -180,8 +187,7 @@ async function resolveToken(token) {
     const decoded = atob(token);
     const [clinicaId, pxId] = decoded.split(':');
     if (clinicaId && pxId) {
-      const pxSnap = await db.collection('clinicas').doc(clinicaId)
-        .collection('pacientes').doc(pxId).get();
+      const pxSnap = await clinicaCol('pacientes').doc(pxId).get();
       if (pxSnap.exists) return { clinicaId, pxId };
     }
   } catch(e) {}
@@ -315,7 +321,7 @@ function renderPortal({ clinica, px, citas, abonos, trats, rxs }) {
   <!-- Footer -->
   <div style="text-align:center;padding:1.5rem 0;border-top:1px solid var(--border);margin-top:1.5rem">
     <div style="font-size:.7rem;color:var(--text-dim)">Portal generado por</div>
-    <div style="font-family:var(--font-display);font-style:italic;font-size:.9rem;color:var(--teal);margin-top:2px">DentalOS</div>
+    <div style="font-family:var(--font-display);font-style:italic;font-size:.9rem;color:var(--teal);margin-top:2px">Hersantych</div>
     <div style="font-size:.65rem;color:var(--text-dim);margin-top:4px">Información actualizada en tiempo real</div>
   </div>
   `;
@@ -351,6 +357,22 @@ function showError(title, msg) {
     <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.5rem">${title}</div>
     <div style="font-size:.82rem;color:var(--text-muted)">${msg}</div>
   </div>`;
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>

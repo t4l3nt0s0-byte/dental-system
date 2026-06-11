@@ -1,8 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hersantych Dental · Recibo de Pago</title>
+<meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hersantych · Recibo de Pago</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -54,7 +71,7 @@
 }
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
@@ -147,7 +164,7 @@
           <div class="recibo-header">
             <div class="recibo-badge">RECIBO DE PAGO</div>
             <div id="rv-logo" class="recibo-logo-emoji">🦷</div>
-            <div class="recibo-clinic" id="rv-clinica">Hersantych Dental</div>
+            <div class="recibo-clinic" id="rv-clinica">Hersantych</div>
             <div class="recibo-clinic-sub" id="rv-sub"></div>
           </div>
           <div class="recibo-body">
@@ -204,7 +221,7 @@
             </div>
           </div>
           <div class="recibo-footer" id="rv-footer">
-            <strong>Hersantych Dental</strong><br>
+            <strong>Hersantych</strong><br>
             Este recibo es comprobante oficial de pago
           </div>
         </div>
@@ -229,7 +246,7 @@
         💡 Estos datos aparecerán en todos los recibos. Se guardan en tu clínica en Firebase.
       </div>
       <div class="config-grid">
-        <div class="form-group"><label class="form-label">Razón social / Nombre</label><input class="form-input" id="fc-razon" placeholder="Hersantych Dental S.A. de C.V."></div>
+        <div class="form-group"><label class="form-label">Razón social / Nombre</label><input class="form-input" id="fc-razon" placeholder="Hersantych S.A. de C.V."></div>
         <div class="form-group"><label class="form-label">RFC</label><input class="form-input" id="fc-rfc" placeholder="XXXX000000XX0"></div>
         <div class="form-group"><label class="form-label">Cédula profesional</label><input class="form-input" id="fc-cedula" placeholder="Núm. de cédula profesional"></div>
         <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="fc-especialidad" placeholder="Cirujano Dentista"></div>
@@ -259,6 +276,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script src="print-helper.js"></script>
 <script>
 window.CURRENT_PAGE = 'recibo';
@@ -270,10 +288,10 @@ initSession('any').then(async session=>{
   const {clinica,user}=session;
 
   // Cargar datos fiscales Y logo guardados
-  const cSnap=await db.collection('clinicas').doc(clinica.id).get();
+  const cSnap=await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).get();
   const cData = cSnap.data() || {};
   fiscalData=cData.fiscal||{};
-  fiscalData.nombre=fiscalData.nombre||clinica.nombre||'Hersantych Dental';
+  fiscalData.nombre=fiscalData.nombre||clinica.nombre||'Hersantych';
   fiscalData.tel=fiscalData.tel||clinica.telefono||'';
   fiscalData.email=fiscalData.email||clinica.emailClinica||'';
   fiscalData.direccion=fiscalData.direccion||clinica.direccion||'';
@@ -324,10 +342,10 @@ async function loadPacientes(){
     allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
 }
 async function loadAbonos(){
-  allAbonos=await fsGetAll('abonos');
+  allAbonos=await fsGetAll('abonos',r=>r.limit(100));
 }
 async function loadTrat(){
-  allTrat=await fsGetAll('tratamientos');
+  allTrat=await fsGetAll('tratamientos',r=>r.limit(100));
 }
 
 window.loadAbonosPx=function(){
@@ -400,11 +418,11 @@ function renderFiscalPreview(){
       else logoEl.textContent = '🦷';
     }
   }
-  document.getElementById('rv-clinica').textContent=fiscalData.nombre||SESSION?.clinica?.nombre||'Hersantych Dental';
+  document.getElementById('rv-clinica').textContent=fiscalData.nombre||SESSION?.clinica?.nombre||'Hersantych';
   const eslogan = SESSION?.clinica?.eslogan || '';
   const subParts=[eslogan, fiscalData.especialidad,fiscalData.tel,fiscalData.email].filter(Boolean);
   document.getElementById('rv-sub').textContent=subParts.join(' · ');
-  document.getElementById('rv-footer').innerHTML=`<strong>${fiscalData.nombre||'Hersantych Dental'}</strong><br>${fiscalData.leyenda||'Gracias por su preferencia'}<br>${fiscalData.direccion||''}`;
+  document.getElementById('rv-footer').innerHTML=`<strong>${fiscalData.nombre||'Hersantych'}</strong><br>${fiscalData.leyenda||'Gracias por su preferencia'}<br>${fiscalData.direccion||''}`;
   // Datos fiscales en el cuerpo
   const rows=[
     fiscalData.razon?['Razón social',fiscalData.razon]:null,
@@ -481,11 +499,11 @@ async function saveFiscal(){
   const btn=document.getElementById('btnSaveFiscal');
   btn.disabled=true;btn.textContent='Guardando...';
   try{
-    await db.collection('clinicas').doc(SESSION.clinica.id).update({fiscal:fiscalData,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).update({fiscal:fiscalData,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
     showToast('Datos fiscales guardados','success');
     closeModal('modalFiscal');
     renderFiscalPreview();
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'recibo'); }
   btn.disabled=false;btn.textContent='💾 Guardar datos fiscales';
 }
 
@@ -510,13 +528,13 @@ async function guardarRecibo(){
     showToast('Recibo guardado correctamente','success');
     reciboNum++;
     document.getElementById('r-numero').value='R-'+String(reciboNum).padStart(3,'0');
-  }catch(e){showToast('Error: '+e.message,'error');}
+  } catch(e) { handleError(e, 'recibo'); }
 }
 
 function imprimirRecibo_OLD_UNUSED(){
   const preview=document.getElementById('reciboPreview').outerHTML;
   const pw=window.open('','_blank');
-  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <title>Recibo de Pago</title>
     <style>
@@ -555,6 +573,22 @@ function imprimirRecibo_OLD_UNUSED(){
     </style>
   </head><body>${preview}<script>window.onload=()=>window.print()<\/script></body></html>`);
   pw.document.close();
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>

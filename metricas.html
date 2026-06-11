@@ -458,7 +458,7 @@ window.guardarMeta=async function(){
   const val=parseInt(document.getElementById('metaInput').value)||0;
   if(val<1000){showToast('La meta mínima es $1,000 MXN','error');return;}
   try{
-    await db.collection('clinicas').doc(SESSION.clinica.id).update({metaMensual:val});
+    await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).update({metaMensual:val});
     metaMensual=val;
     closeModal('modalMeta');
     renderMeta();
@@ -829,8 +829,7 @@ initSession('metricas').then(async session=>{
   const mesAnt  = (()=>{const d=new Date();d.setMonth(d.getMonth()-1);return d.toISOString().slice(0,7);})();
   let analyticsDoc = null;
   try {
-    const aSnap = await db.collection('clinicas').doc(clinica.id)
-      .collection('analytics').doc('monthly_' + mesISO).get();
+    const aSnap = await clinicaCol('analytics').doc('monthly_' + mesISO).get();
     if (aSnap.exists) analyticsDoc = aSnap.data();
   } catch(e) {}
 
@@ -858,7 +857,7 @@ initSession('metricas').then(async session=>{
       safeGet('tratamientos', r=>r.limit(300)),
       safeGet('cotizaciones', r=>r.limit(100)),
     ]);
-    try{const cSnap=await db.collection('clinicas').doc(clinica.id).get();metaMensual=cSnap.data()?.metaMensual||0;}catch(e){}
+    try{const cSnap=await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).get();metaMensual=cSnap.data()?.metaMensual||0;}catch(e){}
   }
 
   ALL_CITAS=citas;ALL_ABONOS=abonos;ALL_PACIENTES=pacientes;ALL_TRATS=trats;ALL_COTIZACIONES=cotizaciones;

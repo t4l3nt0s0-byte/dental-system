@@ -1,5 +1,5 @@
 /**
- * print-helper.js — Hersantych Dental
+ * print-helper.js — Hersantych
  * Impresión universal sin ventanas emergentes
  * Funciona en Chrome, Edge, Safari, Firefox
  * Extrae CSS dinámicamente de la página para conservar el diseño exacto
@@ -45,7 +45,7 @@ function printHTML(html, title, extraCSS) {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>${title || 'Hersantych Dental'}</title>
+  <title>${title || 'Hersantych'}</title>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>${fullCSS}</style>
 </head>
@@ -87,7 +87,7 @@ function printElement(elementId) {
 function imprimirRecibo() {
   const el = document.getElementById('reciboPreview');
   if (!el) { showToast('No hay recibo para imprimir','error'); return; }
-  printHTML(el.outerHTML, 'Recibo de Pago · Hersantych Dental', `
+  printHTML(el.outerHTML, 'Recibo de Pago · Hersantych', `
     body { display:flex; justify-content:center; padding:20px; }
     .recibo { max-width:440px; width:100%; box-shadow:none !important; }
     .recibo-actions { display:none !important; }
@@ -105,7 +105,7 @@ function imprimirRecibo() {
 function imprimirCot() {
   const el = document.getElementById('previewCard');
   if (!el) { showToast('No hay cotización para imprimir','error'); return; }
-  printHTML(el.outerHTML, 'Cotización · Hersantych Dental', `
+  printHTML(el.outerHTML, 'Cotización · Hersantych', `
     body { display:flex; justify-content:center; padding:20px; }
     .preview-card { max-width:620px; width:100%; box-shadow:none !important; }
     .preview-actions { display:none !important; }
@@ -124,7 +124,7 @@ function imprimirCot() {
 function printTicket() {
   const el = document.getElementById('ticketPreview');
   if (!el) { showToast('No hay corte para imprimir','error'); return; }
-  printHTML(el.outerHTML, 'Corte de Caja · Hersantych Dental', `
+  printHTML(el.outerHTML, 'Corte de Caja · Hersantych', `
     body { display:flex; justify-content:center; padding:20px; }
     .ticket { max-width:340px; width:100%; }
     .ticket-header { background:#060D14 !important; }
@@ -171,13 +171,13 @@ function printOdo() {
   const pxNombre = document.getElementById('odoSub')?.textContent || '';
   const header   = `
     <div style="margin-bottom:16px">
-      <h2 style="font-family:'Instrument Serif',serif;font-style:italic;color:#111;margin-bottom:4px">Odontograma · Hersantych Dental</h2>
+      <h2 style="font-family:'Instrument Serif',serif;font-style:italic;color:#111;margin-bottom:4px">Odontograma · Hersantych</h2>
       <p style="font-size:.78rem;color:#666">${pxNombre} · ${new Date().toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'})}</p>
     </div>`;
   const notasHtml = notas
     ? `<div style="margin-top:16px;padding:12px;background:#f8f9fa;border-radius:6px;font-size:.78rem;color:#555;border:1px solid #eee"><strong>Notas:</strong> ${notas}</div>`
     : '';
-  printHTML(header + el.outerHTML + notasHtml, 'Odontograma · Hersantych Dental', `
+  printHTML(header + el.outerHTML + notasHtml, 'Odontograma · Hersantych', `
     body { padding:24px; }
     .odo-wrap { background:#fff !important; border:none !important; box-shadow:none !important; padding:0 !important; }
     .odo-title, .odo-sub, .btn, .panel-title, .toolLegend, [class*="legend"] { display:none !important; }

@@ -1,8 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Hersantych Dental · Recetas Médicas</title>
+<meta charset="UTF-8">
+<style>
+/* Critical CSS — instant background, prevents flash */
+:root{--bg:#060D14;--surface:#0D1822;--teal:#00C2A8}
+html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0;min-height:100vh}
+/* Fade the content area, not the whole body */
+body.loading .content{opacity:0}
+body.loaded .content{opacity:1;transition:opacity .2s ease}
+/* Keep sidebar visible immediately */
+body.loading .sidebar{opacity:1}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="icons/icon-192.png"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hersantych · Recetas Médicas</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -137,7 +154,7 @@
 .rp-validez{background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:6px 12px;font-size:8pt;color:#f57f17;font-weight:600;display:inline-flex;align-items:center;gap:6px}
 </style>
 </head>
-<body>
+<body class="loading">
 <aside class="sidebar" id="sidebar"></aside>
 <button class="hamburger" id="hamburger">☰</button>
 
@@ -283,7 +300,7 @@
       <div class="rp-logo-area">
         <div id="rp-logo-container"></div>
         <div>
-          <div class="rp-clinic-name" id="rp-clinicName">Hersantych Dental</div>
+          <div class="rp-clinic-name" id="rp-clinicName">Hersantych</div>
           <div class="rp-clinic-slogan" id="rp-clinicSlogan">Sistema de salud dental</div>
           <div class="rp-clinic-contact" id="rp-clinicContact"></div>
         </div>
@@ -346,7 +363,7 @@
 
     <!-- FOOTER -->
     <div class="rp-footer" id="rp-footer">
-      <span id="rp-footerClinica">Hersantych Dental</span> &nbsp;|&nbsp;
+      <span id="rp-footerClinica">Hersantych</span> &nbsp;|&nbsp;
       <span id="rp-footerDir"></span> &nbsp;|&nbsp;
       <span id="rp-footerTel"></span>
     </div>
@@ -364,6 +381,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="dataService.js"></script>
 <script>
 window.CURRENT_PAGE = 'recetas';
 
@@ -379,9 +397,9 @@ initSession('any').then(async session => {
   CLINICA = session.clinica;
 
   const [pxs, docs, inv] = await Promise.all([
-    fsGetAll('pacientes').catch(()=>[]),
-    fsGetAll('doctores').catch(()=>[]),
-    fsGetAll('inventario').catch(()=>[]),
+    fsGetAll('pacientes',r=>r.limit(300)).catch(()=>[]),
+    fsGetAll('doctores',r=>r.limit(50)).catch(()=>[]),
+    fsGetAll('inventario',r=>r.limit(200)).catch(()=>[]),
   ]);
   ALL_PXLIST     = pxs;
   ALL_DOCTORES   = docs;
@@ -565,7 +583,7 @@ function generarReceta(){
   const folio = 'RX-'+Date.now().toString(36).toUpperCase().slice(-6);
 
   // ── Clinica info ──
-  document.getElementById('rp-clinicName').textContent    = CLINICA.nombre||'Hersantych Dental';
+  document.getElementById('rp-clinicName').textContent    = CLINICA.nombre||'Hersantych';
   document.getElementById('rp-clinicSlogan').textContent  = CLINICA.eslogan||'Sistema integral dental';
   document.getElementById('rp-clinicContact').innerHTML   =
     [CLINICA.telefono?'📞 '+CLINICA.telefono:'', CLINICA.emailClinica?'✉ '+CLINICA.emailClinica:'', CLINICA.direccion||''].filter(Boolean).join('<br>');
@@ -653,7 +671,7 @@ function generarReceta(){
   document.getElementById('rp-validez').textContent='⚕ '+document.getElementById('r-validez').value;
 
   // ── Footer ──
-  document.getElementById('rp-footerClinica').textContent=CLINICA.nombre||'Hersantych Dental';
+  document.getElementById('rp-footerClinica').textContent=CLINICA.nombre||'Hersantych';
   document.getElementById('rp-footerDir').textContent=CLINICA.direccion||CLINICA.ciudad||'';
   document.getElementById('rp-footerTel').textContent=CLINICA.telefono||'';
 
@@ -718,7 +736,7 @@ async function guardarRecetaFirebase(){
 
   if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
   try{
-    const base = db.collection('clinicas').doc(SESSION.clinica.id).collection('rx');
+    const base = clinicaCol('rx');
     if(_rxGuardadaId){
       await base.doc(_rxGuardadaId).update({...rxData,
         actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()});
@@ -746,8 +764,7 @@ async function cargarUltimaReceta(){
   if(btn){ btn.disabled=true; btn.textContent='Cargando...'; }
   try{
     // Sin orderBy — evita requerir índice compuesto en Firestore
-    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
-                         .collection('rx')
+    const snap = await clinicaCol('rx')
                          .where('expId','==',pxId)
                          .get();
     if(snap.empty){
@@ -833,8 +850,7 @@ async function verificarHistorialPx(pxId){
   if(!btn) return;
   if(!pxId){ btn.style.display='none'; return; }
   try{
-    const snap = await db.collection('clinicas').doc(SESSION.clinica.id)
-                         .collection('rx')
+    const snap = await clinicaCol('rx')
                          .where('expId','==',pxId)
                          .limit(1).get();
     btn.style.display = snap.empty ? 'none' : 'inline-flex';
@@ -860,6 +876,22 @@ function limpiarReceta(){
   if(btnG){ btnG.disabled=false; btnG.textContent='Guardar en historial'; btnG.style.color=''; }
   const btnC = document.getElementById('btnCargarUltima');
   if(btnC) btnC.style.display='none';
+}
+</script>
+<script>
+// ── Service Worker Registration ────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered, scope:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 600000);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err.message);
+      });
+  });
 }
 </script>
 </body>
