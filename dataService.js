@@ -195,7 +195,7 @@ var DS = {
     },
     // Paginado (para lista de pacientes)
     getPaged: async function(cursor, pageSize) {
-      var ref = col('pacientes').limit(pageSize || 25);
+      var ref = col(colName).limit(pageSize || 25);
       if (cursor) ref = ref.startAfter(cursor);
       var snap = await ref.get();
       var docs = toDocs(snap).sort(function(a,b) {
