@@ -381,10 +381,22 @@ async function initSession(requiredPage) {
           var orgId = userData.orgId || userData.clinicaId || clinicaId;
 
           db.collection('organizations').doc(clinicaId).get()
-            .then(function(clinicaSnap) {
+            .then(async function(clinicaSnap) {
+              // ── FALLBACK: si no existe en organizations/, buscar en clinicas/ ──
+              // Esto permite que el sistema funcione tanto ANTES como DESPUÉS
+              // de ejecutar el script de migración
+              var _fromLegacy = false;
+              if (!clinicaSnap.exists) {
+                try {
+                  clinicaSnap = await db.collection('clinicas').doc(clinicaId).get();
+                  if (clinicaSnap.exists) _fromLegacy = true;
+                } catch(e2) {
+                  console.warn('initSession fallback clinicas:', e2.message);
+                }
+              }
               if (!clinicaSnap.exists) { if(document.body){document.body.classList.remove('loading');document.body.classList.add('loaded');} resolve(null); return; }
 
-              var clinicaData = Object.assign({ id: clinicaId }, clinicaSnap.data());
+              var clinicaData = Object.assign({ id: clinicaId, _source: _fromLegacy ? 'clinicas' : 'organizations' }, clinicaSnap.data());
 
               // ── Control de acceso por permisos individuales ──────
               // Prioridad: 1) userData.permisos (personalizado por admin)
@@ -941,11 +953,37 @@ function branchRef() {
 
 // clinicaCol(col) — accede a la colección correcta según el tipo
 // Automáticamente elige org-level vs branch-level
+// _MIGRATED: true cuando el sistema ya leyó datos de organizations/
+// false/undefined = datos aún en clinicas/ (pre-migración)
+var _useLegacyPath = null; // null = no determinado aún
+
 function clinicaCol(col) {
   var resolved = resolveColName(col);
-  if (isOrgLevel(col)) {
-    return orgRef().collection(resolved);
+
+  // Si ya determinamos que los datos están en organizations/, usar esa ruta
+  if (_useLegacyPath === false) {
+    if (isOrgLevel(col)) return orgRef().collection(resolved);
+    return branchRef().collection(resolved);
   }
+
+  // Si ya determinamos que los datos están en clinicas/ (pre-migración)
+  if (_useLegacyPath === true) {
+    return db.collection('clinicas')
+      .doc(SESSION && SESSION.clinica ? SESSION.clinica.id : '_')
+      .collection(col); // usar nombre original, no resuelto
+  }
+
+  // Aún no determinado: usar la ruta nueva (organizations/)
+  // initSession ya verificó cuál existe
+  if (SESSION && SESSION.clinica && SESSION.clinica._source === 'clinicas') {
+    _useLegacyPath = true;
+    return db.collection('clinicas')
+      .doc(SESSION.clinica.id)
+      .collection(col);
+  }
+
+  _useLegacyPath = false;
+  if (isOrgLevel(col)) return orgRef().collection(resolved);
   return branchRef().collection(resolved);
 }
 
