@@ -348,19 +348,19 @@ function renderPendientes(){
   });
   // Citas de mañana
   allCitas.filter(c=>c.fecha===mananaISO&&c.tel).forEach(c=>{
-    const msg=buildMsg('recordatorio_cita',{nombre:c.paciente?.split(' ')[0]||'',fecha:'mañana',hora:c.hora||''});
+    msg=buildMsg('recordatorio_cita',{nombre:c.paciente?.split(' ')[0]||'',fecha:'mañana',hora:c.hora||''});
     cards.push(recCard({tipo:'cita',icon:'📅',titulo:'Recordatorio cita mañana',paciente:c.paciente||'—',fecha:`Mañana · ${c.hora||''}`,msg,tel:c.tel}));
   });
   // Adeudos mayores
   allTrat.filter(t=>Number(t.saldo||0)>2000).slice(0,5).forEach(t=>{
     const px=allPacientes.find(p=>p.id===t.expId);
     if(!px?.tel) return;
-    const msg=buildMsg('recordatorio_pago',{nombre:px.nombre?.split(' ')[0]||'',saldo:fmtMXN(t.saldo),tratamiento:t.tratamiento||''});
+    msg=buildMsg('recordatorio_pago',{nombre:px.nombre?.split(' ')[0]||'',saldo:fmtMXN(t.saldo),tratamiento:t.tratamiento||''});
     cards.push(recCard({tipo:'pago',icon:'💰',titulo:'Recordatorio de pago',paciente:px.nombre||'—',fecha:`Saldo: ${fmtMXN(t.saldo)}`,msg,tel:px.tel}));
   });
   // Cumpleaños hoy
   allPacientes.filter(p=>p.fnac&&p.fnac.slice(5)===hoy.slice(5)&&p.tel).forEach(p=>{
-    const msg=buildMsg('cumpleanos',{nombre:p.nombre?.split(' ')[0]||''});
+    msg=buildMsg('cumpleanos',{nombre:p.nombre?.split(' ')[0]||''});
     cards.push(recCard({tipo:'cumple',icon:'🎂',titulo:'Felicitación de cumpleaños',paciente:p.nombre||'—',fecha:'¡Hoy es su cumpleaños!',msg,tel:p.tel}));
   });
 
