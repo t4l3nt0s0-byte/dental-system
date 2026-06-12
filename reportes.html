@@ -131,7 +131,7 @@ let currentReporte = null, clinicaInfo = null;
 let reporteData = {};
 
 initSession('reportes').then(async session => {
-  if (!session) return;
+  if (!session) { document.body.innerHTML='<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><div style="font-size:.85rem;margin-bottom:20px">Inicia sesión para continuar</div><a href=\"login.html\" style=\"background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700\">Iniciar sesión</a></div></div>'; return; }
   clinicaInfo = session.clinica;
   const hoy = new Date(), hace30 = new Date();
   hace30.setDate(hoy.getDate()-30);
