@@ -2,9 +2,9 @@
 // firebase-config.js — Hersantych · Core Firebase Setup
 // ============================================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updatePassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { initializeApp } from "https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp } from "https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updatePassword, sendPasswordResetEmail } from "https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA4KnJ9y0bbdbwrnd62K5QhZdiMC5-_EV8",

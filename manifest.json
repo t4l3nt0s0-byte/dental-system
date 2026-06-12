@@ -9,7 +9,11 @@
   "background_color": "#060D14",
   "theme_color": "#00C2A8",
   "lang": "es-MX",
-  "categories": ["medical","business","productivity"],
+  "categories": [
+    "medical",
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "favicon.svg",
@@ -21,13 +25,39 @@
   "shortcuts": [
     {
       "name": "Nueva cita",
+      "short_name": "Cita",
+      "description": "Abrir agenda para crear cita",
       "url": "/dental-system/agenda.html",
-      "icons": [{"src": "favicon.svg","sizes": "any"}]
+      "icons": [
+        {
+          "src": "favicon.svg",
+          "sizes": "any"
+        }
+      ]
     },
     {
       "name": "Pacientes",
+      "short_name": "Pacientes",
+      "description": "Ver lista de pacientes",
       "url": "/dental-system/pacientes.html",
-      "icons": [{"src": "favicon.svg","sizes": "any"}]
+      "icons": [
+        {
+          "src": "favicon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver dashboard del consultorio",
+      "url": "/dental-system/index.html",
+      "icons": [
+        {
+          "src": "favicon.svg",
+          "sizes": "any"
+        }
+      ]
     }
   ]
 }

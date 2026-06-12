@@ -1461,14 +1461,17 @@ async function fsDelete(col, id) {
 }
 
 async function fsGetAll(col, constraints) {
-  // Use cache for unconstrained reads (full collection)
+  // Use cache for unconstrained reads
   if (!constraints) {
     const cached = cacheGet(col);
     if (cached) return cached;
   }
   let ref = clinicaCol(col);
-  if (constraints) ref = constraints(ref);
-  else ref = ref.orderBy('creadoEn','desc');
+  if (constraints) {
+    ref = constraints(ref);
+  }
+  // No default orderBy — avoids composite index requirement
+  // Pages sort data client-side after loading
   const snap = await ref.get();
   const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (!constraints) cacheSet(col, data);
