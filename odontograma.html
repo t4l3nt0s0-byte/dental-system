@@ -2,71 +2,212 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<style>
-html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}
-@media(min-width:768px){.main{margin-left:240px}}
-</style>
+<style>html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}@media(min-width:768px){.main{margin-left:240px}}</style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00C2A8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hersantych">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://cdn.jsdelivr.net https://*.gstatic.com;"><link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="favicon.svg"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://cdn.jsdelivr.net https://*.gstatic.com;">
+<link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="shortcut icon" href="favicon.ico"><link rel="apple-touch-icon" href="favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hersantych · Odontograma</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
-.odo-layout{display:grid;grid-template-columns:1fr 320px;gap:20px}
-.odo-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px}
-.odo-title{font-family:var(--font-display);font-size:1.05rem;font-style:italic;margin-bottom:6px}
-.odo-sub{font-size:.75rem;color:var(--text-muted);margin-bottom:20px}
-/* TOOTH GRID */
-.arch-label{font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);text-align:center;margin-bottom:8px}
-.teeth-row{display:flex;justify-content:center;gap:4px;margin-bottom:4px}
-.tooth{width:38px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border-radius:6px;transition:all .15s;position:relative}
-.tooth:hover{background:var(--surface2)}
-.tooth.selected{background:var(--teal-dim);outline:2px solid var(--teal)}
-.tooth-num{font-size:.55rem;font-weight:700;color:var(--text-dim);line-height:1}
-.tooth-svg{width:28px;height:32px;flex-shrink:0}
-/* TOOTH SVG faces */
-.tooth-face{transition:fill .15s;cursor:pointer}
-.face-O{fill:rgba(255,255,255,.04)} /* Oclusal center */
-.face-V{fill:rgba(255,255,255,.04)} /* Vestibular */
-.face-L{fill:rgba(255,255,255,.04)} /* Lingual */
-.face-M{fill:rgba(255,255,255,.04)} /* Mesial */
-.face-D{fill:rgba(255,255,255,.04)} /* Distal */
-/* STATUS COLORS */
-.s-sano{fill:rgba(255,255,255,.04)}
-.s-caries{fill:#FF5C5C}
-.s-obturado{fill:#00C2A8}
-.s-corona{fill:#F4B942}
-.s-extraccion{fill:#A78BFA}
-.s-ausente{fill:#4A9EFF;opacity:.4}
-.s-implante{fill:#34D399}
-.s-endodoncia{fill:#FF9A3C}
-.s-fractura{fill:#FF5C5C;stroke:#fff;stroke-width:1;stroke-dasharray:3,2}
-.midline{width:2px;background:rgba(255,255,255,.08);border-radius:1px;margin:0 4px;align-self:stretch}
-/* LEGEND */
-.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--text-muted);cursor:pointer;padding:5px 8px;border-radius:6px;transition:all .15s;border:1px solid transparent}
-.legend-item:hover{background:var(--surface2);border-color:var(--border)}
-.legend-item.active{background:var(--teal-dim);border-color:rgba(0,194,168,.3);color:var(--teal)}
-.legend-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
-/* PANEL */
-.panel-title{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px}
-.tooth-info{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px;font-size:.8rem}
-.tooth-info-num{font-family:var(--font-mono);font-size:1.2rem;font-weight:700;color:var(--teal);margin-bottom:4px}
-.tooth-info-name{font-size:.75rem;color:var(--text-muted)}
-.face-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:10px 0}
-.face-btn{padding:6px;font-size:.7rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;text-align:center}
-.face-btn:hover{background:var(--surface2);color:var(--text)}
-.face-btn.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,194,168,.3)}
-.history-item{padding:8px 0;border-bottom:1px solid var(--border);font-size:.76rem}
-.history-item:last-child{border-bottom:none}
-.history-date{font-size:.65rem;color:var(--text-dim)}
-/* Quadrant labels */
-.quad-labels{display:flex;justify-content:center;gap:8px;margin-bottom:4px;font-size:.6rem;color:var(--text-dim);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+/* ─── LAYOUT ──────────────────────────────────────────────── */
+.odo-layout { display:grid; grid-template-columns:1fr 300px; gap:16px; align-items:start; }
+.odo-card   { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+
+/* ─── TOOLBAR ─────────────────────────────────────────────── */
+.odo-toolbar {
+  display:flex; align-items:center; gap:8px; padding:10px 16px;
+  background:var(--surface2); border-bottom:1px solid var(--border); flex-wrap:wrap;
+}
+.tool-btn {
+  display:flex; align-items:center; gap:6px; padding:6px 12px;
+  border-radius:8px; border:1px solid transparent; cursor:pointer;
+  font-size:.75rem; font-weight:600; transition:all .15s; white-space:nowrap;
+  background:transparent; color:var(--text-muted); font-family:var(--font-body);
+}
+.tool-btn:hover { background:var(--surface); border-color:var(--border); color:var(--text); }
+.tool-btn.active { border-color:currentColor; color:var(--text); }
+.tool-swatch { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+.tool-sep { width:1px; height:24px; background:var(--border); margin:0 4px; }
+
+/* ─── ODONTOGRAMA CANVAS ──────────────────────────────────── */
+.odo-canvas {
+  padding:20px 16px 16px;
+  overflow-x:auto;
+}
+.arch-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:0 4px; margin-bottom:6px;
+}
+.arch-label {
+  font-size:.6rem; font-weight:700; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--text-dim);
+}
+.quad-label {
+  font-size:.58rem; color:var(--text-dim); letter-spacing:.05em;
+}
+.teeth-row {
+  display:flex; justify-content:center; gap:3px;
+  min-width:520px;
+}
+.midline-gap {
+  width:12px; flex-shrink:0; position:relative;
+}
+.midline-gap::after {
+  content:''; position:absolute; top:0; bottom:0; left:50%;
+  width:1px; background:rgba(255,255,255,.08);
+}
+.arch-divider {
+  height:1px; background:rgba(255,255,255,.06);
+  margin:6px 16px; position:relative;
+}
+.arch-divider::before {
+  content:'SUPERIOR'; position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%); font-size:.5rem; font-weight:700;
+  letter-spacing:.2em; color:rgba(255,255,255,.08); background:var(--surface);
+  padding:0 8px;
+}
+.arch-divider.lower::before { content:'INFERIOR'; }
+
+/* ─── TOOTH ELEMENT ───────────────────────────────────────── */
+.tooth {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  cursor:pointer; padding:3px 2px; border-radius:6px;
+  transition:background .12s, box-shadow .12s;
+  position:relative; flex-shrink:0; width:34px;
+  -webkit-user-select:none; user-select:none;
+}
+.tooth:hover  { background:rgba(255,255,255,.05); }
+.tooth.active { background:rgba(0,194,168,.08); box-shadow:0 0 0 1.5px rgba(0,194,168,.4); }
+.tooth-num {
+  font-size:.52rem; font-weight:700; color:var(--text-dim);
+  line-height:1; font-family:var(--font-mono);
+}
+.tooth-svg { width:28px; height:36px; flex-shrink:0; overflow:visible; }
+
+/* ─── TOOTH SVG FACES ─────────────────────────────────────── */
+.t-border { fill:none; stroke:rgba(255,255,255,.15); stroke-width:1.5; }
+.t-face { transition:fill .12s; cursor:pointer; }
+.t-face:hover { filter:brightness(1.3); }
+
+/* ─── STATUS BADGES ────────────────────────────────────────── */
+.tooth-badge {
+  font-size:.48rem; position:absolute; bottom:1px; right:2px;
+  width:10px; height:10px; border-radius:50%; display:flex;
+  align-items:center; justify-content:center; font-weight:900;
+  line-height:1; z-index:1;
+}
+
+/* ─── RIGHT PANEL ─────────────────────────────────────────── */
+.panel-section {
+  padding:14px;
+  border-bottom:1px solid var(--border);
+}
+.panel-section:last-child { border-bottom:none; }
+.panel-label {
+  font-size:.6rem; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--text-dim); margin-bottom:10px;
+}
+
+/* ─── TOOTH DETAIL ─────────────────────────────────────────── */
+.sel-tooth-num {
+  font-family:var(--font-mono); font-size:1.8rem; font-weight:700;
+  color:var(--teal); line-height:1;
+}
+.sel-tooth-name {
+  font-size:.75rem; color:var(--text-muted); margin-top:2px; margin-bottom:12px;
+}
+.faces-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:4px;
+  margin-bottom:12px;
+}
+.face-chip {
+  padding:5px 4px; border-radius:6px; border:1px solid var(--border);
+  background:var(--surface2); color:var(--text-dim); font-size:.65rem;
+  font-weight:600; cursor:pointer; text-align:center;
+  transition:all .12s; position:relative;
+}
+.face-chip:hover { border-color:var(--text-muted); color:var(--text); }
+.face-chip.has-status { border-color:currentColor; }
+.face-chip-label { font-size:.55rem; opacity:.6; display:block; }
+
+/* ─── STATUS BUTTONS ───────────────────────────────────────── */
+.status-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:12px;
+}
+.status-chip {
+  display:flex; align-items:center; gap:6px; padding:6px 8px;
+  border-radius:7px; border:1px solid transparent; cursor:pointer;
+  font-size:.7rem; font-weight:600; transition:all .12s;
+  background:var(--surface2); color:var(--text-muted);
+  font-family:var(--font-body);
+}
+.status-chip:hover { background:var(--surface); color:var(--text); border-color:var(--border); }
+.status-chip.active { color:var(--text); }
+.status-dot { width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+
+/* ─── HISTORY ──────────────────────────────────────────────── */
+.hist-item {
+  padding:7px 0; border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:.72rem;
+}
+.hist-item:last-child { border-bottom:none; }
+.hist-action { color:var(--text); font-weight:500; }
+.hist-meta { font-size:.62rem; color:var(--text-dim); margin-top:2px; }
+
+/* ─── STATS MINI ───────────────────────────────────────────── */
+.stat-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:5px 0; font-size:.73rem;
+}
+.stat-bar-wrap {
+  flex:1; height:4px; background:rgba(255,255,255,.06);
+  border-radius:2px; margin:0 10px; overflow:hidden;
+}
+.stat-bar { height:100%; border-radius:2px; transition:width .4s ease; }
+.stat-val { font-family:var(--font-mono); font-weight:700; font-size:.78rem; min-width:20px; text-align:right; }
+
+/* ─── LEGEND ───────────────────────────────────────────────── */
+.legend-wrap {
+  display:flex; flex-wrap:wrap; gap:6px;
+  padding:10px 16px; border-top:1px solid var(--border);
+}
+.legend-pill {
+  display:flex; align-items:center; gap:5px;
+  font-size:.65rem; color:var(--text-muted); padding:3px 8px;
+  border-radius:100px; background:var(--surface2);
+  border:1px solid transparent;
+}
+.legend-pip { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+/* ─── EMPTY STATE ──────────────────────────────────────────── */
+.odo-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:60px 20px; color:var(--text-dim); text-align:center;
+}
+.odo-empty-icon { font-size:2.5rem; margin-bottom:12px; opacity:.4; }
+.odo-empty-title { font-size:.9rem; color:var(--text-muted); margin-bottom:6px; }
+.odo-empty-sub { font-size:.78rem; }
+
+/* ─── PRINT OPTIMIZATIONS ─────────────────────────────────── */
+@media print {
+  .sidebar,.hamburger,.topbar-actions,.odo-toolbar,.right-panel { display:none !important; }
+  .odo-layout { grid-template-columns:1fr; }
+  .main { margin-left:0 !important; }
+  .odo-canvas { padding:10px; }
+}
+
+/* ─── MOBILE ──────────────────────────────────────────────── */
+@media(max-width:900px) {
+  .odo-layout { grid-template-columns:1fr; }
+  .right-panel { order:-1; }
+}
 </style>
 </head>
 <body>
@@ -74,78 +215,107 @@ html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}
 <button class="hamburger" id="hamburger">☰</button>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">🦷 Odontograma Interactivo</div>
+    <div class="topbar-title">🦷 Odontograma</div>
     <div class="topbar-actions">
-      <select class="form-select" id="selectPaciente" style="width:240px"><option value="">Seleccionar paciente...</option></select>
+      <select class="form-select" id="selectPaciente" style="width:220px">
+        <option value="">— Seleccionar paciente —</option>
+      </select>
       <button class="btn btn-ghost btn-sm" onclick="printOdo()">🖨️ Imprimir</button>
       <button class="btn btn-primary btn-sm" id="btnGuardar" disabled>💾 Guardar</button>
     </div>
   </div>
+
   <div class="content">
-    <div class="odo-layout" id="mainLayout">
-      <!-- ODONTOGRAMA -->
+    <div class="odo-layout">
+
+      <!-- ══ COLUMNA PRINCIPAL ══════════════════════════════ -->
       <div>
-        <div class="odo-wrap">
-          <div class="odo-title">Odontograma Universal (FDI)</div>
-          <div class="odo-sub" id="odoSub">Selecciona un paciente para comenzar o ver su odontograma.</div>
-          <!-- HERRAMIENTAS -->
-          <div style="margin-bottom:16px">
-            <div class="panel-title">Herramienta activa</div>
-            <div class="legend-grid" id="toolLegend">
-              <div class="legend-item active" data-tool="sano" onclick="setTool('sano')"><div class="legend-dot" style="background:rgba(255,255,255,.1);border:1px solid var(--border)"></div>Sano</div>
-              <div class="legend-item" data-tool="caries" onclick="setTool('caries')"><div class="legend-dot" style="background:#FF5C5C"></div>Caries</div>
-              <div class="legend-item" data-tool="obturado" onclick="setTool('obturado')"><div class="legend-dot" style="background:#00C2A8"></div>Obturado</div>
-              <div class="legend-item" data-tool="corona" onclick="setTool('corona')"><div class="legend-dot" style="background:#F4B942"></div>Corona</div>
-              <div class="legend-item" data-tool="extraccion" onclick="setTool('extraccion')"><div class="legend-dot" style="background:#A78BFA"></div>Extracción ind.</div>
-              <div class="legend-item" data-tool="ausente" onclick="setTool('ausente')"><div class="legend-dot" style="background:#4A9EFF"></div>Ausente</div>
-              <div class="legend-item" data-tool="implante" onclick="setTool('implante')"><div class="legend-dot" style="background:#34D399"></div>Implante</div>
-              <div class="legend-item" data-tool="endodoncia" onclick="setTool('endodoncia')"><div class="legend-dot" style="background:#FF9A3C"></div>Endodoncia</div>
+        <div class="odo-card">
+
+          <!-- TOOLBAR DE HERRAMIENTAS -->
+          <div class="odo-toolbar" id="toolBar">
+            <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-right:4px">Herramienta:</span>
+            <!-- Tools rendered by JS -->
+          </div>
+
+          <!-- CANVAS DEL ODONTOGRAMA -->
+          <div class="odo-canvas">
+            <div id="emptyState" class="odo-empty">
+              <div class="odo-empty-icon">🦷</div>
+              <div class="odo-empty-title">Selecciona un paciente</div>
+              <div class="odo-empty-sub">El odontograma aparecerá aquí</div>
+            </div>
+            <div id="odoGrid" style="display:none">
+              <!-- Upper arch -->
+              <div class="arch-header">
+                <div class="quad-label">Q1 — Sup. Derecho</div>
+                <div class="arch-label">Arcada Superior</div>
+                <div class="quad-label">Q2 — Sup. Izquierdo</div>
+              </div>
+              <div class="teeth-row" id="upperRow"></div>
+              <div class="arch-divider"></div>
+              <div class="arch-divider lower"></div>
+              <!-- Lower arch -->
+              <div class="teeth-row" id="lowerRow"></div>
+              <div class="arch-header" style="margin-top:6px">
+                <div class="quad-label">Q4 — Inf. Derecho</div>
+                <div class="arch-label">Arcada Inferior</div>
+                <div class="quad-label">Q3 — Inf. Izquierdo</div>
+              </div>
             </div>
           </div>
-          <!-- TEETH -->
-          <div id="odontograma"></div>
-          <div style="display:flex;justify-content:center;gap:20px;margin-top:16px;font-size:.65rem;color:var(--text-dim)">
-            <span>⬆ Superior</span><span>↕ Izquierda del paciente ↕</span><span>⬇ Inferior</span>
-          </div>
+
+          <!-- LEYENDA -->
+          <div class="legend-wrap" id="legendWrap"></div>
         </div>
-        <!-- NOTAS -->
-        <div class="card" style="margin-top:16px">
-          <div class="panel-title">📝 Notas clínicas del odontograma</div>
-          <textarea class="form-textarea" id="odoNotas" placeholder="Observaciones generales, plan de tratamiento..." rows="3"></textarea>
-          <div style="margin-top:8px;display:flex;justify-content:flex-end">
+
+        <!-- NOTAS CLÍNICAS -->
+        <div class="odo-card" style="margin-top:12px; padding:14px">
+          <div class="panel-label">📝 Notas clínicas del odontograma</div>
+          <textarea class="form-textarea" id="odoNotas"
+            placeholder="Observaciones generales, plan de tratamiento, notas para el expediente..." rows="3"
+            style="font-size:.82rem"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
             <button class="btn btn-primary btn-sm" id="btnGuardarNotas" disabled>💾 Guardar notas</button>
           </div>
         </div>
       </div>
 
-      <!-- PANEL DERECHO -->
-      <div>
-        <!-- Diente seleccionado -->
-        <div class="card" style="margin-bottom:14px">
-          <div class="panel-title">Diente seleccionado</div>
-          <div id="toothPanel">
-            <div class="tooth-info">
-              <div class="tooth-info-num" id="selToothNum">—</div>
-              <div class="tooth-info-name" id="selToothName">Haz clic en un diente</div>
+      <!-- ══ PANEL DERECHO ══════════════════════════════════ -->
+      <div class="right-panel">
+        <!-- DIENTE SELECCIONADO -->
+        <div class="odo-card" style="margin-bottom:10px">
+          <div class="panel-section">
+            <div class="panel-label">Diente seleccionado</div>
+            <div id="toothDetailWrap">
+              <div style="text-align:center;padding:20px;color:var(--text-dim);font-size:.78rem">
+                Haz clic en un diente para ver detalles
+              </div>
             </div>
-            <div id="selToothStatus" style="font-size:.78rem;color:var(--text-muted)"></div>
           </div>
         </div>
 
-        <!-- Historial del diente -->
-        <div class="card" style="margin-bottom:14px">
-          <div class="panel-title">Historial del diente</div>
-          <div id="toothHistory"><div style="font-size:.75rem;color:var(--text-dim);padding:8px">Selecciona un diente</div></div>
+        <!-- HISTORIAL DEL DIENTE -->
+        <div class="odo-card" style="margin-bottom:10px">
+          <div class="panel-section">
+            <div class="panel-label">Historial de la pieza</div>
+            <div id="toothHistory" style="font-size:.72rem;color:var(--text-dim);min-height:40px">
+              <div style="padding:8px 0">Selecciona un diente</div>
+            </div>
+          </div>
         </div>
 
-        <!-- Estadísticas -->
-        <div class="card">
-          <div class="panel-title">📊 Resumen del paciente</div>
-          <div id="odoStats" style="font-size:.78rem;color:var(--text-muted)">
-            <div style="text-align:center;color:var(--text-dim);padding:10px">Sin datos</div>
+        <!-- ESTADÍSTICAS -->
+        <div class="odo-card">
+          <div class="panel-section">
+            <div class="panel-label">📊 Resumen bucal</div>
+            <div id="odoStats">
+              <div style="text-align:center;color:var(--text-dim);padding:10px;font-size:.78rem">Sin datos</div>
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </main>
@@ -159,198 +329,309 @@ html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}
 <script>
 window.CURRENT_PAGE = 'odontograma';
 
-// FDI Notation: upper right=11-18, upper left=21-28, lower left=31-38, lower right=41-48
+// ── FDI NOTATION ─────────────────────────────────────────────
 const UPPER_RIGHT = [18,17,16,15,14,13,12,11];
 const UPPER_LEFT  = [21,22,23,24,25,26,27,28];
 const LOWER_LEFT  = [31,32,33,34,35,36,37,38];
 const LOWER_RIGHT = [48,47,46,45,44,43,42,41];
 
 const TOOTH_NAMES = {
-  11:'Incisivo central sup der',12:'Incisivo lateral sup der',13:'Canino sup der',14:'1er premolar sup der',15:'2do premolar sup der',16:'1er molar sup der',17:'2do molar sup der',18:'3er molar sup der',
-  21:'Incisivo central sup izq',22:'Incisivo lateral sup izq',23:'Canino sup izq',24:'1er premolar sup izq',25:'2do premolar sup izq',26:'1er molar sup izq',27:'2do molar sup izq',28:'3er molar sup izq',
-  31:'Incisivo central inf izq',32:'Incisivo lateral inf izq',33:'Canino inf izq',34:'1er premolar inf izq',35:'2do premolar inf izq',36:'1er molar inf izq',37:'2do molar inf izq',38:'3er molar inf izq',
-  41:'Incisivo central inf der',42:'Incisivo lateral inf der',43:'Canino inf der',44:'1er premolar inf der',45:'2do premolar inf der',46:'1er molar inf der',47:'2do molar inf der',48:'3er molar inf der',
+  11:'Inc. central sup der',12:'Inc. lateral sup der',13:'Canino sup der',
+  14:'1er premolar sup der',15:'2do premolar sup der',16:'1er molar sup der',
+  17:'2do molar sup der',18:'3er molar sup der (juicio)',
+  21:'Inc. central sup izq',22:'Inc. lateral sup izq',23:'Canino sup izq',
+  24:'1er premolar sup izq',25:'2do premolar sup izq',26:'1er molar sup izq',
+  27:'2do molar sup izq',28:'3er molar sup izq (juicio)',
+  31:'Inc. central inf izq',32:'Inc. lateral inf izq',33:'Canino inf izq',
+  34:'1er premolar inf izq',35:'2do premolar inf izq',36:'1er molar inf izq',
+  37:'2do molar inf izq',38:'3er molar inf izq (juicio)',
+  41:'Inc. central inf der',42:'Inc. lateral inf der',43:'Canino inf der',
+  44:'1er premolar inf der',45:'2do premolar inf der',46:'1er molar inf der',
+  47:'2do molar inf der',48:'3er molar inf der (juicio)',
 };
 
-const STATUS_COLORS = {
-  sano:'rgba(255,255,255,.06)', caries:'#FF5C5C', obturado:'#00C2A8',
-  corona:'#F4B942', extraccion:'#A78BFA', ausente:'#4A9EFF',
-  implante:'#34D399', endodoncia:'#FF9A3C',
-};
+// ── STATUSES ────────────────────────────────────────────────
+const STATUSES = [
+  { key:'sano',       label:'Sano',          color:'rgba(255,255,255,.08)', icon:'○', textColor:'var(--text-dim)' },
+  { key:'caries',     label:'Caries',        color:'#EF4444', icon:'●', textColor:'#EF4444' },
+  { key:'obturado',   label:'Obturado',      color:'#00C2A8', icon:'●', textColor:'#00C2A8' },
+  { key:'corona',     label:'Corona',        color:'#F59E0B', icon:'◆', textColor:'#F59E0B' },
+  { key:'puente',     label:'Puente',        color:'#8B5CF6', icon:'━', textColor:'#8B5CF6' },
+  { key:'extraccion', label:'Extracción ind',color:'#F97316', icon:'⊗', textColor:'#F97316' },
+  { key:'ausente',    label:'Ausente',       color:'#3B82F6', icon:'✕', textColor:'#3B82F6' },
+  { key:'implante',   label:'Implante',      color:'#10B981', icon:'⊕', textColor:'#10B981' },
+  { key:'endodoncia', label:'Endodoncia',    color:'#EC4899', icon:'↓', textColor:'#EC4899' },
+  { key:'fractura',   label:'Fractura',      color:'#94A3B8', icon:'╱', textColor:'#94A3B8' },
+  { key:'movilidad',  label:'Movilidad',     color:'#FBBF24', icon:'↕', textColor:'#FBBF24' },
+];
 
-let activeTool = 'sano';
-let selectedPxId = null;
-let odoData = {}; // { toothNum: { faces: {O,V,L,M,D}, status, notas } }
+const STATUS_MAP = Object.fromEntries(STATUSES.map(s=>[s.key,s]));
+
+// ── STATE ────────────────────────────────────────────────────
+let activeTool    = 'caries';
+let selectedPxId  = null;
+let odoData       = {};   // { toothNum: { faces:{O,V,L,M,D}, status, notas } }
 let selectedTooth = null;
-let toothHistory = {};
-let isDirty = false;
+let toothHistory  = {};
+let isDirty       = false;
 
+// ── INIT ─────────────────────────────────────────────────────
 initSession('odontograma').then(async session => {
-  if (!session) { document.body.innerHTML='<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><div style="font-size:.85rem;margin-bottom:20px">Inicia sesión para continuar</div><a href=\"login.html\" style=\"background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700\">Iniciar sesión</a></div></div>'; return; }
+  if (!session) {
+    document.body.innerHTML='<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><a href="login.html" style="background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Iniciar sesión</a></div></div>';
+    return;
+  }
+
+  renderToolbar();
+  renderLegend();
+
+  // Load patients
   const pxList = await fsGetAll('pacientes', r => r.limit(300));
+  pxList.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
   const sel = document.getElementById('selectPaciente');
-  sel.innerHTML = '<option value="">Seleccionar paciente...</option>' +
-    pxList.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
+  sel.innerHTML = '<option value="">— Seleccionar paciente —</option>' +
+    pxList.map(p=>`<option value="${p.id}">${esc(p.nombre)||p.id}</option>`).join('');
 
   const pxParam = new URLSearchParams(location.search).get('px');
   if (pxParam) { sel.value = pxParam; loadOdoPx(pxParam); }
 
-  sel.addEventListener('change', () => { if(sel.value) loadOdoPx(sel.value); });
+  sel.addEventListener('change', () => {
+    if (isDirty && !confirm('Hay cambios sin guardar. ¿Continuar sin guardar?')) {
+      sel.value = selectedPxId || '';
+      return;
+    }
+    if (sel.value) loadOdoPx(sel.value);
+  });
+
   document.getElementById('btnGuardar').addEventListener('click', saveOdo);
   document.getElementById('btnGuardarNotas').addEventListener('click', saveOdo);
 
   renderOdontograma();
 });
 
+// ── TOOLBAR ──────────────────────────────────────────────────
+function renderToolbar() {
+  const bar = document.getElementById('toolBar');
+  bar.innerHTML = `<span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-right:4px;white-space:nowrap">Herramienta:</span>` +
+    STATUSES.map(s => `
+      <button class="tool-btn ${s.key===activeTool?'active':''}" data-tool="${s.key}"
+        onclick="setTool('${s.key}')"
+        style="${s.key===activeTool?`color:${s.color};border-color:${s.color};background:${s.color}18`:''}"
+      >
+        <span class="tool-swatch" style="background:${s.color}"></span>
+        ${s.label}
+      </button>
+    `).join('') +
+    `<div class="tool-sep"></div>
+     <button class="tool-btn" onclick="clearAll()" style="color:var(--red)">🗑 Limpiar todo</button>`;
+}
+
+function renderLegend() {
+  document.getElementById('legendWrap').innerHTML =
+    STATUSES.filter(s=>s.key!=='sano').map(s=>`
+      <div class="legend-pill">
+        <span class="legend-pip" style="background:${s.color}"></span>
+        ${s.label}
+      </div>`).join('');
+}
+
+// ── LOAD PATIENT ODO ─────────────────────────────────────────
 async function loadOdoPx(pxId) {
   selectedPxId = pxId;
   isDirty = false;
   document.getElementById('btnGuardar').disabled = true;
   document.getElementById('btnGuardarNotas').disabled = true;
 
-  const snap = await clinicaCol('odontogramas').doc(pxId).get();
+  try {
+    const snap = await clinicaCol('odontogramas').doc(pxId).get();
+    if (snap.exists) {
+      const d = snap.data();
+      odoData = d.dientes || {};
+      document.getElementById('odoNotas').value = d.notas || '';
+    } else {
+      odoData = {};
+      document.getElementById('odoNotas').value = '';
+    }
 
-  if (snap.exists) {
-    const data = snap.data();
-    odoData = data.dientes || {};
-    document.getElementById('odoNotas').value = data.notas || '';
-  } else {
-    odoData = {};
-    document.getElementById('odoNotas').value = '';
+    // Load history (no orderBy to avoid index requirement)
+    const histSnap = await clinicaCol('odontogramas').doc(pxId)
+      .collection('historial').limit(30).get();
+    toothHistory = {};
+    histSnap.docs.forEach(d => {
+      const item = d.data();
+      if (!toothHistory[item.diente]) toothHistory[item.diente] = [];
+      toothHistory[item.diente].push(item);
+    });
+
+  } catch(e) {
+    console.error('[loadOdoPx]', e.message);
   }
 
-  // Load history
-  const histSnap = await clinicaCol('odontogramas').doc(pxId)
-    .collection('historial').orderBy('fecha','desc').limit(20).get();
-  toothHistory = {};
-  histSnap.docs.forEach(d => {
-    const item = d.data();
-    if (!toothHistory[item.diente]) toothHistory[item.diente] = [];
-    toothHistory[item.diente].push(item);
-  });
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('odoGrid').style.display    = 'block';
+  document.getElementById('btnGuardarNotas').disabled = false;
 
-  const pxSel = document.getElementById('selectPaciente');
-  const pxNombre = pxSel.options[pxSel.selectedIndex]?.text || '';
-  document.getElementById('odoSub').textContent = `Paciente: ${pxNombre}`;
   renderOdontograma();
   renderStats();
+
+  const pxSel = document.getElementById('selectPaciente');
+  const pxName = pxSel.options[pxSel.selectedIndex]?.text || '';
+  showToast(`Odontograma: ${pxName}`, 'info');
 }
 
+// ── RENDER TEETH ─────────────────────────────────────────────
 function renderOdontograma() {
-  const container = document.getElementById('odontograma');
-  container.innerHTML = `
-    <div class="quad-labels"><span style="flex:1;text-align:right">Cuadrante 1 (superior derecho)</span><div style="width:10px"></div><span style="flex:1">Cuadrante 2 (superior izquierdo)</span></div>
-    <div class="teeth-row" id="upperRow"></div>
-    <div style="height:8px;border-top:1px dashed rgba(255,255,255,.06);margin:4px 20px"></div>
-    <div style="height:8px;border-bottom:1px dashed rgba(255,255,255,.06);margin:4px 20px"></div>
-    <div class="teeth-row" id="lowerRow"></div>
-    <div class="quad-labels" style="margin-top:4px"><span style="flex:1;text-align:right">Cuadrante 4 (inferior derecho)</span><div style="width:10px"></div><span style="flex:1">Cuadrante 3 (inferior izquierdo)</span></div>
-  `;
+  const upper = document.getElementById('upperRow');
+  const lower = document.getElementById('lowerRow');
+  if (!upper || !lower) return;
 
-  const upperRow = document.getElementById('upperRow');
-  const lowerRow = document.getElementById('lowerRow');
+  upper.innerHTML = '';
+  lower.innerHTML = '';
 
-  [...UPPER_RIGHT, ...UPPER_LEFT].forEach(num => {
-    upperRow.appendChild(createToothEl(num, 'upper'));
-  });
-  [...LOWER_RIGHT, ...LOWER_LEFT].forEach(num => {
-    lowerRow.appendChild(createToothEl(num, 'lower'));
-  });
+  // Upper: Q1 | Q2
+  UPPER_RIGHT.forEach(n => upper.appendChild(createToothEl(n,'upper')));
+  upper.appendChild(midlineEl());
+  UPPER_LEFT.forEach(n => upper.appendChild(createToothEl(n,'upper')));
+
+  // Lower: Q4 | Q3
+  LOWER_RIGHT.forEach(n => lower.appendChild(createToothEl(n,'lower')));
+  lower.appendChild(midlineEl());
+  LOWER_LEFT.forEach(n => lower.appendChild(createToothEl(n,'lower')));
+}
+
+function midlineEl() {
+  const d = document.createElement('div');
+  d.className = 'midline-gap';
+  return d;
 }
 
 function createToothEl(num, arch) {
-  const div = document.createElement('div');
-  div.className = `tooth ${selectedTooth===num?'selected':''}`;
-  div.id = `tooth-${num}`;
-  div.setAttribute('data-num', num);
+  const wrap = document.createElement('div');
+  wrap.className = `tooth ${selectedTooth===num?'active':''}`;
+  wrap.id = `tooth-${num}`;
+  wrap.setAttribute('data-num', num);
 
-  const data = odoData[num] || {};
-  const faces = data.faces || {};
+  const data   = odoData[num] || {};
+  const faces  = data.faces  || {};
   const status = data.status || 'sano';
+  const st     = STATUS_MAP[status] || STATUS_MAP.sano;
+  const isAbsent  = status === 'ausente';
+  const hasBridge = status === 'puente';
+  const hasImpl   = status === 'implante';
+  const hasEndo   = status === 'endodoncia';
 
-  // Simple SVG tooth representation
-  div.innerHTML = `
-    <div class="tooth-num">${num}</div>
-    <svg class="tooth-svg" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg">
-      <!-- Outer border -->
-      <rect x="1" y="1" width="26" height="30" rx="4" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5"/>
-      <!-- D face (left/distal) -->
-      <rect class="tooth-face" data-face="D" x="1" y="1" width="8" height="30" rx="4"
-        fill="${getFaceColor(faces.D, status)}" opacity=".9"/>
-      <!-- M face (right/mesial) -->
-      <rect class="tooth-face" data-face="M" x="19" y="1" width="8" height="30" rx="4"
-        fill="${getFaceColor(faces.M, status)}" opacity=".9"/>
-      <!-- V face (top/vestibular for upper, bottom for lower) -->
-      <rect class="tooth-face" data-face="V" x="1" y="${arch==='upper'?1:23}" width="26" height="8" rx="4"
-        fill="${getFaceColor(faces.V, status)}" opacity=".9"/>
-      <!-- L face (lingual) -->
-      <rect class="tooth-face" data-face="L" x="1" y="${arch==='upper'?23:1}" width="26" height="8" rx="4"
-        fill="${getFaceColor(faces.L, status)}" opacity=".9"/>
-      <!-- O face (oclusal/center) -->
-      <rect class="tooth-face" data-face="O" x="9" y="9" width="10" height="14" rx="2"
-        fill="${getFaceColor(faces.O, status)}" opacity=".95"/>
-      <!-- Absent/implant overlay -->
-      ${status==='ausente'?'<line x1="2" y1="2" x2="26" y2="30" stroke="#4A9EFF" stroke-width="2"/><line x1="26" y1="2" x2="2" y2="30" stroke="#4A9EFF" stroke-width="2"/>':''}
-      ${status==='implante'?'<circle cx="14" cy="16" r="6" fill="none" stroke="#34D399" stroke-width="2"/><circle cx="14" cy="16" r="2" fill="#34D399"/>':''}
-      ${status==='endodoncia'?'<line x1="14" y1="4" x2="14" y2="28" stroke="#FF9A3C" stroke-width="2"/><circle cx="14" cy="28" r="3" fill="#FF9A3C"/>':''}
-    </svg>
-    ${getToothBadge(status)}
-  `;
+  // Tooth number above/below depending on arch
+  const numHtml = `<div class="tooth-num">${num}</div>`;
 
-  div.addEventListener('click', e => {
+  // Build SVG — professional 5-face representation
+  // Faces: V (vestibular), L (lingual), M (mesial), D (distal), O (oclusal center)
+  const vIsUp = arch === 'upper'; // vestibular = top for upper arch
+  const fV = getFaceColor(faces.V, status);
+  const fL = getFaceColor(faces.L, status);
+  const fM = getFaceColor(faces.M, status);
+  const fD = getFaceColor(faces.D, status);
+  const fO = getFaceColor(faces.O, status);
+
+  const svgHtml = `
+  <svg class="tooth-svg" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background / full tooth fill -->
+    <rect x="1" y="1" width="26" height="34" rx="5"
+      fill="${isAbsent ? 'rgba(59,130,246,.08)' : 'rgba(255,255,255,.03)'}"
+      stroke="${isAbsent ? 'rgba(59,130,246,.4)' : 'rgba(255,255,255,.14)'}"
+      stroke-width="1.5"/>
+
+    ${isAbsent ? `
+      <line x1="4" y1="4" x2="24" y2="32" stroke="#3B82F6" stroke-width="1.5" opacity=".7"/>
+      <line x1="24" y1="4" x2="4" y2="32" stroke="#3B82F6" stroke-width="1.5" opacity=".7"/>
+    ` : `
+    <!-- D face (distal - left side) -->
+    <path class="t-face" data-face="D"
+      d="M1,6 Q1,1 6,1 L1,1 Z M1,30 Q1,35 6,35 L1,35 Z M1,6 L1,30"
+      fill="${fD}" stroke="${fD==='rgba(255,255,255,.08)'?'transparent':fD}" stroke-width=".5" opacity=".85"/>
+    <rect class="t-face" data-face="D" x="1" y="1" width="7" height="34" rx="4"
+      fill="${fD}" opacity=".85"/>
+
+    <!-- M face (mesial - right side) -->
+    <rect class="t-face" data-face="M" x="20" y="1" width="7" height="34" rx="4"
+      fill="${fM}" opacity=".85"/>
+
+    <!-- V face (vestibular) -->
+    <rect class="t-face" data-face="V"
+      x="1" y="${vIsUp ? 1 : 27}" width="26" height="8" rx="4"
+      fill="${fV}" opacity=".85"/>
+
+    <!-- L face (lingual) -->
+    <rect class="t-face" data-face="L"
+      x="1" y="${vIsUp ? 27 : 1}" width="26" height="8" rx="4"
+      fill="${fL}" opacity=".85"/>
+
+    <!-- O face (oclusal center) -->
+    <rect class="t-face" data-face="O"
+      x="9" y="10" width="10" height="16" rx="2.5"
+      fill="${fO}" opacity=".95"/>
+    `}
+
+    <!-- Special overlays -->
+    ${hasImpl ? `
+      <circle cx="14" cy="18" r="7" fill="none" stroke="#10B981" stroke-width="1.5"/>
+      <circle cx="14" cy="18" r="2.5" fill="#10B981"/>
+      <line x1="14" y1="1" x2="14" y2="11" stroke="#10B981" stroke-width="1.5"/>
+    ` : ''}
+    ${hasEndo ? `
+      <line x1="14" y1="${vIsUp?4:32}" x2="14" y2="${vIsUp?32:4}" stroke="#EC4899" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <circle cx="14" cy="${vIsUp?32:4}" r="3" fill="#EC4899"/>
+    ` : ''}
+    ${hasBridge ? `
+      <rect x="0" y="${vIsUp?14:18}" width="28" height="4" fill="#8B5CF6" opacity=".6"/>
+    ` : ''}
+    ${status==='fractura' ? `
+      <line x1="10" y1="2" x2="18" y2="34" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="3,2"/>
+    ` : ''}
+
+    <!-- Hover area (transparent, full tooth) -->
+    <rect x="1" y="1" width="26" height="34" rx="5"
+      fill="transparent" class="t-face" data-face="O"
+      style="display:${isAbsent?'block':'none'}"/>
+  </svg>`;
+
+  // Badge indicator
+  const badge = (!isAbsent && status !== 'sano') ? `
+    <div class="tooth-badge" style="background:${st.color}20;color:${st.color}">
+      ${st.icon}
+    </div>` : '';
+
+  wrap.innerHTML = arch === 'upper'
+    ? numHtml + svgHtml + badge
+    : svgHtml + badge + numHtml;
+
+  // Events
+  wrap.addEventListener('click', e => {
     e.stopPropagation();
-    const face = e.target.getAttribute('data-face');
-    if (face) applyToFace(num, face);
-    else selectTooth(num);
+    const face = e.target.closest('[data-face]')?.getAttribute('data-face');
+    if (face && !isAbsent && selectedPxId) {
+      applyToFace(num, face);
+    } else {
+      selectTooth(num);
+    }
   });
 
-  return div;
+  return wrap;
 }
 
 function getFaceColor(faceStatus, toothStatus) {
-  if (faceStatus && faceStatus !== 'sano') return STATUS_COLORS[faceStatus] || STATUS_COLORS.sano;
-  if (toothStatus && toothStatus !== 'sano') return STATUS_COLORS[toothStatus] || STATUS_COLORS.sano;
-  return STATUS_COLORS.sano;
+  if (faceStatus && faceStatus !== 'sano') {
+    return STATUS_MAP[faceStatus]?.color || 'rgba(255,255,255,.08)';
+  }
+  if (toothStatus && toothStatus !== 'sano') {
+    return STATUS_MAP[toothStatus]?.color || 'rgba(255,255,255,.08)';
+  }
+  return 'rgba(255,255,255,.08)';
 }
 
-function getToothBadge(status) {
-  if (!status || status === 'sano') return '';
-  const dots = { caries:'🔴', obturado:'🟢', corona:'🟡', extraccion:'🟣', ausente:'🔵', implante:'🟩', endodoncia:'🟠' };
-  return `<div style="font-size:.5rem;position:absolute;bottom:1px;right:2px">${dots[status]||''}</div>`;
-}
-
+// ── TOOL ACTIONS ──────────────────────────────────────────────
 function setTool(tool) {
   activeTool = tool;
-  document.querySelectorAll('.legend-item').forEach(el => el.classList.toggle('active', el.dataset.tool === tool));
-}
-
-function selectTooth(num) {
-  selectedTooth = num;
-  document.querySelectorAll('.tooth').forEach(el => el.classList.remove('selected'));
-  const el = document.getElementById(`tooth-${num}`);
-  if (el) el.classList.add('selected');
-
-  document.getElementById('selToothNum').textContent = `Pieza ${num}`;
-  document.getElementById('selToothName').textContent = TOOTH_NAMES[num] || `Diente ${num}`;
-
-  const data = odoData[num] || {};
-  const status = data.status || 'sano';
-  document.getElementById('selToothStatus').innerHTML = `
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
-      ${Object.entries(STATUS_COLORS).map(([s,c])=>`
-        <button onclick="applyStatus(${num},'${s}')" style="padding:4px 10px;border-radius:6px;border:1px solid ${status===s?c:'var(--border)'};background:${status===s?c+'22':'var(--surface2)'};color:${status===s?c:'var(--text-muted)'};font-size:.68rem;cursor:pointer">${s}</button>
-      `).join('')}
-    </div>
-    <div style="margin-top:10px">
-      <textarea class="form-textarea" id="toothNota" placeholder="Notas de esta pieza..." rows="2" style="font-size:.78rem">${data.notas||''}</textarea>
-      <button class="btn btn-primary btn-sm" style="margin-top:6px;width:100%" onclick="saveToothNota(${num})">Guardar nota</button>
-    </div>`;
-
-  // History
-  const hist = toothHistory[num] || [];
-  document.getElementById('toothHistory').innerHTML = hist.length
-    ? hist.map(h=>`<div class="history-item"><div style="color:var(--text)">${h.accion||'—'} · ${h.status||'—'}</div><div class="history-date">${h.fecha||'—'} · ${h.usuario||'—'}</div></div>`).join('')
-    : '<div style="font-size:.75rem;color:var(--text-dim);padding:8px">Sin historial para esta pieza</div>';
+  renderToolbar();
 }
 
 function applyToFace(num, face) {
@@ -359,11 +640,15 @@ function applyToFace(num, face) {
   if (!odoData[num].faces) odoData[num].faces = {};
   odoData[num].faces[face] = activeTool;
   if (activeTool !== 'sano') odoData[num].status = activeTool;
-  isDirty = true;
-  document.getElementById('btnGuardar').disabled = false;
-  document.getElementById('btnGuardarNotas').disabled = false;
+  else {
+    // If all faces are sano, reset status
+    const faces = odoData[num].faces;
+    const allSano = Object.values(faces).every(f=>!f||f==='sano');
+    if (allSano) odoData[num].status = 'sano';
+  }
+  markDirty();
   refreshTooth(num);
-  if (selectedTooth === num) selectTooth(num);
+  if (selectedTooth === num) updateToothDetail(num);
   renderStats();
 }
 
@@ -371,100 +656,210 @@ function applyStatus(num, status) {
   if (!selectedPxId) { showToast('Selecciona un paciente primero','error'); return; }
   if (!odoData[num]) odoData[num] = { faces:{}, status };
   else odoData[num].status = status;
+  // Apply to all faces
+  if (!odoData[num].faces) odoData[num].faces = {};
+  if (status !== 'sano') {
+    ['O','V','L','M','D'].forEach(f => { odoData[num].faces[f] = status; });
+  } else {
+    odoData[num].faces = {};
+  }
+  markDirty();
+  refreshTooth(num);
+  updateToothDetail(num);
+  renderStats();
+}
+
+function clearAll() {
+  if (!selectedPxId) return;
+  if (!confirm('¿Limpiar todo el odontograma? Esta acción no se puede deshacer hasta guardar.')) return;
+  odoData = {};
+  markDirty();
+  renderOdontograma();
+  renderStats();
+  showToast('Odontograma limpiado. Guarda para confirmar.','info');
+}
+
+function markDirty() {
   isDirty = true;
   document.getElementById('btnGuardar').disabled = false;
   document.getElementById('btnGuardarNotas').disabled = false;
-  refreshTooth(num);
-  selectTooth(num);
-  renderStats();
+}
+
+function refreshTooth(num) {
+  const old = document.getElementById(`tooth-${num}`);
+  if (!old) return;
+  const isUpper = [...UPPER_RIGHT,...UPPER_LEFT].includes(num);
+  const newEl = createToothEl(num, isUpper?'upper':'lower');
+  old.replaceWith(newEl);
+}
+
+// ── SELECT & DETAIL ───────────────────────────────────────────
+function selectTooth(num) {
+  // Deselect previous
+  if (selectedTooth !== null) {
+    const prev = document.getElementById(`tooth-${selectedTooth}`);
+    if (prev) prev.classList.remove('active');
+  }
+  selectedTooth = num;
+  const el = document.getElementById(`tooth-${num}`);
+  if (el) el.classList.add('active');
+
+  updateToothDetail(num);
+
+  // History
+  const hist = (toothHistory[num] || []).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  document.getElementById('toothHistory').innerHTML = hist.length
+    ? hist.map(h=>`
+        <div class="hist-item">
+          <div class="hist-action">${esc(h.accion||'Actualización')} — <span style="color:${STATUS_MAP[h.status]?.color||'var(--text-muted)'}">${h.status||'—'}</span></div>
+          <div class="hist-meta">${h.fecha||'—'} · ${esc(h.usuario||'—')}</div>
+        </div>`).join('')
+    : '<div style="font-size:.72rem;color:var(--text-dim);padding:6px 0">Sin historial para esta pieza</div>';
+}
+
+function updateToothDetail(num) {
+  const data   = odoData[num] || {};
+  const status = data.status || 'sano';
+  const faces  = data.faces  || {};
+  const st     = STATUS_MAP[status] || STATUS_MAP.sano;
+
+  document.getElementById('toothDetailWrap').innerHTML = `
+    <div class="sel-tooth-num">${num}</div>
+    <div class="sel-tooth-name">${TOOTH_NAMES[num]||'Diente '+num}</div>
+
+    <!-- Current status badge -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 10px;
+      border-radius:8px;background:${st.color}18;border:1px solid ${st.color}40">
+      <span style="width:10px;height:10px;border-radius:2px;background:${st.color};flex-shrink:0;display:inline-block"></span>
+      <span style="font-size:.78rem;font-weight:600;color:${st.color}">${st.label}</span>
+    </div>
+
+    <!-- Status buttons -->
+    <div class="panel-label" style="margin-bottom:6px">Cambiar estado</div>
+    <div class="status-grid">
+      ${STATUSES.map(s=>`
+        <div class="status-chip ${status===s.key?'active':''}"
+          onclick="applyStatus(${num},'${s.key}')"
+          style="${status===s.key?`border-color:${s.color};background:${s.color}18;color:${s.color}`:''}"
+        >
+          <span class="status-dot" style="background:${s.color}"></span>
+          ${s.label}
+        </div>`).join('')}
+    </div>
+
+    <!-- Face indicators -->
+    <div class="panel-label" style="margin-bottom:6px">Caras</div>
+    <div class="faces-grid">
+      ${['V','O','L','M','D'].map(f=>{
+        const fs = faces[f];
+        const fc = fs && fs!=='sano' ? STATUS_MAP[fs] : null;
+        return `<div class="face-chip ${fc?'has-status':''}"
+          onclick="setTool('${activeTool}');applyToFace(${num},'${f}')"
+          style="${fc?`color:${fc.color};background:${fc.color}18;border-color:${fc.color}40`:''}"
+          title="Cara ${f}: ${fs||'sana'}">
+          <div>${f==='O'?'Oclusal':f==='V'?'Vestib.':f==='L'?'Lingual':f==='M'?'Mesial':'Distal'}</div>
+          <span class="face-chip-label">${fc?fc.label:'Sana'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Nota de la pieza -->
+    <textarea class="form-textarea" id="toothNota" rows="2"
+      placeholder="Nota para esta pieza..." style="font-size:.75rem;margin-top:8px"
+    >${esc(data.notas||'')}</textarea>
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px"
+      onclick="saveToothNota(${num})">Guardar nota de pieza</button>
+  `;
 }
 
 window.saveToothNota = function(num) {
   if (!odoData[num]) odoData[num] = { faces:{}, status:'sano' };
   odoData[num].notas = document.getElementById('toothNota')?.value || '';
-  isDirty = true;
-  document.getElementById('btnGuardar').disabled = false;
-  document.getElementById('btnGuardarNotas').disabled = false;
-  showToast('Nota guardada localmente. Guarda el odontograma para persistir.','info');
+  markDirty();
+  showToast('Nota guardada. Recuerda guardar el odontograma.','info');
 };
 
-function refreshTooth(num) {
-  const old = document.getElementById(`tooth-${num}`);
-  if (!old) return;
-  const arch = [11,12,13,14,15,16,17,18,21,22,23,24,25,26,27,28].includes(num) ? 'upper' : 'lower';
-  const newEl = createToothEl(num, arch);
-  old.replaceWith(newEl);
-}
-
+// ── SAVE ──────────────────────────────────────────────────────
 async function saveOdo() {
   if (!selectedPxId) { showToast('Selecciona un paciente','error'); return; }
-  const btn = document.getElementById('btnGuardar');
-  btn.disabled = true; btn.textContent = 'Guardando...';
+  const btn1 = document.getElementById('btnGuardar');
+  const btn2 = document.getElementById('btnGuardarNotas');
+  btn1.disabled = btn2.disabled = true;
+  btn1.textContent = 'Guardando...';
   try {
     const notas = document.getElementById('odoNotas').value;
     await clinicaCol('odontogramas').doc(selectedPxId).set({
-        dientes: odoData, notas,
-        pacienteId: selectedPxId,
-        actualizadoPor: SESSION.user.nombre || SESSION.user.email,
-        actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true });
+      dientes: odoData, notas,
+      pacienteId: selectedPxId,
+      actualizadoPor: SESSION.user.nombre || SESSION.user.email,
+      actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
 
-    // Save history entry
-    const changes = Object.entries(odoData).filter(([,d])=>d.status && d.status!=='sano');
+    // Historial — solo piezas con estado
+    const changes = Object.entries(odoData).filter(([,d])=>d.status&&d.status!=='sano');
     if (changes.length) {
-      await clinicaCol('odontogramas').doc(selectedPxId)
-        .collection('historial').add({
-          fecha: todayISO(),
-          usuario: SESSION.user.nombre || SESSION.user.email,
-          resumen: `${changes.length} pieza(s) con estado registrado`,
-          accion: 'Actualización odontograma',
-          creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-        });
+      await clinicaCol('odontogramas').doc(selectedPxId).collection('historial').add({
+        fecha:   todayISO(),
+        usuario: SESSION.user.nombre || SESSION.user.email,
+        accion:  'Actualización odontograma',
+        resumen: `${changes.length} pieza(s) registradas`,
+        creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      });
     }
     isDirty = false;
+    if(typeof audit==='function') audit('UPDATE_ODONTOGRAMA',{ piezas: changes.length });
     showToast('Odontograma guardado correctamente','success');
-  } catch(e) { handleError(e, 'odontograma'); }
-  btn.disabled = false; btn.textContent = '💾 Guardar';
-  document.getElementById('btnGuardarNotas').textContent = '💾 Guardar notas';
+  } catch(e) { handleError(e,'odontograma'); }
+  btn1.disabled = false; btn1.textContent = '💾 Guardar';
+  btn2.disabled = false; btn2.textContent = '💾 Guardar notas';
 }
 
+// ── STATS ─────────────────────────────────────────────────────
 function renderStats() {
-  const pieces = Object.entries(odoData);
+  const total  = 32;
   const counts = {};
-  pieces.forEach(([,d])=>{ const s=d.status||'sano'; counts[s]=(counts[s]||0)+1; });
-  const total = 32;
-  const sanos = total - pieces.filter(([,d])=>d.status&&d.status!=='sano').length;
-  const statsEl = document.getElementById('odoStats');
-  const rows = [
-    {label:'✅ Sanas',val:sanos,color:'var(--text)'},
-    {label:'🔴 Caries',val:counts.caries||0,color:'var(--red)'},
-    {label:'🟢 Obturadas',val:counts.obturado||0,color:'var(--teal)'},
-    {label:'🟡 Coronas',val:counts.corona||0,color:'var(--gold)'},
-    {label:'🔵 Ausentes',val:counts.ausente||0,color:'var(--blue)'},
-    {label:'🟢 Implantes',val:counts.implante||0,color:'var(--green)'},
-    {label:'🟠 Endodoncia',val:counts.endodoncia||0,color:'#FF9A3C'},
-    {label:'🟣 Extracción ind.',val:counts.extraccion||0,color:'var(--purple)'},
-  ];
-  statsEl.innerHTML = rows.filter(r=>r.val>0||r.label.includes('Sanas')).map(r=>
-    `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>${r.label}</span><span style="font-family:var(--font-mono);font-weight:700;color:${r.color}">${r.val}</span></div>`
-  ).join('');
-}
+  Object.values(odoData).forEach(d => {
+    const s = d.status || 'sano';
+    counts[s] = (counts[s]||0) + 1;
+  });
+  const sanos = total - Object.values(odoData).filter(d=>d.status&&d.status!=='sano').length;
 
-// printOdo definida en print-helper.js
+  const rows = [
+    { key:'sano',       label:'Sanas',     val:sanos, color:'var(--text-muted)' },
+    { key:'caries',     label:'Caries',    val:counts.caries||0,     color:'#EF4444' },
+    { key:'obturado',   label:'Obturadas', val:counts.obturado||0,   color:'#00C2A8' },
+    { key:'corona',     label:'Coronas',   val:counts.corona||0,     color:'#F59E0B' },
+    { key:'ausente',    label:'Ausentes',  val:counts.ausente||0,    color:'#3B82F6' },
+    { key:'implante',   label:'Implantes', val:counts.implante||0,   color:'#10B981' },
+    { key:'endodoncia', label:'Endodoncia',val:counts.endodoncia||0, color:'#EC4899' },
+    { key:'puente',     label:'Puentes',   val:counts.puente||0,     color:'#8B5CF6' },
+    { key:'extraccion', label:'Extrac. ind',val:counts.extraccion||0,color:'#F97316' },
+    { key:'fractura',   label:'Fracturas', val:counts.fractura||0,   color:'#94A3B8' },
+    { key:'movilidad',  label:'Movilidad', val:counts.movilidad||0,  color:'#FBBF24' },
+  ].filter(r => r.val > 0);
+
+  if (!rows.length) {
+    document.getElementById('odoStats').innerHTML =
+      '<div style="text-align:center;color:var(--text-dim);padding:10px;font-size:.78rem">Sin datos registrados</div>';
+    return;
+  }
+
+  document.getElementById('odoStats').innerHTML = rows.map(r => `
+    <div class="stat-row">
+      <span style="color:var(--text-muted);min-width:70px;font-size:.71rem">${r.label}</span>
+      <div class="stat-bar-wrap">
+        <div class="stat-bar" style="width:${Math.round(r.val/total*100)}%;background:${r.color}"></div>
+      </div>
+      <span class="stat-val" style="color:${r.color}">${r.val}</span>
+    </div>`).join('');
+}
 </script>
 <script>
-// ── Service Worker Registration ────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js', { scope: '/dental-system/' })
-      .then(function(reg) {
-        console.log('[PWA] SW registered, scope:', reg.scope);
-        // Check for updates every 10 minutes
-        setInterval(function() { reg.update(); }, 600000);
-      })
-      .catch(function(err) {
-        console.warn('[PWA] SW registration failed:', err.message);
-      });
+      .then(reg => { console.log('[PWA] SW registered'); setInterval(()=>reg.update(),600000); })
+      .catch(err => console.warn('[PWA] SW failed:', err.message));
   });
 }
 </script>
