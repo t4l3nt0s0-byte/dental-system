@@ -229,7 +229,7 @@ async function genReporte(tipo) {
     // For tratamientos
     if (tipo==='tratamientos') {
       html = headerHtml;
-      const estadoClass={Liquidado:'badge-green',Abonando:'badge-gold',Pendiente:'badge-red',Cancelado:'badge-purple'};
+      estadoClass={Liquidado:'badge-green',Abonando:'badge-gold',Pendiente:'badge-red',Cancelado:'badge-purple'};
       html+=`<div class="table-wrap"><table><thead><tr><th>Paciente</th><th>Tratamiento</th><th>Inicio</th><th>Costo</th><th>Abonado</th><th>Saldo</th><th>Estado</th></tr></thead>
         <tbody>${trat.map(t=>`<tr><td style="font-weight:600;color:var(--text)">${t.paciente||'—'}</td><td>${t.tratamiento||'—'}</td><td>${t.fechaInicio||'—'}</td><td style="font-family:var(--font-mono)">${fmtMXN(t.costo)}</td><td style="font-family:var(--font-mono);color:var(--green)">${fmtMXN(t.abonado)}</td><td style="font-family:var(--font-mono);color:var(--red)">${fmtMXN(t.saldo)}</td><td><span class="badge ${estadoClass[t.estado]||'badge-blue'}" style="font-size:.65rem">${t.estado||'—'}</span></td></tr>`).join('')}</tbody></table></div>`;
     }
@@ -250,7 +250,7 @@ async function exportCSV(tipo) {
   const hasta  = document.getElementById('fechaHasta').value;
   let [trat,abonos,pxList,citas] = await Promise.all([
     fsGetAll('tratamientos',r=>r.limit(500)),fsGetAll('abonos',r=>r.limit(1000)),
-    fsGetAll('pacientes',r=>r.orderBy('nombre','asc')),fsGetAll('citas',r=>r.limit(1000)),
+    fsGetAll('pacientes',r=>r.limit(300)),fsGetAll('citas',r=>r.limit(1000)),
   ]);
   const abonosPeriodo = abonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
   let headers=[], rows=[];

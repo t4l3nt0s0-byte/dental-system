@@ -399,7 +399,7 @@ async function runImport() {
   let existingNames = new Set();
   let lastExpNum = 0;
   if (selectedTipo === 'pacientes') {
-    const existing = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+    const existing = await fsGetAll('pacientes', r => r.limit(300));
     existingNames = new Set(existing.map(p => (p.nombre||'').toUpperCase().trim()));
     lastExpNum = existing.length;
   }
@@ -457,7 +457,7 @@ async function runImport() {
           vigente:true,
         };
       } else if (selectedTipo==='inventario') {
-        const nombre = getField(row,'nombre');
+        nombre = getField(row,'nombre');
         if (!nombre) { addLog(`Fila ${i+1}: Sin nombre — omitida`,'warn'); err++; continue; }
         data = {
           nombre, categoria:getField(row,'categoria')||'Consumibles',
@@ -471,7 +471,7 @@ async function runImport() {
           ubicacion:getField(row,'ubicacion'),
         };
       } else if (selectedTipo==='ofertas') {
-        const nombre = getField(row,'nombre');
+        nombre = getField(row,'nombre');
         if (!nombre) { addLog(`Fila ${i+1}: Sin nombre — omitida`,'warn'); err++; continue; }
         data = {
           nombre, descripcion:getField(row,'descripcion'),

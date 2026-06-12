@@ -108,7 +108,7 @@ initSession('any').then(async () => {
 });
 
 async function loadCatalogo() {
-  allCat = await fsGetAll('catalogo', r => r.orderBy('tratamiento','asc'));
+  allCat = await fsGetAll('catalogo', r => r.limit(200));
   renderGrid();
 }
 

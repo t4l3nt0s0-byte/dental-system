@@ -239,17 +239,17 @@ initSession('any').then(async session => {
 
 async function loadCatalogo() {
   // Carga todo el catálogo sin filtrar por vigente para evitar errores de índice
-  allCatalogo = await fsGetAll('catalogo', r=>r.orderBy('tratamiento','asc'));
+  allCatalogo = await fsGetAll('catalogo', r=>r.limit(200));
   const sel = document.getElementById('f-addTrat');
   sel.innerHTML = '<option value="">Seleccionar del catálogo...</option>' + allCatalogo.map(c=>`<option value="${c.id}">${c.tratamiento} — ${fmtMXN(c.sugerido||0)}</option>`).join('');
 }
 async function loadPacientes() {
-  allPacientes = await fsGetAll('pacientes', r=>r.orderBy('nombre','asc'));
+  allPacientes = await fsGetAll('pacientes', r=>r.limit(300));
   const sel = document.getElementById('f-paciente');
   sel.innerHTML = '<option value="">Sin paciente (cotización libre)</option>' + allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
 }
 async function loadCotNum() {
-  const cots = await fsGetAll('cotizaciones', r=>r.orderBy('creadoEn','desc').limit(1));
+  const cots = await fsGetAll('cotizaciones', r=>r.limit(1));
   cotNum = (cots[0]?.numero||0) + 1;
   document.getElementById('pvNumero').textContent = '#COT-' + String(cotNum).padStart(3,'0');
 }

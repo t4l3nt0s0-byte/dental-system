@@ -115,7 +115,10 @@ window.CURRENT_PAGE = 'abonos';
 let allAbonos = [], allPacientes = [], allTrat = [], editId = null;
 
 initSession('any').then(async session => {
-  if (!session) return;
+  if (!session) {
+    document.body.innerHTML = '<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">No se pudo cargar la sesión</div><a href=\"login.html\" style=\"background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700\">Iniciar sesión</a></div></div>';
+    return;
+  }
   const tratId = new URLSearchParams(location.search).get('trat');
   await Promise.all([loadAbonos(), loadPacientes(), loadTrat()]);
   if (tratId) { abrirModalParaTrat(tratId); }
@@ -142,10 +145,12 @@ async function loadAbonos() {
   }
 }
 async function loadPacientes() {
-  allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+  allPacientes = await fsGetAll('pacientes', r => r.limit(300));
+  // Sort client-side — avoids Firestore composite index requirement
+  allPacientes.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
   const sel = document.getElementById('f-paciente');
   sel.innerHTML = '<option value="">Seleccionar paciente...</option>' +
-    allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');
+    allPacientes.map(p=>`<option value="${p.id}">${esc(p.nombre)||p.id}</option>`).join('');
 }
 async function loadTrat() {
   allTrat = await fsGetAll('tratamientos',r=>r.limit(200));
@@ -299,9 +304,9 @@ async function saveAbono() {
   if (monto <= 0) { showToast('El monto debe ser mayor a cero','error'); return; }
   if (monto > 999999) { showToast('Monto inusualmente alto. Verifica antes de guardar.','error'); return; }
   // Validar que el abono no supere el saldo pendiente del tratamiento
-  const trat = allTrats.find(t=>t.id===tratId);
-  if (trat && !editId) {
-    const saldoActual = Number(trat.saldo||trat.costo||0);
+  const tratCheck = allTrat.find(t=>t.id===tratId);
+  if (tratCheck && !editId) {
+    const saldoActual = Number(tratCheck.saldo||tratCheck.costo||0);
     if (monto > saldoActual && saldoActual > 0) {
       const ok = await confirmDialog(
         `⚠️ El abono ($${monto.toLocaleString('es-MX')}) supera el saldo pendiente ($${saldoActual.toLocaleString('es-MX')}).\n\n¿Es un anticipo o saldo a favor? Si no, verifica el monto.`

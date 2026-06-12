@@ -916,7 +916,7 @@ async function ejecutarRestauracion(file) {
     // Restaurar catálogo
     if (backup.catalogo?.length) {
       addLog(`📚 Restaurando ${backup.catalogo.length} items del catálogo...`);
-      let ok=0;
+      ok=0;
       const existCat = await fsGetAll('catalogo',r=>r.limit(200));
       const existTrats = new Set(existCat.map(c=>(c.tratamiento||'').toLowerCase()));
       for (const c of backup.catalogo) {
@@ -929,7 +929,7 @@ async function ejecutarRestauracion(file) {
     // Restaurar inventario
     if (backup.inventario?.length) {
       addLog(`💊 Restaurando ${backup.inventario.length} productos de inventario...`);
-      let ok=0;
+      ok=0;
       for (const item of backup.inventario) {
         if (!item.nombre) continue;
         delete item.id; await fsCreate('inventario',item); ok++;

@@ -167,7 +167,7 @@ async function loadAudit(reset = false) {
   } catch(e) {
     // Fallback: load without date filter if index missing
     try {
-      const snap = await clinicaCol('auditoria')
+      snap = await clinicaCol('auditoria')
         .orderBy('ts','desc')
         .limit(500)
         .get();

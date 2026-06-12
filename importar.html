@@ -229,7 +229,7 @@ const SYSTEM_FIELDS = [
 initSession('any').then(async session => {
   if (!session) return;
   // Cargar pacientes existentes para detectar duplicados
-  existingPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));
+  existingPacientes = await fsGetAll('pacientes', r => r.limit(300));
 
   // Drag and drop
   const dz = document.getElementById('dropzone');

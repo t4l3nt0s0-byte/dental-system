@@ -130,7 +130,7 @@ initSession('any').then(async session=>{
   const cSnap=await db.collection('organizations').doc(SESSION.clinica.orgId || SESSION.clinica.id).get();
   clinicaData.fiscal=cSnap.data()?.fiscal||{};
 
-  allPacientes=await fsGetAll('pacientes',r=>r.orderBy('nombre','asc'));
+  allPacientes=await fsGetAll('pacientes',r=>r.limit(300));
   renderPxList(allPacientes);
 
   document.getElementById('searchPx').addEventListener('input',function(){

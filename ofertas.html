@@ -106,7 +106,7 @@ initSession('any').then(async () => {
 });
 
 async function loadOfertas() {
-  allOfertas = await fsGetAll('ofertas', r => r.orderBy('creadoEn','desc'));
+  allOfertas = await fsGetAll('ofertas', r => r.limit(100));
   renderOfertas();
 }
 

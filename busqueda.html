@@ -123,11 +123,11 @@ initSession('any').then(async session => {
 
 async function loadAll() {
   const [px, trat, abonos, citas, cat] = await Promise.all([
-    fsGetAll('pacientes', r => r.orderBy('nombre','asc')),
+    fsGetAll('pacientes', r => r.limit(300)),
     fsGetAll('tratamientos',r=>r.limit(200)),
-    fsGetAll('abonos', r => r.orderBy('creadoEn','desc').limit(500)),
-    fsGetAll('citas', r => r.orderBy('creadoEn','desc').limit(200)),
-    fsGetAll('catalogo', r => r.orderBy('tratamiento','asc')),
+    fsGetAll('abonos', r => r.limit(500)),
+    fsGetAll('citas', r => r.limit(200)),
+    fsGetAll('catalogo', r => r.limit(200)),
   ]);
   allData = { pacientes:px, tratamientos:trat, abonos, citas, catalogo:cat };
 }

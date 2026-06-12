@@ -297,7 +297,7 @@ initSession('any').then(async session=>{
   clinicaLogoBase64 = cData.logoBase64 || null;
 
   // Número de recibo
-  const recibos=await fsGetAll('recibos',r=>r.orderBy('creadoEn','desc').limit(1));
+  const recibos=await fsGetAll('recibos',r=>r.limit(1));
   reciboNum=(recibos[0]?.numero||0)+1;
 
   renderFiscalPreview();
@@ -333,7 +333,7 @@ initSession('any').then(async session=>{
 });
 
 async function loadPacientes(){
-  allPacientes=await fsGetAll('pacientes',r=>r.orderBy('nombre','asc'));
+  allPacientes=await fsGetAll('pacientes',r=>r.limit(300));
   const sel=document.getElementById('f-paciente');
   sel.innerHTML='<option value="">Seleccionar paciente...</option>'+
     allPacientes.map(p=>`<option value="${p.id}">${p.nombre||p.id}</option>`).join('');

@@ -165,7 +165,7 @@ initSession('inventario').then(async () => {
 });
 
 async function loadInventario() {
-  allInv = await fsGetAll('inventario', r => r.orderBy('nombre','asc'));
+  allInv = await fsGetAll('inventario', r => r.limit(300));
   renderTable();
   renderSummary();
 }
@@ -211,7 +211,7 @@ function renderTable() {
     return;
   }
   tbody.innerHTML = filtered.map(i => {
-    const status = getStockStatus(i);
+    status = getStockStatus(i);
     const statusBadge = {ok:'<span class="badge badge-green">✅ OK</span>',low:'<span class="badge badge-gold">⚠️ Bajo</span>',out:'<span class="badge badge-red">🚫 Agotado</span>'}[status];
     const stock = Number(i.stock||0), min = Number(i.minStock||1);
     const pct = Math.min(100, Math.round(stock/Math.max(min*2,1)*100));

@@ -229,7 +229,7 @@ async function loadCorte() {
 }
 
 async function loadHistorial() {
-  const cortes = await fsGetAll('cortes', r => r.orderBy('creadoEn','desc').limit(7));
+  const cortes = await fsGetAll('cortes', r => r.limit(7));
   const el = document.getElementById('historialCortes');
   if (!cortes.length) { el.innerHTML='<div style="font-size:.78rem;color:var(--text-dim);padding:10px">Sin cortes guardados</div>'; return; }
   el.innerHTML = cortes.map(c=>`

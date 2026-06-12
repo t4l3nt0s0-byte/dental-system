@@ -437,7 +437,7 @@ async function createSeedData(clinicaId) {
   const today = new Date();
   const fmt   = d => d.toISOString().split('T')[0];
   const d     = (offset) => { const x=new Date(today); x.setDate(x.getDate()+offset); return fmt(x); };
-  const m     = (offset) => { const x=new Date(today); x.setDate(x.getDate()-offset); return fmt(x); };
+  const m     = (offset) => { x=new Date(today); x.setDate(x.getDate()-offset); return fmt(x); };
 
   try {
     // ── 1. DOCTORES ─────────────────────────────────────────
@@ -482,7 +482,7 @@ async function createSeedData(clinicaId) {
       [{nombre:'Selladores',              costo:600, pagado:600, saldo:0,   estado:'Completado',doctor:dr1Ref.id}],
     ];
     const tratRefs = [];
-    for (let i=0; i<pxRefs.length; i++) {
+    for (i=0; i<pxRefs.length; i++) {
       const pxRef   = pxRefs[i];
       const pxNombre = pxData[i].nombre;
       for (const t of tratData[i]) {
@@ -523,7 +523,7 @@ async function createSeedData(clinicaId) {
       {hora:'11:00',expId:pxRefs[1].id,paciente:pxData[1].nombre,tel:pxData[1].tel,tratamiento:'Instalación brackets',estado:'Completado',doctor:'Dra. Sofía Ramírez Lara', duracion:90,fecha:m(20)},
       {hora:'10:00',expId:pxRefs[2].id,paciente:pxData[2].nombre,tel:pxData[2].tel,tratamiento:'Extracción molar',    estado:'Completado',doctor:'Dr. Carlos Hernández Ruiz',duracion:60,fecha:m(15)},
     ];
-    for (const c of citasPasadas) {
+    for (c of citasPasadas) {
       await db_c.collection('citas').add({...c, creadoEn:ts, _demo:true});
     }
     // Citas futuras
@@ -532,7 +532,7 @@ async function createSeedData(clinicaId) {
       {hora:'11:30',expId:pxRefs[3].id,paciente:pxData[3].nombre,tel:pxData[3].tel,tratamiento:'Revisión implante',  estado:'Agendado',doctor:'Dr. Carlos Hernández Ruiz',duracion:60,fecha:d(14)},
       {hora:'09:30',expId:pxRefs[0].id,paciente:pxData[0].nombre,tel:pxData[0].tel,tratamiento:'Blanqueamiento',     estado:'Agendado',doctor:'Dr. Carlos Hernández Ruiz',duracion:90,fecha:d(3)},
     ];
-    for (const c of citasFuturas) {
+    for (c of citasFuturas) {
       await db_c.collection('citas').add({...c, creadoEn:ts, _demo:true});
     }
 
@@ -574,7 +574,7 @@ async function createSeedData(clinicaId) {
       {nombre:'Cepillo de profilaxis',   categoria:'Insumos',  stock:50, minimo:20, costo:8.0,  unidad:'pieza'},
       {nombre:'Eyector de saliva',       categoria:'Insumos',  stock:100,minimo:30, costo:1.5,  unidad:'pieza'},
     ];
-    for (const item of inventario) {
+    for (item of inventario) {
       await db_c.collection('inventario').add({...item, activo:true, creadoEn:ts, _demo:true});
     }
 

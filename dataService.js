@@ -163,7 +163,7 @@ var DS = {
 
   // ── Pacientes ────────────────────────────────────────────
   pacientes: Object.assign(makeService('pacientes', {
-    defaultOrder: 'nombre', orderDir: 'asc', defaultLimit: 200
+    defaultLimit: 200
   }), {
     // Búsqueda por nombre (prefix query)
     search: async function(query) {
@@ -262,14 +262,10 @@ var DS = {
   }),
 
   // ── Doctores ─────────────────────────────────────────────
-  doctores: makeService('doctores', {
-    defaultOrder: 'nombre', orderDir: 'asc'
-  }),
+  doctores: makeService('doctores', {}),
 
   // ── Catálogo ─────────────────────────────────────────────
-  catalogo: makeService('catalogo', {
-    defaultOrder: 'tratamiento', orderDir: 'asc'
-  }),
+  catalogo: makeService('catalogo', {}),
 
   // ── Inventario ───────────────────────────────────────────
   inventario: Object.assign(makeService('inventario'), {

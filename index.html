@@ -457,7 +457,7 @@ initSession('any').then(async session=>{
     q('abonos',       r => r.where('fecha','>=',mesActualStr+'-01').where('fecha','<=',mesActualStr+'-31')),
     // Abonos del mes anterior para comparativa
     q('abonos',       r => r.where('fecha','>=',mesAnteriorStr+'-01').where('fecha','<=',mesAnteriorStr+'-31')),
-    q('pacientes',    r => r.orderBy('nombre','asc').limit(200)),
+    q('pacientes',    r => r.limit(300).limit(200)),
     q('tratamientos', r => r.limit(100)),
     q('doctores'),
   ]);
@@ -1384,12 +1384,12 @@ function initModalEvents(){
   // Opciones de pausa doctor
   document.querySelectorAll('.opt-pausa').forEach(el=>{
     el.onclick = function(){
-      const val = this.dataset.val;
+      val = this.dataset.val;
       _pausaSeleccionada = val;
       document.querySelectorAll('.opt-pausa').forEach(e=>{
         e.style.border     = '2px solid var(--border)';
         e.style.background = 'transparent';
-        const lbl = e.querySelector('div:nth-child(2)');
+        lbl = e.querySelector('div:nth-child(2)');
         if(lbl) lbl.style.color = 'var(--text)';
       });
       this.style.border     = '2px solid var(--teal)';
@@ -1419,10 +1419,10 @@ function resetModal(){
   });
   // Pausa: activar Continúa
   document.querySelectorAll('.opt-pausa').forEach(e=>{
-    const isSel = e.dataset.val==='';
+    isSel = e.dataset.val==='';
     e.style.border     = isSel?'2px solid var(--teal)':'2px solid var(--border)';
     e.style.background = isSel?'var(--teal-dim)':'transparent';
-    const lbl = e.querySelector('div:nth-child(2)');
+    lbl = e.querySelector('div:nth-child(2)');
     if(lbl) lbl.style.color = isSel?'var(--teal)':'var(--text)';
   });
   const extraWrap = document.getElementById('tiempoExtraWrap');
@@ -1538,10 +1538,10 @@ function resetPausa(){
       _pausaSeleccionada=this.dataset.val;
       document.querySelectorAll('.opt-pausa').forEach(e=>{
         e.style.border='2px solid var(--border)';e.style.background='transparent';
-        const l=e.querySelector('div:nth-child(2)');if(l) l.style.color='var(--text)';
+        l=e.querySelector('div:nth-child(2)');if(l) l.style.color='var(--text)';
       });
       this.style.border='2px solid var(--teal)';this.style.background='var(--teal-dim)';
-      const l=this.querySelector('div:nth-child(2)');if(l) l.style.color='var(--teal)';
+      l=this.querySelector('div:nth-child(2)');if(l) l.style.color='var(--teal)';
     };
   });
 }
@@ -1642,7 +1642,7 @@ async function confirmarFinCita(){
 
     // Toast
     const iconos={Completado:'✅',Extendido:'⏰','No Asistió':'❌',Cancelado:'🚫','En sala de espera':'🪑',Reagendar:'📅','En camino':'🚗',Agendado:'📋','En tratamiento':'⏰',Confirmado:'✓'};
-    const msgs={
+    msgs={
       Completado:    '✅ Consulta completada',
       'No Asistió':  '❌ Marcado como no asistió',
       Cancelado:     '🚫 Cita cancelada',
