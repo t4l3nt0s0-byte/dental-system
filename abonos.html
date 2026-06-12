@@ -131,9 +131,15 @@ initSession('any').then(async session => {
 });
 
 async function loadAbonos() {
-  allAbonos = await fsGetAll('abonos',r=>r.limit(500));
-  renderTable();
-  renderSummary();
+  try {
+    allAbonos = await fsGetAll('abonos', r => r.limit(500));
+    renderTable();
+    renderSummary();
+  } catch(e) {
+    console.error('[loadAbonos]', e.message);
+    const tbody = document.getElementById('abonoBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted)">No se pudieron cargar los pagos. Recarga la página.</td></tr>';
+  }
 }
 async function loadPacientes() {
   allPacientes = await fsGetAll('pacientes', r => r.orderBy('nombre','asc'));

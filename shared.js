@@ -1466,16 +1466,19 @@ async function fsGetAll(col, constraints) {
     const cached = cacheGet(col);
     if (cached) return cached;
   }
-  let ref = clinicaCol(col);
-  if (constraints) {
-    ref = constraints(ref);
+  try {
+    let ref = clinicaCol(col);
+    if (constraints) {
+      ref = constraints(ref);
+    }
+    const snap = await ref.get();
+    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!constraints) cacheSet(col, data);
+    return data;
+  } catch(e) {
+    console.error('[fsGetAll] Error reading', col, '→', e.code, e.message);
+    return [];
   }
-  // No default orderBy — avoids composite index requirement
-  // Pages sort data client-side after loading
-  const snap = await ref.get();
-  const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (!constraints) cacheSet(col, data);
-  return data;
 }
 
 async function fsGet(col, id) {
