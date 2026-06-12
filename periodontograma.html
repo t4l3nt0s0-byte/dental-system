@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}@media(min-width:768px){.main{margin-left:240px}}</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://cdn.jsdelivr.net;">
+<link rel="icon" href="favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="shortcut icon" href="favicon.ico">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hersantych · Periodontograma</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.peri-wrap  { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.peri-layout{ display:grid; grid-template-columns:1fr 280px; gap:16px; }
+
+/* ── MODE BAR ───────────────────────────────────────────── */
+.mode-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 14px; background:var(--surface2);
+  border-bottom:1px solid var(--border); flex-wrap:wrap;
+}
+.mode-btn {
+  padding:5px 14px; border-radius:7px; font-size:.73rem; font-weight:600;
+  border:1px solid var(--border); cursor:pointer; transition:all .15s;
+  background:transparent; color:var(--text-muted); font-family:var(--font-body);
+}
+.mode-btn.active { background:var(--teal-dim); color:var(--teal); border-color:rgba(0,194,168,.4); }
+.mode-sep { width:1px; height:20px; background:var(--border); flex-shrink:0; }
+
+/* ── CANVAS WRAPPER ─────────────────────────────────────── */
+.canvas-scroll { overflow-x:auto; padding:16px 12px 8px; }
+
+/* ── GRID ROW LABELS ────────────────────────────────────── */
+.grid-container { position:relative; }
+.row-label {
+  font-size:.58rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-dim); white-space:nowrap; padding:2px 6px 2px 0;
+  display:flex; align-items:center; justify-content:flex-end;
+  height:22px; min-width:60px;
+}
+.row-label.highlight { color:var(--teal); }
+
+/* ── TOOTH COLUMN ───────────────────────────────────────── */
+.tooth-col {
+  display:flex; flex-direction:column; align-items:center;
+  width:38px; flex-shrink:0; cursor:pointer;
+  border-radius:4px; transition:background .12s;
+}
+.tooth-col:hover { background:rgba(255,255,255,.04); }
+.tooth-col.selected { background:rgba(0,194,168,.08); outline:1px solid rgba(0,194,168,.3); outline-offset:-1px; }
+.tooth-num-label {
+  font-size:.58rem; font-weight:700; color:var(--text-dim);
+  font-family:var(--font-mono); height:18px; display:flex;
+  align-items:center; justify-content:center; width:100%;
+}
+
+/* ── PROBING DEPTH BAR ──────────────────────────────────── */
+.bar-cell {
+  width:38px; height:80px; position:relative;
+  display:flex; align-items:flex-end; justify-content:center; gap:2px;
+  padding:0 2px;
+}
+.bar-point {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-end; gap:0; height:100%;
+  position:relative;
+}
+.bar-fill {
+  width:100%; border-radius:2px 2px 0 0;
+  transition:height .2s ease; min-height:2px;
+}
+.bar-val {
+  font-size:.5rem; font-family:var(--font-mono);
+  color:var(--text-muted); line-height:1; margin-bottom:2px;
+  position:absolute; bottom:100%; width:200%; text-align:center;
+  left:-50%;
+}
+
+/* ── SINGLE INPUT CELL ──────────────────────────────────── */
+.cell {
+  width:38px; height:20px; display:flex;
+  align-items:center; justify-content:center; gap:1px;
+}
+.pt-input {
+  width:10px; height:18px; background:transparent;
+  border:none; border-bottom:1px solid rgba(255,255,255,.12);
+  color:var(--text); font-size:.58rem; font-family:var(--font-mono);
+  text-align:center; padding:0; outline:none; border-radius:0;
+  transition:border-color .15s, background .15s;
+  -moz-appearance:textfield;
+}
+.pt-input::-webkit-outer-spin-button,
+.pt-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.pt-input:focus { border-bottom-color:var(--teal); background:rgba(0,194,168,.06); }
+.pt-input.val-danger { color:#EF4444; font-weight:700; }
+.pt-input.val-warn   { color:#F59E0B; }
+.pt-input.val-ok     { color:#10B981; }
+
+/* ── BOP / PLACA TOGGLE ─────────────────────────────────── */
+.toggle-cell { width:38px; height:20px; display:flex; align-items:center; justify-content:center; gap:1px; }
+.bop-dot {
+  width:9px; height:9px; border-radius:50%;
+  border:1px solid rgba(255,255,255,.2); cursor:pointer;
+  transition:all .12s; flex-shrink:0;
+}
+.bop-dot.active       { background:#EF4444; border-color:#EF4444; box-shadow:0 0 4px #EF444488; }
+.placa-dot.active     { background:#F59E0B; border-color:#F59E0B; }
+
+/* ── MOBILITY / FURCATION SELECT ────────────────────────── */
+.select-cell {
+  width:38px; height:20px; display:flex; align-items:center; justify-content:center;
+}
+.mini-select {
+  width:34px; height:18px; background:var(--surface2);
+  border:1px solid rgba(255,255,255,.1); border-radius:3px;
+  color:var(--text-muted); font-size:.55rem; font-family:var(--font-mono);
+  text-align:center; padding:0 2px; cursor:pointer; outline:none;
+}
+.mini-select:focus { border-color:var(--teal); }
+
+/* ── ARCH DIVIDER ───────────────────────────────────────── */
+.arch-divider-row { height:16px; display:flex; align-items:center; }
+.arch-line { flex:1; height:1px; background:rgba(255,255,255,.06); }
+.arch-pill {
+  font-size:.55rem; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--text-dim);
+  padding:2px 10px; border:1px solid rgba(255,255,255,.07);
+  border-radius:100px; margin:0 8px; white-space:nowrap;
+}
+
+/* ── RIGHT PANEL ────────────────────────────────────────── */
+.panel-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:12px; }
+.panel-header { padding:10px 14px; border-bottom:1px solid var(--border); font-size:.65rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); }
+.panel-body { padding:12px 14px; }
+
+/* ── AAP CLASSIFICATION ─────────────────────────────────── */
+.aap-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 10px; border-radius:8px; font-size:.75rem; font-weight:700;
+}
+.stat-mini { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:.73rem; border-bottom:1px solid rgba(255,255,255,.04); }
+.stat-mini:last-child { border-bottom:none; }
+.stat-val { font-family:var(--font-mono); font-weight:700; }
+
+/* ── PRINT ───────────────────────────────────────────────── */
+@media print {
+  .sidebar,.hamburger,.topbar-actions,.mode-bar,.right-panel,.panel-card { display:none!important; }
+  .peri-layout { grid-template-columns:1fr; }
+  .main { margin-left:0!important; }
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media(max-width:1024px) {
+  .peri-layout { grid-template-columns:1fr; }
+  .right-panel { order:-1; }
+}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🔬 Periodontograma</div>
+    <div class="topbar-actions">
+      <select class="form-select" id="selectPaciente" style="width:220px">
+        <option value="">— Seleccionar paciente —</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn btn-primary btn-sm" id="btnGuardar" disabled>💾 Guardar</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="peri-layout">
+
+      <!-- ══ MAIN CANVAS ══════════════════════════════════ -->
+      <div>
+        <div class="peri-wrap">
+
+          <!-- MODE BAR -->
+          <div class="mode-bar">
+            <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Vista:</span>
+            <button class="mode-btn active" id="btnVestibular" onclick="setVista('V')">Vestibular</button>
+            <button class="mode-btn" id="btnLingual" onclick="setVista('L')">Palatino/Lingual</button>
+            <div class="mode-sep"></div>
+            <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Ingreso:</span>
+            <button class="mode-btn active" id="btnPS" onclick="setModo('PS')">Prof. bolsa</button>
+            <button class="mode-btn" id="btnREC" onclick="setModo('REC')">Recesión</button>
+            <button class="mode-btn" id="btnBOP" onclick="setModo('BOP')">Sangrado</button>
+            <button class="mode-btn" id="btnPLACA" onclick="setModo('PLACA')">Placa</button>
+            <div class="mode-sep"></div>
+            <div id="modoActivo" style="font-size:.68rem;color:var(--teal);font-weight:600">Ingresando: Profundidad de bolsa</div>
+          </div>
+
+          <!-- GRID -->
+          <div class="canvas-scroll">
+            <div id="periGrid">
+              <div style="text-align:center;padding:50px 20px;color:var(--text-dim);font-size:.85rem">
+                <div style="font-size:2rem;margin-bottom:12px;opacity:.3">🔬</div>
+                Selecciona un paciente para comenzar
+              </div>
+            </div>
+          </div>
+
+          <!-- LEGEND BAR -->
+          <div style="display:flex;align-items:center;gap:16px;padding:8px 14px;border-top:1px solid var(--border);flex-wrap:wrap">
+            <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Referencias:</span>
+            <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:#10B981"><span style="width:8px;height:8px;background:#10B981;border-radius:2px;display:inline-block"></span>≤3mm Normal</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:#F59E0B"><span style="width:8px;height:8px;background:#F59E0B;border-radius:2px;display:inline-block"></span>4–5mm Moderado</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:#EF4444"><span style="width:8px;height:8px;background:#EF4444;border-radius:2px;display:inline-block"></span>≥6mm Severo</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-dim)"><span style="width:8px;height:8px;background:#EF4444;border-radius:50%;display:inline-block"></span>BOP</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--text-dim)"><span style="width:8px;height:8px;background:#F59E0B;border-radius:50%;display:inline-block"></span>Placa</div>
+          </div>
+        </div>
+
+        <!-- NOTAS -->
+        <div class="peri-wrap" style="margin-top:12px;padding:14px">
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">📝 Notas clínicas del periodontograma</div>
+          <textarea class="form-textarea" id="periNotas"
+            placeholder="Plan de tratamiento, observaciones, fase de reevaluación..." rows="3"
+            style="font-size:.82rem"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button class="btn btn-primary btn-sm" id="btnGuardarNotas" disabled>💾 Guardar notas</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ RIGHT PANEL ══════════════════════════════════ -->
+      <div class="right-panel">
+
+        <!-- CLASIFICACIÓN AAP 2018 -->
+        <div class="panel-card">
+          <div class="panel-header">🏥 Clasificación AAP 2018</div>
+          <div class="panel-body" id="aapPanel">
+            <div style="text-align:center;color:var(--text-dim);font-size:.75rem;padding:8px">
+              Ingresa datos para clasificación automática
+            </div>
+          </div>
+        </div>
+
+        <!-- ESTADÍSTICAS -->
+        <div class="panel-card">
+          <div class="panel-header">📊 Estadísticas</div>
+          <div class="panel-body" id="statsPanel">
+            <div style="text-align:center;color:var(--text-dim);font-size:.75rem;padding:8px">Sin datos</div>
+          </div>
+        </div>
+
+        <!-- DIENTE SELECCIONADO -->
+        <div class="panel-card">
+          <div class="panel-header">🦷 Diente seleccionado</div>
+          <div class="panel-body" id="toothPanel">
+            <div style="color:var(--text-dim);font-size:.75rem;padding:4px">Haz clic en un número de diente</div>
+          </div>
+        </div>
+
+        <!-- HISTORIAL -->
+        <div class="panel-card">
+          <div class="panel-header">📋 Historial de exploraciones</div>
+          <div class="panel-body" id="historialPanel">
+            <div style="color:var(--text-dim);font-size:.75rem;padding:4px">Sin exploraciones previas</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-firestore-compat.min.js"></script>
+<script src="shared.js"></script>
+<script src="dataService.js"></script>
+<script>
+window.CURRENT_PAGE = 'periodontograma';
+
+// ── FDI TOOTH LAYOUT ────────────────────────────────────────
+const UPPER_RIGHT = [18,17,16,15,14,13,12,11];
+const UPPER_LEFT  = [21,22,23,24,25,26,27,28];
+const LOWER_LEFT  = [31,32,33,34,35,36,37,38];
+const LOWER_RIGHT = [48,47,46,45,44,43,42,41];
+
+const TOOTH_NAMES = {
+  11:'Inc. central',12:'Inc. lateral',13:'Canino',14:'1er premolar',15:'2do premolar',16:'1er molar',17:'2do molar',18:'3er molar',
+  21:'Inc. central',22:'Inc. lateral',23:'Canino',24:'1er premolar',25:'2do premolar',26:'1er molar',27:'2do molar',28:'3er molar',
+  31:'Inc. central',32:'Inc. lateral',33:'Canino',34:'1er premolar',35:'2do premolar',36:'1er molar',37:'2do molar',38:'3er molar',
+  41:'Inc. central',42:'Inc. lateral',43:'Canino',44:'1er premolar',45:'2do premolar',46:'1er molar',47:'2do molar',48:'3er molar',
+};
+
+const MOLARES = [16,17,18,26,27,28,36,37,38,46,47,48];
+const ALL_TEETH = [...UPPER_RIGHT,...UPPER_LEFT,...LOWER_LEFT,...LOWER_RIGHT];
+
+// ── DATA STRUCTURE ───────────────────────────────────────────
+// For each tooth: { V:{ps:[0,0,0],rec:[0,0,0],bop:[0,0,0],placa:0}, L:{...}, movilidad:0, furcacion:0, ausente:0 }
+let periData = {};
+let selectedTooth = null;
+let vistaActual = 'V';    // V=vestibular, L=lingual/palatino
+let modoActual  = 'PS';   // PS, REC, BOP, PLACA
+let isDirty = false;
+let selectedPxId = null;
+
+function defaultTooth() {
+  return {
+    V:{ ps:[0,0,0], rec:[0,0,0], bop:[0,0,0], placa:0 },
+    L:{ ps:[0,0,0], rec:[0,0,0], bop:[0,0,0], placa:0 },
+    movilidad:0, furcacion:0, ausente:false
+  };
+}
+
+function getTooth(n) {
+  if (!periData[n]) periData[n] = defaultTooth();
+  return periData[n];
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+initSession('periodontograma').then(async session => {
+  if (!session) {
+    document.body.innerHTML = '<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><a href="login.html" style="background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Iniciar sesión</a></div></div>';
+    return;
+  }
+
+  // Plan gate: Profesional+ only
+  const plan = session.clinica.plan || 'basico';
+  if (!['profesional','premium','multi-3','multi-10','enterprise','trial'].includes(plan)) {
+    document.getElementById('periGrid').innerHTML = `
+      <div style="text-align:center;padding:60px 30px;color:var(--text-muted)">
+        <div style="font-size:2.5rem;margin-bottom:16px">🔒</div>
+        <div style="font-size:1rem;font-weight:600;color:var(--text);margin-bottom:8px">
+          El Periodontograma requiere Plan Profesional o superior
+        </div>
+        <div style="font-size:.82rem;margin-bottom:20px">
+          Actualiza tu plan para acceder a esta herramienta clínica avanzada.
+        </div>
+        <a href="planes.html" class="btn btn-primary">Ver planes →</a>
+      </div>`;
+    return;
+  }
+
+  // Load patients
+  const pxList = await fsGetAll('pacientes', r => r.limit(300));
+  pxList.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'','es'));
+  const sel = document.getElementById('selectPaciente');
+  sel.innerHTML = '<option value="">— Seleccionar paciente —</option>' +
+    pxList.map(p => `<option value="${p.id}">${esc(p.nombre)||p.id}</option>`).join('');
+
+  const pxParam = new URLSearchParams(location.search).get('px');
+  if (pxParam) { sel.value = pxParam; loadPeri(pxParam); }
+
+  sel.addEventListener('change', () => {
+    if (isDirty && !confirm('Hay cambios sin guardar. ¿Continuar?')) {
+      sel.value = selectedPxId || ''; return;
+    }
+    if (sel.value) loadPeri(sel.value);
+  });
+
+  document.getElementById('btnGuardar').addEventListener('click', savePeri);
+  document.getElementById('btnGuardarNotas').addEventListener('click', savePeri);
+});
+
+// ── LOAD ─────────────────────────────────────────────────────
+async function loadPeri(pxId) {
+  selectedPxId = pxId;
+  isDirty = false;
+  document.getElementById('btnGuardar').disabled = true;
+  document.getElementById('btnGuardarNotas').disabled = true;
+
+  try {
+    const snap = await clinicaCol('odontogramas').doc(pxId)
+      .collection('periodontograma').doc('actual').get();
+    if (snap.exists) {
+      periData = snap.data().dientes || {};
+      document.getElementById('periNotas').value = snap.data().notas || '';
+    } else {
+      periData = {};
+      document.getElementById('periNotas').value = '';
+    }
+
+    // Load history
+    const histSnap = await clinicaCol('odontogramas').doc(pxId)
+      .collection('periodontograma_hist').limit(10).get();
+    renderHistorial(histSnap.docs.map(d => d.data()));
+
+  } catch(e) {
+    console.error('[loadPeri]', e.message);
+  }
+
+  document.getElementById('btnGuardarNotas').disabled = false;
+  renderGrid();
+  renderStats();
+  renderAAP();
+
+  const pxSel = document.getElementById('selectPaciente');
+  const name = pxSel.options[pxSel.selectedIndex]?.text || '';
+  showToast(`Periodontograma: ${name}`, 'info');
+}
+
+// ── SAVE ─────────────────────────────────────────────────────
+async function savePeri() {
+  if (!selectedPxId) { showToast('Selecciona un paciente','error'); return; }
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const notas = document.getElementById('periNotas').value;
+    const docRef = clinicaCol('odontogramas').doc(selectedPxId)
+      .collection('periodontograma').doc('actual');
+
+    // Save snapshot to history before overwriting
+    const prev = await docRef.get();
+    if (prev.exists) {
+      await clinicaCol('odontogramas').doc(selectedPxId)
+        .collection('periodontograma_hist').add({
+          ...prev.data(),
+          _archivedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          _archivedBy: SESSION.user.nombre || SESSION.user.email,
+        });
+    }
+
+    await docRef.set({
+      dientes: periData, notas,
+      pacienteId: selectedPxId,
+      fecha: todayISO(),
+      actualizadoPor: SESSION.user.nombre || SESSION.user.email,
+      actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    isDirty = false;
+    if (typeof audit === 'function') audit('UPDATE_PERIODONTOGRAMA', { pxId: selectedPxId });
+    showToast('Periodontograma guardado correctamente','success');
+  } catch(e) { handleError(e,'periodontograma'); }
+  btn.disabled = false; btn.textContent = '💾 Guardar';
+  document.getElementById('btnGuardarNotas').disabled = false;
+}
+
+// ── MODE CONTROLS ─────────────────────────────────────────────
+function setVista(v) {
+  vistaActual = v;
+  document.getElementById('btnVestibular').classList.toggle('active', v==='V');
+  document.getElementById('btnLingual').classList.toggle('active', v==='L');
+  renderGrid();
+}
+
+function setModo(m) {
+  modoActual = m;
+  const labels = { PS:'Profundidad de bolsa', REC:'Recesión gingival', BOP:'Sangrado al sondaje', PLACA:'Índice de placa' };
+  document.getElementById('modoActivo').textContent = `Ingresando: ${labels[m]}`;
+  ['btnPS','btnREC','btnBOP','btnPLACA'].forEach(id => {
+    const mode = id.replace('btn','');
+    document.getElementById(id).classList.toggle('active', mode === m);
+  });
+  renderGrid();
+}
+
+// ── RENDER GRID ───────────────────────────────────────────────
+function renderGrid() {
+  const container = document.getElementById('periGrid');
+  if (!selectedPxId) return;
+
+  const arch = (teeth, label) => {
+    return `
+    <div style="margin-bottom:8px">
+      <div class="arch-divider-row"><div class="arch-line"></div><div class="arch-pill">${label}</div><div class="arch-line"></div></div>
+      ${renderArch(teeth)}
+    </div>`;
+  };
+
+  container.innerHTML =
+    arch([...UPPER_RIGHT, ...UPPER_LEFT], 'Arcada Superior') +
+    arch([...LOWER_RIGHT, ...LOWER_LEFT], 'Arcada Inferior');
+}
+
+function renderArch(teeth) {
+  const ROWS = [
+    { key:'ps_bar', label:'PS (mm)', isBar:true },
+    { key:'rec',   label:'Recesión', isInput:true },
+    { key:'nic',   label:'NIC',      isComputed:true },
+    { key:'bop',   label:'Sangrado', isDots:true, dotType:'bop' },
+    { key:'placa', label:'Placa',    isDots:true, dotType:'placa', isPerTooth:true },
+    { key:'num',   label:'',         isNum:true },
+    { key:'mov',   label:'Movilidad',isSelect:true, selectKey:'movilidad', opts:['0','I','II','III'] },
+    { key:'furc',  label:'Furcación',isSelect:true, selectKey:'furcacion', opts:['—','I','II','III'], onlyMolares:true },
+  ];
+
+  const v = vistaActual;
+
+  let html = `<div style="display:flex;align-items:stretch">`;
+  html += `<div style="display:flex;flex-direction:column;margin-right:4px">`;
+  ROWS.forEach(row => {
+    html += `<div class="row-label${row.isNum?'':''}">${row.label}</div>`;
+  });
+  html += `</div>`;
+
+  html += `<div style="display:flex;gap:1px">`;
+
+  teeth.forEach(num => {
+    const td = getTooth(num);
+    const side = td[v] || { ps:[0,0,0], rec:[0,0,0], bop:[0,0,0], placa:0 };
+    const ps  = side.ps  || [0,0,0];
+    const rec = side.rec || [0,0,0];
+    const bop = side.bop || [0,0,0];
+    const isMolar = MOLARES.includes(num);
+
+    html += `<div class="tooth-col ${selectedTooth===num?'selected':''}" onclick="selectTooth(${num})" id="tc-${num}">`;
+
+    ROWS.forEach(row => {
+      if (row.isBar) {
+        html += `<div class="bar-cell" id="bar-${num}-${v}">`;
+        [0,1,2].forEach(i => {
+          const val = Math.max(0, Math.min(12, ps[i]||0));
+          const color = val >= 6 ? '#EF4444' : val >= 4 ? '#F59E0B' : '#10B981';
+          const maxH  = 72;
+          const h     = val > 0 ? Math.max(4, (val/10)*maxH) : 2;
+          html += `<div class="bar-point">
+            <div class="bar-val" style="color:${color}">${val||''}</div>
+            <div class="bar-fill" style="height:${h}px;background:${color};width:100%"></div>
+          </div>`;
+        });
+        html += `</div>`;
+
+      } else if (row.isInput) {
+        const arr = row.key === 'rec' ? rec : ps;
+        html += `<div class="cell">`;
+        [0,1,2].forEach(i => {
+          const val = arr[i]||0;
+          html += `<input type="number" class="pt-input ${val>=6?'val-danger':val>=4?'val-warn':'val-ok'}"
+            id="inp-${num}-${v}-${row.key}-${i}" value="${val||''}"
+            min="0" max="12" placeholder="0"
+            oninput="onInput(event,${num},'${v}','${row.key}',${i})"
+            onkeydown="navInput(event,${num},'${v}','${row.key}',${i})"
+            onclick="selectTooth(${num})" />`;
+        });
+        html += `</div>`;
+
+      } else if (row.isComputed) {
+        // NIC = PS + Recession
+        html += `<div class="cell" style="gap:1px">`;
+        [0,1,2].forEach(i => {
+          const nic = (ps[i]||0) + (rec[i]||0);
+          const col = nic >= 5 ? '#EF4444' : nic >= 3 ? '#F59E0B' : 'var(--text-dim)';
+          html += `<div style="width:10px;font-size:.5rem;font-family:var(--font-mono);text-align:center;color:${col}">${nic||0}</div>`;
+        });
+        html += `</div>`;
+
+      } else if (row.isDots && !row.isPerTooth) {
+        const arr = row.dotType === 'bop' ? bop : [];
+        html += `<div class="toggle-cell">`;
+        [0,1,2].forEach(i => {
+          const on = arr[i]||0;
+          html += `<div class="${row.dotType}-dot bop-dot ${on?'active':''}"
+            id="dot-${num}-${v}-${row.dotType}-${i}"
+            onclick="event.stopPropagation();toggleDot(${num},'${v}','${row.dotType}',${i})"></div>`;
+        });
+        html += `</div>`;
+
+      } else if (row.isDots && row.isPerTooth) {
+        const on = side.placa||0;
+        html += `<div class="toggle-cell">
+          <div class="placa-dot bop-dot ${on?'active':''}" style="width:12px;height:12px"
+            id="placa-${num}-${v}"
+            onclick="event.stopPropagation();togglePlaca(${num},'${v}')"></div>
+        </div>`;
+
+      } else if (row.isNum) {
+        html += `<div class="tooth-num-label" style="color:${selectedTooth===num?'var(--teal)':'var(--text-dim)'}">${num}</div>`;
+
+      } else if (row.isSelect) {
+        const curVal = td[row.selectKey]||'0';
+        const showFurc = row.selectKey === 'furcacion';
+        if (showFurc && !isMolar) {
+          html += `<div class="select-cell"><div style="width:34px;height:18px"></div></div>`;
+        } else {
+          html += `<div class="select-cell">
+            <select class="mini-select" onchange="onSelectChange(${num},'${row.selectKey}',this.value)"
+              onclick="event.stopPropagation()">
+              ${row.opts.map(o=>`<option value="${o}" ${curVal==o?'selected':''}>${o}</option>`).join('')}
+            </select>
+          </div>`;
+        }
+      }
+    });
+
+    html += `</div>`;
+  });
+
+  html += `</div></div>`;
+
+  // Add PS input row explicitly above bars (vestibular top, lingual bottom)
+  // Already included in ROWS as isInput
+
+  return html;
+}
+
+// ── INPUT HANDLERS ────────────────────────────────────────────
+function onInput(e, num, vista, field, idx) {
+  const val = Math.max(0, Math.min(12, parseInt(e.target.value)||0));
+  const td  = getTooth(num);
+  if (!td[vista]) td[vista] = { ps:[0,0,0], rec:[0,0,0], bop:[0,0,0], placa:0 };
+  if (!td[vista][field]) td[vista][field] = [0,0,0];
+  td[vista][field][idx] = val;
+
+  // Color update
+  const input = e.target;
+  input.className = `pt-input ${val>=6?'val-danger':val>=4?'val-warn':'val-ok'}`;
+
+  // Update bar
+  updateBar(num, vista);
+  // Update NIC
+  updateNIC(num, vista);
+
+  markDirty();
+  renderStats();
+  renderAAP();
+  if (selectedTooth === num) updateToothPanel(num);
+}
+
+function onSelectChange(num, field, val) {
+  const td = getTooth(num);
+  td[field] = val;
+  markDirty();
+  if (selectedTooth === num) updateToothPanel(num);
+}
+
+function toggleDot(num, vista, type, idx) {
+  const td = getTooth(num);
+  if (!td[vista]) td[vista] = { ps:[0,0,0], rec:[0,0,0], bop:[0,0,0], placa:0 };
+  if (!td[vista][type]) td[vista][type] = [0,0,0];
+  td[vista][type][idx] = td[vista][type][idx] ? 0 : 1;
+  const el = document.getElementById(`dot-${num}-${vista}-${type}-${idx}`);
+  if (el) el.classList.toggle('active', !!td[vista][type][idx]);
+  markDirty(); renderStats(); renderAAP();
+}
+
+function togglePlaca(num, vista) {
+  const td = getTooth(num);
+  if (!td[vista]) td[vista] = { ps:[0,0,0], rec:[0,0,0], bop:[0,0,0], placa:0 };
+  td[vista].placa = td[vista].placa ? 0 : 1;
+  const el = document.getElementById(`placa-${num}-${vista}`);
+  if (el) el.classList.toggle('active', !!td[vista].placa);
+  markDirty(); renderStats(); renderAAP();
+}
+
+function navInput(e, num, vista, field, idx) {
+  if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    const nextIdx = idx + 1;
+    if (nextIdx < 3) {
+      document.getElementById(`inp-${num}-${vista}-${field}-${nextIdx}`)?.focus();
+    } else {
+      // Move to next tooth
+      const allTeeth = [...UPPER_RIGHT,...UPPER_LEFT,...LOWER_LEFT,...LOWER_RIGHT];
+      const i = allTeeth.indexOf(num);
+      const nextTooth = allTeeth[i+1];
+      if (nextTooth) document.getElementById(`inp-${nextTooth}-${vista}-${field}-0`)?.focus();
+    }
+  }
+  if (e.key === 'ArrowLeft') {
+    const prevIdx = idx - 1;
+    if (prevIdx >= 0) document.getElementById(`inp-${num}-${vista}-${field}-${prevIdx}`)?.focus();
+  }
+}
+
+function updateBar(num, vista) {
+  const td = getTooth(num);
+  const ps = td[vista]?.ps || [0,0,0];
+  const barEl = document.getElementById(`bar-${num}-${vista}`);
+  if (!barEl) return;
+  const maxH = 72;
+  barEl.querySelectorAll('.bar-point').forEach((pt, i) => {
+    const val   = Math.max(0, Math.min(12, ps[i]||0));
+    const color = val >= 6 ? '#EF4444' : val >= 4 ? '#F59E0B' : '#10B981';
+    const h     = val > 0 ? Math.max(4, (val/10)*maxH) : 2;
+    const fill  = pt.querySelector('.bar-fill');
+    const label = pt.querySelector('.bar-val');
+    if (fill)  { fill.style.height = h+'px'; fill.style.background = color; }
+    if (label) { label.textContent = val||''; label.style.color = color; }
+  });
+}
+
+function updateNIC(num, vista) {
+  const td  = getTooth(num);
+  const ps  = td[vista]?.ps  || [0,0,0];
+  const rec = td[vista]?.rec || [0,0,0];
+  const col = document.querySelector(`#tc-${num} .cell:nth-child(3)`);
+  if (!col) return;
+  col.querySelectorAll('div').forEach((d,i) => {
+    const nic = (ps[i]||0) + (rec[i]||0);
+    const color = nic >= 5 ? '#EF4444' : nic >= 3 ? '#F59E0B' : 'var(--text-dim)';
+    d.textContent = nic||0;
+    d.style.color = color;
+  });
+}
+
+// ── SELECT TOOTH ──────────────────────────────────────────────
+function selectTooth(num) {
+  if (selectedTooth !== null) {
+    const prev = document.getElementById(`tc-${selectedTooth}`);
+    if (prev) prev.classList.remove('selected');
+  }
+  selectedTooth = num;
+  const el = document.getElementById(`tc-${num}`);
+  if (el) el.classList.add('selected');
+  updateToothPanel(num);
+}
+
+function updateToothPanel(num) {
+  const td   = getTooth(num);
+  const vd   = td['V'] || {};
+  const ld   = td['L'] || {};
+  const ps6V = vd.ps  || [0,0,0];
+  const ps6L = ld.ps  || [0,0,0];
+  const rec6V= vd.rec || [0,0,0];
+  const rec6L= ld.rec || [0,0,0];
+  const bopV = vd.bop || [0,0,0];
+  const bopL = ld.bop || [0,0,0];
+  const maxPS = Math.max(...ps6V, ...ps6L);
+  const col   = maxPS >= 6 ? '#EF4444' : maxPS >= 4 ? '#F59E0B' : '#10B981';
+
+  document.getElementById('toothPanel').innerHTML = `
+    <div style="font-family:var(--font-mono);font-size:1.6rem;font-weight:700;color:${col};line-height:1">${num}</div>
+    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:10px">${TOOTH_NAMES[num]||''} · Q${Math.floor(num/10)}</div>
+
+    <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px">Vestibular — PS / Recesión / NIC</div>
+    <div style="display:flex;gap:4px;margin-bottom:8px">
+      ${[0,1,2].map(i => {
+        const ps = ps6V[i]||0;
+        const r  = rec6V[i]||0;
+        const nic= ps+r;
+        const c  = ps>=6?'#EF4444':ps>=4?'#F59E0B':'#10B981';
+        return `<div style="flex:1;background:var(--surface2);border-radius:6px;padding:5px 4px;text-align:center;border:1px solid ${bopV[i]?'#EF4444':'transparent'}">
+          <div style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${c}">${ps}</div>
+          <div style="font-size:.55rem;color:var(--text-dim)">PS</div>
+          <div style="font-size:.65rem;color:var(--text-muted)">${r>0?'-'+r:'—'}</div>
+          <div style="font-size:.6rem;font-weight:600;color:${nic>=5?'#EF4444':'var(--text-dim)'}">NIC:${nic}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px">Palatino/Lingual</div>
+    <div style="display:flex;gap:4px;margin-bottom:10px">
+      ${[0,1,2].map(i => {
+        const ps = ps6L[i]||0;
+        const r  = rec6L[i]||0;
+        const nic= ps+r;
+        const c  = ps>=6?'#EF4444':ps>=4?'#F59E0B':'#10B981';
+        return `<div style="flex:1;background:var(--surface2);border-radius:6px;padding:5px 4px;text-align:center;border:1px solid ${bopL[i]?'#EF4444':'transparent'}">
+          <div style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${c}">${ps}</div>
+          <div style="font-size:.55rem;color:var(--text-dim)">PS</div>
+          <div style="font-size:.65rem;color:var(--text-muted)">${r>0?'-'+r:'—'}</div>
+          <div style="font-size:.6rem;font-weight:600;color:${nic>=5?'#EF4444':'var(--text-dim)'}">NIC:${nic}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="display:flex;gap:8px;font-size:.72rem;">
+      <div style="flex:1;background:var(--surface2);padding:6px 8px;border-radius:6px">
+        <div style="color:var(--text-dim);font-size:.6rem">Movilidad</div>
+        <div style="font-weight:700;color:var(--text)">${td.movilidad||0}</div>
+      </div>
+      ${MOLARES.includes(num) ? `<div style="flex:1;background:var(--surface2);padding:6px 8px;border-radius:6px">
+        <div style="color:var(--text-dim);font-size:.6rem">Furcación</div>
+        <div style="font-weight:700;color:var(--text)">${td.furcacion||'—'}</div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+// ── STATISTICS ────────────────────────────────────────────────
+function calcStats() {
+  let totalSites = 0, bopCount = 0, placaCount = 0;
+  let ps_all = [], nic_all = [];
+  let maxPS = 0;
+
+  ALL_TEETH.forEach(n => {
+    const td = periData[n];
+    if (!td) return;
+    ['V','L'].forEach(v => {
+      const sd = td[v]; if (!sd) return;
+      (sd.ps||[]).forEach((p,i) => {
+        if (p > 0) {
+          ps_all.push(p);
+          const nic = p + (sd.rec?sd.rec[i]:0);
+          nic_all.push(nic);
+          if (p > maxPS) maxPS = p;
+          totalSites++;
+        }
+        if (sd.bop && sd.bop[i]) bopCount++;
+        if (p > 0) totalSites++;
+      });
+      if (sd.placa) placaCount++;
+    });
+  });
+
+  const avgPS  = ps_all.length  ? (ps_all.reduce((s,v)=>s+v,0)  / ps_all.length).toFixed(1)  : 0;
+  const avgNIC = nic_all.length ? (nic_all.reduce((s,v)=>s+v,0) / nic_all.length).toFixed(1) : 0;
+  const bopPct  = totalSites > 0 ? Math.round(bopCount / totalSites * 100)   : 0;
+  const placaPct= totalSites > 0 ? Math.round(placaCount / (ALL_TEETH.length*2) * 100) : 0;
+
+  const depth_3  = ps_all.filter(p=>p<=3).length;
+  const depth_46 = ps_all.filter(p=>p>=4&&p<=5).length;
+  const depth_6  = ps_all.filter(p=>p>=6).length;
+
+  return { avgPS, avgNIC, bopPct, placaPct, maxPS, depth_3, depth_46, depth_6, totalSites };
+}
+
+function renderStats() {
+  const st = calcStats();
+  if (st.totalSites === 0) {
+    document.getElementById('statsPanel').innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:.75rem;padding:8px">Sin datos ingresados</div>';
+    return;
+  }
+  document.getElementById('statsPanel').innerHTML = `
+    <div class="stat-mini"><span style="color:var(--text-muted)">PS promedio</span><span class="stat-val" style="color:${st.avgPS>=4?'#EF4444':'#10B981'}">${st.avgPS} mm</span></div>
+    <div class="stat-mini"><span style="color:var(--text-muted)">NIC promedio</span><span class="stat-val" style="color:var(--text)">${st.avgNIC} mm</span></div>
+    <div class="stat-mini"><span style="color:var(--text-muted)">PS máxima</span><span class="stat-val" style="color:${st.maxPS>=6?'#EF4444':st.maxPS>=4?'#F59E0B':'#10B981'}">${st.maxPS} mm</span></div>
+    <div class="stat-mini"><span style="color:var(--text-muted)">Sangrado (BOP)</span><span class="stat-val" style="color:${st.bopPct>=30?'#EF4444':st.bopPct>=10?'#F59E0B':'#10B981'}">${st.bopPct}%</span></div>
+    <div class="stat-mini"><span style="color:var(--text-muted)">Índice de placa</span><span class="stat-val" style="color:${st.placaPct>=50?'#EF4444':'#F59E0B'}">${st.placaPct}%</span></div>
+    <div style="margin-top:10px">
+      <div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Distribución PS</div>
+      ${renderBar2('≤3mm — Normal', st.depth_3, st.depth_3+st.depth_46+st.depth_6, '#10B981')}
+      ${renderBar2('4–5mm — Moderado', st.depth_46, st.depth_3+st.depth_46+st.depth_6, '#F59E0B')}
+      ${renderBar2('≥6mm — Severo', st.depth_6, st.depth_3+st.depth_46+st.depth_6, '#EF4444')}
+    </div>`;
+}
+
+function renderBar2(label, val, total, color) {
+  const pct = total > 0 ? Math.round(val/total*100) : 0;
+  return `<div style="margin-bottom:5px">
+    <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-muted);margin-bottom:2px">
+      <span>${label}</span><span style="font-family:var(--font-mono);color:${color}">${val}</span>
+    </div>
+    <div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px">
+      <div style="height:100%;width:${pct}%;background:${color};border-radius:2px;transition:width .3s"></div>
+    </div>
+  </div>`;
+}
+
+// ── AAP 2018 CLASSIFICATION ───────────────────────────────────
+function renderAAP() {
+  const st = calcStats();
+  if (st.totalSites === 0) {
+    document.getElementById('aapPanel').innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:.75rem;padding:8px">Ingresa datos de sondaje</div>';
+    return;
+  }
+
+  // Staging (Estadio) — based on max PS and NIC
+  let stage = 'I', stageColor = '#10B981', stageLabel = 'Estadio I — Leve';
+  if (st.maxPS >= 6 || parseFloat(st.avgNIC) >= 5) {
+    stage = 'IV'; stageColor = '#EF4444'; stageLabel = 'Estadio IV — Muy severo';
+  } else if (st.maxPS >= 5 || parseFloat(st.avgNIC) >= 4) {
+    stage = 'III'; stageColor = '#F97316'; stageLabel = 'Estadio III — Severo';
+  } else if (st.maxPS >= 4 || parseFloat(st.avgNIC) >= 3) {
+    stage = 'II'; stageColor = '#F59E0B'; stageLabel = 'Estadio II — Moderado';
+  }
+
+  // Grading — based on BOP and progression rate
+  let grade = 'A', gradeColor = '#10B981', gradeLabel = 'Grado A — Progresión lenta';
+  if (st.bopPct >= 30) {
+    grade = 'C'; gradeColor = '#EF4444'; gradeLabel = 'Grado C — Progresión rápida';
+  } else if (st.bopPct >= 15) {
+    grade = 'B'; gradeColor = '#F59E0B'; gradeLabel = 'Grado B — Progresión moderada';
+  }
+
+  const advice = {
+    'I-A': 'Control de placa e instrucción de higiene. Raspado y alisado radicular si necesario.',
+    'II-A': 'Terapia periodontal básica. Raspado y alisado radicular. Reevaluación a 6-8 semanas.',
+    'II-B': 'Terapia periodontal intensiva. Control de factores de riesgo. Reevaluación frecuente.',
+    'III-B': 'Terapia periodontal compleja. Considerar cirugía. Interconsulta con periodoncista.',
+    'III-C': 'Derivación urgente a periodoncista. Terapia intensiva y control estricto.',
+    'IV-C': 'Periodoncista. Terapia multidisciplinaria. Evaluar pronóstico de cada pieza.',
+  };
+  const adviceKey = `${stage}-${grade}`;
+  const adviceText = advice[adviceKey] || advice[`${stage}-B`] || 'Reevaluar después de terapia inicial.';
+
+  document.getElementById('aapPanel').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:${stageColor}18;border:1px solid ${stageColor}40;border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${stageColor};margin-bottom:3px">Estadio</div>
+        <div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:${stageColor}">${stage}</div>
+      </div>
+      <div style="background:${gradeColor}18;border:1px solid ${gradeColor}40;border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${gradeColor};margin-bottom:3px">Grado</div>
+        <div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:${gradeColor}">${grade}</div>
+      </div>
+    </div>
+    <div style="font-size:.7rem;font-weight:600;color:var(--text);margin-bottom:4px">${stageLabel}</div>
+    <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:10px">${gradeLabel}</div>
+    <div style="background:var(--surface2);border-radius:6px;padding:8px 10px;font-size:.7rem;color:var(--text-muted);border-left:3px solid ${stageColor}">
+      <div style="font-size:.55rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Plan sugerido</div>
+      ${adviceText}
+    </div>
+    <div style="font-size:.58rem;color:var(--text-dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      Clasificación basada en criterios AAP/EFP 2018. Confirmar con evaluación clínica completa.
+    </div>`;
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────
+function renderHistorial(items) {
+  const el = document.getElementById('historialPanel');
+  if (!items.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-size:.75rem;padding:4px">Sin exploraciones previas</div>';
+    return;
+  }
+  el.innerHTML = items.map(h => {
+    const fecha = h.fecha || h._archivedAt?.toDate?.().toLocaleDateString('es-MX') || '—';
+    return `<div style="padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.72rem">
+      <div style="font-weight:500;color:var(--text)">${fecha}</div>
+      <div style="font-size:.62rem;color:var(--text-dim);margin-top:1px">Por: ${h.actualizadoPor||h._archivedBy||'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function markDirty() {
+  isDirty = true;
+  document.getElementById('btnGuardar').disabled = false;
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { scope:'/dental-system/' })
+      .then(r => { console.log('[PWA] SW ok'); setInterval(()=>r.update(),600000); })
+      .catch(e => console.warn('[PWA] SW fail:', e.message));
+  });
+}
+</script>
+</body>
+</html>
