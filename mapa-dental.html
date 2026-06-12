@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}@media(min-width:768px){.main{margin-left:240px}}</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hersantych">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.google.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://cdn.jsdelivr.net https://*.gstatic.com;">
+<link rel="icon" href="favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hersantych · Mapa Dental</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   MAPA DENTAL — estilos compartidos entre los 5 tabs
+════════════════════════════════════════════════════════════ */
+
+/* ── TAB NAVIGATION ─────────────────────────────────────── */
+.tab-nav {
+  display:flex; gap:2px; padding:12px 16px 0;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2); overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.tab-pill {
+  display:flex; align-items:center; gap:6px;
+  padding:8px 16px; border-radius:8px 8px 0 0;
+  font-size:.78rem; font-weight:600; cursor:pointer;
+  border:1px solid transparent; border-bottom:none;
+  transition:all .15s; white-space:nowrap;
+  color:var(--text-muted); background:transparent;
+  font-family:var(--font-body); margin-bottom:-1px;
+  position:relative;
+}
+.tab-pill:hover { background:rgba(255,255,255,.04); color:var(--text); }
+.tab-pill.active {
+  background:var(--surface); color:var(--text);
+  border-color:var(--border); border-bottom-color:var(--surface);
+}
+.tab-pill .tab-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:currentColor; opacity:.4; flex-shrink:0;
+}
+.tab-pill.active .tab-dot { opacity:1; }
+
+/* ── TAB CONTENT WRAPPER ────────────────────────────────── */
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* ── SHARED CARD ─────────────────────────────────────────── */
+.md-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-lg); overflow:hidden;
+}
+
+/* ── PANEL LABEL (shared) ───────────────────────────────── */
+.p-label {
+  font-size:.6rem; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--text-dim); margin-bottom:8px;
+}
+
+/* ── SAVE BAR ────────────────────────────────────────────── */
+.save-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 14px; background:var(--surface2);
+  border-top:1px solid var(--border); flex-wrap:wrap; gap:8px;
+}
+.save-bar-info { font-size:.72rem; color:var(--text-dim); }
+
+/* ══════════════════════════════════════════════════════════
+   TAB 1: ODONTOGRAMA — estilos
+══════════════════════════════════════════════════════════ */
+.odo-layout { display:grid; grid-template-columns:1fr 290px; gap:14px; align-items:start; }
+.odo-toolbar { display:flex; align-items:center; gap:6px; padding:8px 14px; background:var(--surface2); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.tool-btn { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:7px; border:1px solid transparent; cursor:pointer; font-size:.72rem; font-weight:600; transition:all .15s; white-space:nowrap; background:transparent; color:var(--text-muted); font-family:var(--font-body); }
+.tool-btn:hover { background:var(--surface); border-color:var(--border); color:var(--text); }
+.tool-btn.active { border-color:currentColor; color:var(--text); }
+.tool-swatch { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+.tool-sep { width:1px; height:20px; background:var(--border); margin:0 3px; }
+.odo-canvas { padding:16px 12px 12px; overflow-x:auto; }
+.arch-header { display:flex; justify-content:space-between; align-items:center; padding:0 4px; margin-bottom:5px; }
+.arch-label { font-size:.58rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); }
+.quad-label { font-size:.55rem; color:var(--text-dim); }
+.teeth-row { display:flex; justify-content:center; gap:2px; min-width:500px; }
+.midline-gap { width:10px; flex-shrink:0; position:relative; }
+.midline-gap::after { content:''; position:absolute; top:0; bottom:0; left:50%; width:1px; background:rgba(255,255,255,.08); }
+.arch-divider { height:1px; background:rgba(255,255,255,.06); margin:5px 14px; position:relative; }
+.arch-divider::before { content:'SUPERIOR'; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:.48rem; font-weight:700; letter-spacing:.2em; color:rgba(255,255,255,.08); background:var(--surface); padding:0 6px; }
+.arch-divider.lower::before { content:'INFERIOR'; }
+.tooth { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; padding:2px; border-radius:5px; transition:background .12s,box-shadow .12s; position:relative; flex-shrink:0; width:32px; -webkit-user-select:none; user-select:none; }
+.tooth:hover { background:rgba(255,255,255,.05); }
+.tooth.active { background:rgba(0,194,168,.08); box-shadow:0 0 0 1.5px rgba(0,194,168,.4); }
+.tooth-num { font-size:.5rem; font-weight:700; color:var(--text-dim); line-height:1; font-family:var(--font-mono); }
+.tooth-svg { width:26px; height:34px; flex-shrink:0; overflow:visible; }
+.t-face { transition:fill .12s; cursor:pointer; }
+.t-face:hover { filter:brightness(1.3); }
+.tooth-badge { font-size:.44rem; position:absolute; bottom:1px; right:1px; width:9px; height:9px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; line-height:1; z-index:1; }
+.legend-wrap { display:flex; flex-wrap:wrap; gap:5px; padding:8px 14px; border-top:1px solid var(--border); }
+.legend-pill { display:flex; align-items:center; gap:4px; font-size:.62rem; color:var(--text-muted); padding:2px 7px; border-radius:100px; background:var(--surface2); border:1px solid transparent; }
+.legend-pip { width:7px; height:7px; border-radius:2px; flex-shrink:0; }
+.faces-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:10px; }
+.face-chip { padding:4px 3px; border-radius:5px; border:1px solid var(--border); background:var(--surface2); color:var(--text-dim); font-size:.62rem; font-weight:600; cursor:pointer; text-align:center; transition:all .12s; }
+.face-chip-label { font-size:.52rem; opacity:.6; display:block; }
+.status-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:10px; }
+.status-chip { display:flex; align-items:center; gap:5px; padding:5px 7px; border-radius:6px; border:1px solid transparent; cursor:pointer; font-size:.68rem; font-weight:600; transition:all .12s; background:var(--surface2); color:var(--text-muted); font-family:var(--font-body); }
+.status-chip:hover { background:var(--surface); color:var(--text); border-color:var(--border); }
+.status-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+.stat-row { display:flex; align-items:center; justify-content:space-between; padding:4px 0; font-size:.71rem; }
+.stat-bar-wrap { flex:1; height:4px; background:rgba(255,255,255,.06); border-radius:2px; margin:0 8px; overflow:hidden; }
+.stat-bar { height:100%; border-radius:2px; transition:width .4s ease; }
+.stat-val { font-family:var(--font-mono); font-weight:700; font-size:.75rem; min-width:18px; text-align:right; }
+
+/* ══════════════════════════════════════════════════════════
+   TAB 2: PERIODONCIA — estilos
+══════════════════════════════════════════════════════════ */
+.peri-layout { display:grid; grid-template-columns:1fr 270px; gap:14px; }
+.mode-bar { display:flex; align-items:center; gap:6px; padding:8px 12px; background:var(--surface2); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.mode-btn { padding:4px 12px; border-radius:6px; font-size:.7rem; font-weight:600; border:1px solid var(--border); cursor:pointer; transition:all .15s; background:transparent; color:var(--text-muted); font-family:var(--font-body); }
+.mode-btn.active { background:var(--teal-dim); color:var(--teal); border-color:rgba(0,194,168,.4); }
+.mode-sep { width:1px; height:18px; background:var(--border); flex-shrink:0; }
+.canvas-scroll { overflow-x:auto; padding:14px 10px 8px; }
+.row-label { font-size:.56rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); white-space:nowrap; padding:2px 5px 2px 0; display:flex; align-items:center; justify-content:flex-end; height:20px; min-width:56px; }
+.tooth-col { display:flex; flex-direction:column; align-items:center; width:36px; flex-shrink:0; cursor:pointer; border-radius:4px; transition:background .12s; }
+.tooth-col:hover { background:rgba(255,255,255,.04); }
+.tooth-col.selected { background:rgba(0,194,168,.08); outline:1px solid rgba(0,194,168,.3); outline-offset:-1px; }
+.tooth-num-label { font-size:.56rem; font-weight:700; color:var(--text-dim); font-family:var(--font-mono); height:16px; display:flex; align-items:center; justify-content:center; width:100%; }
+.bar-cell { width:36px; height:76px; position:relative; display:flex; align-items:flex-end; justify-content:center; gap:2px; padding:0 2px; }
+.bar-point { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; position:relative; }
+.bar-fill { width:100%; border-radius:2px 2px 0 0; transition:height .2s ease; min-height:2px; }
+.bar-val { font-size:.48rem; font-family:var(--font-mono); color:var(--text-muted); line-height:1; margin-bottom:2px; position:absolute; bottom:100%; width:200%; text-align:center; left:-50%; }
+.cell { width:36px; height:20px; display:flex; align-items:center; justify-content:center; gap:1px; }
+.pt-input { width:10px; height:18px; background:transparent; border:none; border-bottom:1px solid rgba(255,255,255,.12); color:var(--text); font-size:.56rem; font-family:var(--font-mono); text-align:center; padding:0; outline:none; border-radius:0; transition:border-color .15s,background .15s; -moz-appearance:textfield; }
+.pt-input::-webkit-outer-spin-button,.pt-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.pt-input:focus { border-bottom-color:var(--teal); background:rgba(0,194,168,.06); }
+.pt-input.val-danger { color:#EF4444; font-weight:700; }
+.pt-input.val-warn { color:#F59E0B; }
+.pt-input.val-ok { color:#10B981; }
+.toggle-cell { width:36px; height:20px; display:flex; align-items:center; justify-content:center; gap:1px; }
+.bop-dot { width:8px; height:8px; border-radius:50%; border:1px solid rgba(255,255,255,.2); cursor:pointer; transition:all .12s; flex-shrink:0; }
+.bop-dot.active { background:#EF4444; border-color:#EF4444; box-shadow:0 0 4px #EF444488; }
+.placa-dot.active { background:#F59E0B; border-color:#F59E0B; }
+.select-cell { width:36px; height:20px; display:flex; align-items:center; justify-content:center; }
+.mini-select { width:32px; height:18px; background:var(--surface2); border:1px solid rgba(255,255,255,.1); border-radius:3px; color:var(--text-muted); font-size:.52rem; font-family:var(--font-mono); text-align:center; padding:0 2px; cursor:pointer; outline:none; }
+.mini-select:focus { border-color:var(--teal); }
+.arch-divider-row { height:14px; display:flex; align-items:center; }
+.arch-line { flex:1; height:1px; background:rgba(255,255,255,.06); }
+.arch-pill { font-size:.52rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); padding:2px 8px; border:1px solid rgba(255,255,255,.07); border-radius:100px; margin:0 6px; white-space:nowrap; }
+.panel-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:10px; }
+.panel-header { padding:9px 12px; border-bottom:1px solid var(--border); font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); }
+.panel-body { padding:11px 13px; }
+.stat-mini { display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:.71rem; border-bottom:1px solid rgba(255,255,255,.04); }
+.stat-mini:last-child { border-bottom:none; }
+.stat-val { font-family:var(--font-mono); font-weight:700; }
+
+/* ══════════════════════════════════════════════════════════
+   TAB 3: ORTODONCIA — estilos
+══════════════════════════════════════════════════════════ */
+.ortho-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.ortho-section { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:12px 14px; margin-bottom:10px; }
+.ortho-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:.75rem; }
+.ortho-row:last-child { border-bottom:none; }
+.ortho-num { font-family:var(--font-mono); font-size:.65rem; color:var(--teal); width:24px; flex-shrink:0; font-weight:700; }
+.ortho-input { flex:1; background:transparent; border:none; border-bottom:1px solid rgba(255,255,255,.1); color:var(--text); font-size:.72rem; font-family:var(--font-body); padding:2px 0; outline:none; }
+.ortho-input:focus { border-bottom-color:var(--teal); }
+.arc-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:12px 14px; }
+.arc-field { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:.75rem; }
+.arc-label { color:var(--text-muted); font-size:.68rem; width:80px; flex-shrink:0; }
+
+/* ══════════════════════════════════════════════════════════
+   TAB 4: IMPLANTOLOGÍA — estilos
+══════════════════════════════════════════════════════════ */
+.imp-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:12px 14px; margin-bottom:8px; }
+.imp-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.imp-num { font-family:var(--font-mono); font-size:1.4rem; font-weight:700; color:var(--teal); line-height:1; }
+.imp-name { font-size:.72rem; color:var(--text-muted); }
+.imp-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.imp-field { display:flex; flex-direction:column; gap:3px; }
+.imp-field label { font-size:.6rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); }
+.osteoint-bar { height:6px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; margin-top:4px; }
+.osteoint-fill { height:100%; border-radius:3px; transition:width .4s; }
+.status-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:100px; font-size:.65rem; font-weight:600; }
+
+/* ══════════════════════════════════════════════════════════
+   TAB 5: RADIOGRAFÍAS — estilos
+══════════════════════════════════════════════════════════ */
+.rx-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+.rx-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:12px; transition:border-color .12s; }
+.rx-card:hover { border-color:var(--teal); }
+.rx-icon { font-size:1.8rem; margin-bottom:8px; }
+.rx-name { font-size:.78rem; font-weight:600; color:var(--text); margin-bottom:3px; word-break:break-all; }
+.rx-meta { font-size:.65rem; color:var(--text-dim); margin-bottom:8px; }
+.rx-empty { text-align:center; padding:50px 20px; color:var(--text-dim); grid-column:1/-1; }
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media(max-width:900px) {
+  .odo-layout,.peri-layout { grid-template-columns:1fr; }
+  .ortho-grid { grid-template-columns:1fr; }
+}
+@media print {
+  .sidebar,.hamburger,.topbar-actions,.tab-nav,.save-bar { display:none!important; }
+  .main { margin-left:0!important; }
+}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">🗺️ Mapa Dental</div>
+    <div class="topbar-actions">
+      <select class="form-select" id="selectPaciente" style="width:220px">
+        <option value="">— Seleccionar paciente —</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn btn-primary btn-sm" id="btnGuardar" disabled>💾 Guardar</button>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="content" style="text-align:center;padding:80px 20px;color:var(--text-dim)">
+    <div style="font-size:3rem;margin-bottom:16px;opacity:.3">🗺️</div>
+    <div style="font-size:.95rem;color:var(--text-muted);margin-bottom:6px">Selecciona un paciente</div>
+    <div style="font-size:.8rem">El mapa dental completo aparecerá aquí</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="mapContent" style="display:none">
+
+    <!-- TAB BAR -->
+    <div class="tab-nav">
+      <button class="tab-pill active" id="tab-odo" onclick="switchTab('odo')">
+        <span class="tab-dot"></span>🦷 Odontograma
+      </button>
+      <button class="tab-pill" id="tab-peri" onclick="switchTab('peri')">
+        <span class="tab-dot"></span>🔬 Periodoncia
+      </button>
+      <button class="tab-pill" id="tab-ortho" onclick="switchTab('ortho')">
+        <span class="tab-dot"></span>🦿 Ortodoncia
+      </button>
+      <button class="tab-pill" id="tab-imp" onclick="switchTab('imp')">
+        <span class="tab-dot"></span>🔩 Implantología
+      </button>
+      <button class="tab-pill" id="tab-rx" onclick="switchTab('rx')">
+        <span class="tab-dot"></span>🩻 Radiografías
+      </button>
+    </div>
+
+    <div class="content" style="padding-top:16px">
+
+      <!-- ══════════════════════════════════════════════════
+           TAB 1: ODONTOGRAMA
+      ═══════════════════════════════════════════════════ -->
+      <div class="tab-content active" id="content-odo">
+        <!-- Dentition toggle + mode label -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Dentición:</span>
+          <button id="btnAdulto" class="btn btn-primary btn-sm" style="font-size:.72rem;padding:4px 12px" onclick="setDenticion('adulto')">Adulto</button>
+          <button id="btnNino" class="btn btn-ghost btn-sm" style="font-size:.72rem;padding:4px 12px" onclick="setDenticion('nino')">Niño 🧒</button>
+          <div id="odoModeLabel" style="font-size:.72rem;font-weight:600;color:var(--teal);margin-left:8px">🦷 Dentición Permanente (Adulto)</div>
+        </div>
+
+        <div class="odo-layout">
+          <!-- Main canvas -->
+          <div>
+            <div class="md-card">
+              <div class="odo-toolbar" id="toolBar"></div>
+              <div class="odo-canvas">
+                <div id="odoGrid">
+                  <div style="text-align:center;padding:40px;color:var(--text-dim);font-size:.85rem">Cargando odontograma...</div>
+                </div>
+              </div>
+              <div class="legend-wrap" id="legendWrap"></div>
+            </div>
+            <div class="md-card" style="margin-top:10px;padding:12px 14px">
+              <div class="p-label">📝 Notas del odontograma</div>
+              <textarea class="form-textarea" id="odoNotas" placeholder="Observaciones generales, plan de tratamiento..." rows="2" style="font-size:.8rem"></textarea>
+            </div>
+          </div>
+          <!-- Right panel -->
+          <div>
+            <div class="md-card" style="margin-bottom:10px">
+              <div style="padding:10px 12px;border-bottom:1px solid var(--border)"><div class="p-label" style="margin:0">Diente seleccionado</div></div>
+              <div style="padding:12px" id="toothDetailWrap">
+                <div style="text-align:center;padding:20px;color:var(--text-dim);font-size:.75rem">Haz clic en un diente</div>
+              </div>
+            </div>
+            <div class="md-card" style="margin-bottom:10px">
+              <div style="padding:10px 12px;border-bottom:1px solid var(--border)"><div class="p-label" style="margin:0">Historial de la pieza</div></div>
+              <div style="padding:12px" id="toothHistory"><div style="font-size:.72rem;color:var(--text-dim)">Selecciona un diente</div></div>
+            </div>
+            <div class="md-card">
+              <div style="padding:10px 12px;border-bottom:1px solid var(--border)"><div class="p-label" style="margin:0">📊 Resumen bucal</div></div>
+              <div style="padding:12px" id="odoStats"><div style="text-align:center;color:var(--text-dim);font-size:.75rem">Sin datos</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════
+           TAB 2: PERIODONCIA
+      ═══════════════════════════════════════════════════ -->
+      <div class="tab-content" id="content-peri">
+        <div class="peri-layout">
+          <!-- Main canvas -->
+          <div>
+            <div class="md-card">
+              <div class="mode-bar">
+                <span style="font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Vista:</span>
+                <button class="mode-btn active" id="btnVestibular" onclick="setVista('V')">Vestibular</button>
+                <button class="mode-btn" id="btnLingual" onclick="setVista('L')">Palatino/Lingual</button>
+                <div class="mode-sep"></div>
+                <span style="font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Ingreso:</span>
+                <button class="mode-btn active" id="btnPS" onclick="setPModo('PS')">PS</button>
+                <button class="mode-btn" id="btnREC" onclick="setPModo('REC')">Recesión</button>
+                <button class="mode-btn" id="btnBOP" onclick="setPModo('BOP')">Sangrado</button>
+                <button class="mode-btn" id="btnPLACA" onclick="setPModo('PLACA')">Placa</button>
+                <div class="mode-sep"></div>
+                <div id="periModoActivo" style="font-size:.65rem;color:var(--teal);font-weight:600">Profundidad de bolsa</div>
+              </div>
+              <div class="canvas-scroll"><div id="periGrid"><div style="text-align:center;padding:40px;color:var(--text-dim);font-size:.82rem">Cargando periodontograma...</div></div></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:7px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+                <span style="font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Ref:</span>
+                <div style="display:flex;align-items:center;gap:4px;font-size:.62rem;color:#10B981"><span style="width:7px;height:7px;background:#10B981;border-radius:2px;display:inline-block"></span>≤3mm</div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:.62rem;color:#F59E0B"><span style="width:7px;height:7px;background:#F59E0B;border-radius:2px;display:inline-block"></span>4-5mm</div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:.62rem;color:#EF4444"><span style="width:7px;height:7px;background:#EF4444;border-radius:2px;display:inline-block"></span>≥6mm</div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:.62rem;color:var(--text-dim)"><span style="width:7px;height:7px;background:#EF4444;border-radius:50%;display:inline-block"></span>BOP</div>
+              </div>
+            </div>
+            <div class="md-card" style="margin-top:10px;padding:12px 14px">
+              <div class="p-label">📝 Notas periodontales</div>
+              <textarea class="form-textarea" id="periNotas" placeholder="Plan periodontal, observaciones, reevaluación..." rows="2" style="font-size:.8rem"></textarea>
+            </div>
+          </div>
+          <!-- Right panel -->
+          <div>
+            <div class="panel-card">
+              <div class="panel-header">🏥 Clasificación AAP 2018</div>
+              <div class="panel-body" id="aapPanel"><div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Ingresa datos de sondaje</div></div>
+            </div>
+            <div class="panel-card">
+              <div class="panel-header">📊 Estadísticas</div>
+              <div class="panel-body" id="periStatsPanel"><div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Sin datos</div></div>
+            </div>
+            <div class="panel-card">
+              <div class="panel-header">🦷 Diente seleccionado</div>
+              <div class="panel-body" id="periToothPanel"><div style="color:var(--text-dim);font-size:.73rem">Haz clic en un número</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════
+           TAB 3: ORTODONCIA
+      ═══════════════════════════════════════════════════ -->
+      <div class="tab-content" id="content-ortho">
+        <div class="ortho-grid">
+          <!-- Brackets table -->
+          <div>
+            <div class="md-card">
+              <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+                <div class="p-label" style="margin:0">🦿 Brackets por pieza</div>
+                <button class="btn btn-ghost btn-sm" onclick="addBracketRow()">+ Agregar</button>
+              </div>
+              <div style="padding:12px 14px">
+                <div style="display:grid;grid-template-columns:44px 1fr 1fr 1fr 60px;gap:4px;margin-bottom:6px">
+                  <div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Pieza</div>
+                  <div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Marca/Tipo</div>
+                  <div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Slot</div>
+                  <div style="font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Fecha</div>
+                  <div></div>
+                </div>
+                <div id="bracketsTable"></div>
+              </div>
+            </div>
+            <div class="md-card" style="margin-top:10px;padding:12px 14px">
+              <div class="p-label">📝 Notas de ortodoncia</div>
+              <textarea class="form-textarea" id="orthoNotas" placeholder="Plan de tratamiento, objetivos, observaciones..." rows="2" style="font-size:.8rem"></textarea>
+            </div>
+          </div>
+          <!-- Arcos + movimientos -->
+          <div>
+            <div class="md-card">
+              <div style="padding:12px 14px;border-bottom:1px solid var(--border)"><div class="p-label" style="margin:0">〜 Arcos</div></div>
+              <div style="padding:12px 14px">
+                <div style="font-size:.65rem;font-weight:700;color:var(--teal);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em">Superior</div>
+                <div class="arc-field"><span class="arc-label">Material</span><select class="form-select" id="arcoSupMat" style="flex:1;font-size:.72rem"><option>Nitinol .014</option><option>Nitinol .016</option><option>Nitinol .016x.022</option><option>Acero .016x.022</option><option>Acero .019x.025</option><option>TMA .017x.025</option><option>Otro</option></select></div>
+                <div class="arc-field"><span class="arc-label">Fecha colocación</span><input type="date" class="form-input" id="arcoSupFecha" style="flex:1;font-size:.72rem"></div>
+                <div class="arc-field"><span class="arc-label">Notas</span><input type="text" class="form-input" id="arcoSupNota" placeholder="Dobleces, stops..." style="flex:1;font-size:.72rem"></div>
+                <div style="font-size:.65rem;font-weight:700;color:var(--gold);margin:12px 0 8px;text-transform:uppercase;letter-spacing:.08em">Inferior</div>
+                <div class="arc-field"><span class="arc-label">Material</span><select class="form-select" id="arcoInfMat" style="flex:1;font-size:.72rem"><option>Nitinol .014</option><option>Nitinol .016</option><option>Nitinol .016x.022</option><option>Acero .016x.022</option><option>Acero .019x.025</option><option>TMA .017x.025</option><option>Otro</option></select></div>
+                <div class="arc-field"><span class="arc-label">Fecha colocación</span><input type="date" class="form-input" id="arcoInfFecha" style="flex:1;font-size:.72rem"></div>
+                <div class="arc-field"><span class="arc-label">Notas</span><input type="text" class="form-input" id="arcoInfNota" placeholder="Dobleces, stops..." style="flex:1;font-size:.72rem"></div>
+              </div>
+            </div>
+            <div class="md-card" style="margin-top:10px">
+              <div style="padding:12px 14px;border-bottom:1px solid var(--border)"><div class="p-label" style="margin:0">📅 Estimado de finalización</div></div>
+              <div style="padding:12px 14px">
+                <div class="arc-field"><span class="arc-label">Inicio</span><input type="date" class="form-input" id="orthoInicio" style="flex:1;font-size:.72rem"></div>
+                <div class="arc-field"><span class="arc-label">Estimado fin</span><input type="date" class="form-input" id="orthoFin" style="flex:1;font-size:.72rem"></div>
+                <div class="arc-field"><span class="arc-label">Progreso</span>
+                  <div style="flex:1">
+                    <input type="range" id="orthoProgreso" min="0" max="100" value="0" style="width:100%" oninput="document.getElementById('orthoProgresoVal').textContent=this.value+'%'">
+                    <div style="font-size:.65rem;font-family:var(--font-mono);color:var(--teal);margin-top:2px" id="orthoProgresoVal">0%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════
+           TAB 4: IMPLANTOLOGÍA
+      ═══════════════════════════════════════════════════ -->
+      <div class="tab-content" id="content-imp">
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div style="font-size:.78rem;color:var(--text-muted)">Las piezas marcadas como <strong style="color:#3B82F6">ausentes</strong> en el odontograma aparecen automáticamente.</div>
+              <button class="btn btn-ghost btn-sm" onclick="addImplantManual()">+ Agregar pieza</button>
+            </div>
+            <div id="implantsList">
+              <div style="text-align:center;padding:40px;color:var(--text-dim);font-size:.8rem">
+                <div style="font-size:1.5rem;margin-bottom:8px;opacity:.3">🔩</div>
+                Marca piezas como "ausente" en el odontograma para verlas aquí, o agrega manualmente.
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="md-card">
+              <div style="padding:10px 12px;border-bottom:1px solid var(--border)"><div class="p-label" style="margin:0">📊 Resumen de implantes</div></div>
+              <div style="padding:12px" id="implantStats">
+                <div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Sin implantes registrados</div>
+              </div>
+            </div>
+            <div class="md-card" style="margin-top:10px;padding:12px 14px">
+              <div class="p-label">📝 Notas de implantología</div>
+              <textarea class="form-textarea" id="impNotas" placeholder="Protocolo, observaciones, plan prostodontico..." rows="3" style="font-size:.8rem"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════
+           TAB 5: RADIOGRAFÍAS
+      ═══════════════════════════════════════════════════ -->
+      <div class="tab-content" id="content-rx">
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+          <div>
+            <!-- Add RX form -->
+            <div class="md-card" style="margin-bottom:12px;padding:14px">
+              <div class="p-label">🔗 Agregar enlace de radiografía</div>
+              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+                <input type="text" class="form-input" id="rxNombre" placeholder="Nombre (ej: Panorámica 2026-06)" style="flex:2;min-width:150px">
+                <select class="form-select" id="rxTipo" style="flex:1;min-width:120px">
+                  <option value="panoramica">Panorámica</option>
+                  <option value="periapical">Periapical</option>
+                  <option value="aleta">Aleta de mordida</option>
+                  <option value="cefalometria">Cefalometría</option>
+                  <option value="cbct">CBCT / Cone Beam</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <input type="url" class="form-input" id="rxUrl" placeholder="https://drive.google.com/file/d/..." style="flex:1">
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="date" class="form-input" id="rxFecha" style="width:160px">
+                <input type="text" class="form-input" id="rxNota" placeholder="Notas opcionales..." style="flex:1">
+                <button class="btn btn-primary btn-sm" onclick="addRx()">+ Agregar</button>
+              </div>
+              <div style="margin-top:8px;font-size:.65rem;color:var(--text-dim);padding:6px 8px;background:rgba(0,194,168,.06);border-radius:6px;border:1px solid rgba(0,194,168,.15)">
+                💡 Guarda tus radiografías en <strong style="color:var(--teal)">Google Drive</strong> y pega aquí el enlace. Sin costo de almacenamiento en el sistema.
+              </div>
+            </div>
+            <!-- RX list -->
+            <div class="rx-grid" id="rxGrid">
+              <div class="rx-empty">
+                <div style="font-size:2rem;margin-bottom:8px;opacity:.3">🩻</div>
+                Sin radiografías registradas. Agrega el enlace de Google Drive arriba.
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="md-card">
+              <div style="padding:10px 12px;border-bottom:1px solid var(--border)"><div class="p-label" style="margin:0">📋 Resumen</div></div>
+              <div style="padding:12px" id="rxStats">
+                <div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Sin radiografías</div>
+              </div>
+            </div>
+            <div class="md-card" style="margin-top:10px;padding:12px 14px">
+              <div class="p-label">📝 Notas radiológicas</div>
+              <textarea class="form-textarea" id="rxNotas" placeholder="Hallazgos radiológicos, comparativas, seguimiento..." rows="4" style="font-size:.8rem"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .content -->
+  </div><!-- end #mapContent -->
+</main>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-firestore-compat.min.js"></script>
+<script src="shared.js"></script>
+<script src="dataService.js"></script>
+<script>
+window.CURRENT_PAGE = 'mapa-dental';
+
+// ══════════════════════════════════════════════════════════════
+// SHARED STATE
+// ══════════════════════════════════════════════════════════════
+let selectedPxId = null;
+let isDirty = false;
+let activeTab = 'odo';
+
+// ── TAB SWITCHING ─────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('content-'+tab).classList.add('active');
+  activeTab = tab;
+
+  // Lazy render tabs on first visit
+  if (tab === 'odo'   && selectedPxId) renderOdontograma();
+  if (tab === 'peri'  && selectedPxId) renderGrid();
+  if (tab === 'imp'   && selectedPxId) renderImplants();
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+initSession('mapa-dental').then(async session => {
+  if (!session) {
+    document.body.innerHTML = '<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><a href="login.html" style="background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Iniciar sesión</a></div></div>';
+    return;
+  }
+
+  // Check plan for advanced tabs
+  const plan = session.clinica.plan || 'basico';
+  const hasPeriPlan = ['profesional','premium','multi-3','multi-10','enterprise','trial'].includes(plan);
+  if (!hasPeriPlan) {
+    document.getElementById('tab-peri').setAttribute('title','Plan Profesional requerido');
+    document.getElementById('tab-peri').style.opacity = '.4';
+  }
+
+  renderToolbar();
+  renderLegend();
+
+  const pxList = await fsGetAll('pacientes', r => r.limit(300));
+  pxList.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'','es'));
+  const sel = document.getElementById('selectPaciente');
+  sel.innerHTML = '<option value="">— Seleccionar paciente —</option>' +
+    pxList.map(p => `<option value="${p.id}">${esc(p.nombre)||p.id}</option>`).join('');
+
+  const pxParam = new URLSearchParams(location.search).get('px');
+  if (pxParam) { sel.value = pxParam; loadAll(pxParam); }
+
+  sel.addEventListener('change', () => {
+    if (isDirty && !confirm('Hay cambios sin guardar. ¿Continuar?')) {
+      sel.value = selectedPxId || ''; return;
+    }
+    if (sel.value) loadAll(sel.value);
+  });
+
+  document.getElementById('btnGuardar').addEventListener('click', saveAll);
+});
+
+// ══════════════════════════════════════════════════════════════
+// LOAD ALL TABS IN PARALLEL (1 Firestore call per collection)
+// ══════════════════════════════════════════════════════════════
+async function loadAll(pxId) {
+  selectedPxId = pxId;
+  isDirty = false;
+  document.getElementById('btnGuardar').disabled = true;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('mapContent').style.display = 'block';
+
+  // ── PARALLEL LOAD — single read per data type ──────────────
+  const [odoSnap, periSnap, mapSnap] = await Promise.all([
+    clinicaCol('odontogramas').doc(pxId).get().catch(() => null),
+    clinicaCol('odontogramas').doc(pxId).collection('periodontograma').doc('actual').get().catch(() => null),
+    clinicaCol('mapas-dentales').doc(pxId).get().catch(() => null),
+  ]);
+
+  // ODONTOGRAMA
+  if (odoSnap?.exists) {
+    const d = odoSnap.data();
+    odoDataAdult = d.dientesAdulto || d.dientes || {};
+    odoDataChild = d.dientesNino || {};
+    document.getElementById('odoNotas').value = d.notas || '';
+  } else {
+    odoDataAdult = {}; odoDataChild = {};
+    document.getElementById('odoNotas').value = '';
+  }
+  odoData = odoDataAdult;
+
+  // PERIODONCIA
+  if (periSnap?.exists) {
+    periData = periSnap.data().dientes || {};
+    document.getElementById('periNotas').value = periSnap.data().notas || '';
+  } else {
+    periData = {};
+    document.getElementById('periNotas').value = '';
+  }
+
+  // ORTODONCIA + IMPLANTES + RX (stored in mapas-dentales/{pxId})
+  if (mapSnap?.exists) {
+    const m = mapSnap.data();
+    orthoData     = m.ortodoncia   || { brackets:[], arcos:{}, notas:'', inicio:'', fin:'', progreso:0 };
+    implantData   = m.implantes    || {};
+    rxData        = m.radiografias || [];
+    document.getElementById('orthoNotas').value = orthoData.notas || '';
+    document.getElementById('impNotas').value   = m.impNotas  || '';
+    document.getElementById('rxNotas').value    = m.rxNotas   || '';
+    loadOrthoUI();
+    loadRxUI();
+  } else {
+    orthoData   = { brackets:[], arcos:{}, notas:'', inicio:'', fin:'', progreso:0 };
+    implantData = {};
+    rxData      = [];
+  }
+
+  renderOdontograma();
+  renderGrid();
+  renderImplants();
+  renderRxGrid();
+
+  const name = document.getElementById('selectPaciente').options[document.getElementById('selectPaciente').selectedIndex]?.text || '';
+  showToast(`Mapa dental: ${name}`, 'info');
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAVE ALL
+// ══════════════════════════════════════════════════════════════
+async function saveAll() {
+  if (!selectedPxId) { showToast('Selecciona un paciente','error'); return; }
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  try {
+    const ts = firebase.firestore.FieldValue.serverTimestamp();
+    const uid = SESSION.user.nombre || SESSION.user.email;
+
+    // 1. Odontograma
+    await clinicaCol('odontogramas').doc(selectedPxId).set({
+      dientes: odoDataAdult, dientesAdulto: odoDataAdult, dientesNino: odoDataChild,
+      notas: document.getElementById('odoNotas').value,
+      pacienteId: selectedPxId, actualizadoPor: uid, actualizadoEn: ts,
+    }, { merge: true });
+
+    // 2. Periodoncia
+    const periDocRef = clinicaCol('odontogramas').doc(selectedPxId).collection('periodontograma').doc('actual');
+    const prevPeri = await periDocRef.get();
+    if (prevPeri.exists) {
+      await clinicaCol('odontogramas').doc(selectedPxId).collection('periodontograma_hist').add({
+        ...prevPeri.data(), _archivedAt: ts, _archivedBy: uid,
+      });
+    }
+    await periDocRef.set({
+      dientes: periData, notas: document.getElementById('periNotas').value,
+      pacienteId: selectedPxId, fecha: todayISO(), actualizadoPor: uid, actualizadoEn: ts,
+    });
+
+    // 3. Mapa dental (ortodoncia + implantes + rx) — 1 doc
+    orthoData.notas    = document.getElementById('orthoNotas').value;
+    orthoData.arcos    = collectArcosData();
+    orthoData.inicio   = document.getElementById('orthoInicio').value;
+    orthoData.fin      = document.getElementById('orthoFin').value;
+    orthoData.progreso = parseInt(document.getElementById('orthoProgreso').value)||0;
+
+    await clinicaCol('mapas-dentales').doc(selectedPxId).set({
+      ortodoncia:   orthoData,
+      implantes:    implantData,
+      radiografias: rxData,
+      impNotas:  document.getElementById('impNotas').value,
+      rxNotas:   document.getElementById('rxNotas').value,
+      pacienteId: selectedPxId, actualizadoPor: uid, actualizadoEn: ts,
+    });
+
+    isDirty = false;
+    if (typeof audit === 'function') audit('SAVE_MAPA_DENTAL', { pxId: selectedPxId });
+    showToast('Mapa dental guardado correctamente','success');
+  } catch(e) { handleError(e,'mapa-dental'); }
+
+  btn.disabled = false; btn.textContent = '💾 Guardar';
+}
+
+function markDirty() {
+  isDirty = true;
+  document.getElementById('btnGuardar').disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 1: ODONTOGRAMA (código migrado)
+// ══════════════════════════════════════════════════════════════
+const ADULT_UPPER_RIGHT=[18,17,16,15,14,13,12,11];const ADULT_UPPER_LEFT=[21,22,23,24,25,26,27,28];const ADULT_LOWER_LEFT=[31,32,33,34,35,36,37,38];const ADULT_LOWER_RIGHT=[48,47,46,45,44,43,42,41];
+const CHILD_UPPER_RIGHT=[55,54,53,52,51];const CHILD_UPPER_LEFT=[61,62,63,64,65];const CHILD_LOWER_LEFT=[71,72,73,74,75];const CHILD_LOWER_RIGHT=[85,84,83,82,81];
+let UPPER_RIGHT=ADULT_UPPER_RIGHT,UPPER_LEFT=ADULT_UPPER_LEFT,LOWER_LEFT=ADULT_LOWER_LEFT,LOWER_RIGHT=ADULT_LOWER_RIGHT;
+let currentDenticion='adulto';
+let odoDataAdult={},odoDataChild={},odoData=odoDataAdult;
+let activeTool='caries',selectedTooth=null,toothHistory={};
+
+const TOOTH_NAMES={11:'Inc. central',12:'Inc. lateral',13:'Canino',14:'1er premolar',15:'2do premolar',16:'1er molar',17:'2do molar',18:'3er molar',21:'Inc. central',22:'Inc. lateral',23:'Canino',24:'1er premolar',25:'2do premolar',26:'1er molar',27:'2do molar',28:'3er molar',31:'Inc. central',32:'Inc. lateral',33:'Canino',34:'1er premolar',35:'2do premolar',36:'1er molar',37:'2do molar',38:'3er molar',41:'Inc. central',42:'Inc. lateral',43:'Canino',44:'1er premolar',45:'2do premolar',46:'1er molar',47:'2do molar',48:'3er molar',51:'Inc. central',52:'Inc. lateral',53:'Canino',54:'1er molar',55:'2do molar',61:'Inc. central',62:'Inc. lateral',63:'Canino',64:'1er molar',65:'2do molar',71:'Inc. central',72:'Inc. lateral',73:'Canino',74:'1er molar',75:'2do molar',81:'Inc. central',82:'Inc. lateral',83:'Canino',84:'1er molar',85:'2do molar'};
+const STATUSES=[{key:'sano',label:'Sano',color:'rgba(255,255,255,.08)',icon:'○'},{key:'caries',label:'Caries',color:'#EF4444',icon:'●'},{key:'obturado',label:'Obturado',color:'#00C2A8',icon:'●'},{key:'corona',label:'Corona',color:'#F59E0B',icon:'◆'},{key:'puente',label:'Puente',color:'#8B5CF6',icon:'━'},{key:'extraccion',label:'Extracción ind',color:'#F97316',icon:'⊗'},{key:'ausente',label:'Ausente',color:'#3B82F6',icon:'✕'},{key:'implante',label:'Implante',color:'#10B981',icon:'⊕'},{key:'endodoncia',label:'Endodoncia',color:'#EC4899',icon:'↓'},{key:'fractura',label:'Fractura',color:'#94A3B8',icon:'╱'},{key:'movilidad',label:'Movilidad',color:'#FBBF24',icon:'↕'}];
+const STATUS_MAP=Object.fromEntries(STATUSES.map(s=>[s.key,s]));
+
+function setDenticion(tipo){if(currentDenticion===tipo)return;if(isDirty&&!confirm('Cambios sin guardar. ¿Continuar?'))return;isDirty=false;currentDenticion=tipo;if(tipo==='nino'){UPPER_RIGHT=CHILD_UPPER_RIGHT;UPPER_LEFT=CHILD_UPPER_LEFT;LOWER_LEFT=CHILD_LOWER_LEFT;LOWER_RIGHT=CHILD_LOWER_RIGHT;}else{UPPER_RIGHT=ADULT_UPPER_RIGHT;UPPER_LEFT=ADULT_UPPER_LEFT;LOWER_LEFT=ADULT_LOWER_LEFT;LOWER_RIGHT=ADULT_LOWER_RIGHT;}odoData=currentDenticion==='nino'?odoDataChild:odoDataAdult;document.getElementById('btnAdulto').className='btn btn-sm'+(tipo==='adulto'?' btn-primary':' btn-ghost');document.getElementById('btnAdulto').style.cssText='font-size:.72rem;padding:4px 12px';document.getElementById('btnNino').className='btn btn-sm'+(tipo==='nino'?' btn-primary':' btn-ghost');document.getElementById('btnNino').style.cssText='font-size:.72rem;padding:4px 12px';selectedTooth=null;document.getElementById('odoModeLabel').textContent=tipo==='nino'?'🧒 Dentición Primaria (Niño)':'🦷 Dentición Permanente (Adulto)';document.getElementById('odoModeLabel').style.color=tipo==='nino'?'var(--gold)':'var(--teal)';renderOdontograma();renderOdoStats();}
+
+function renderToolbar(){const bar=document.getElementById('toolBar');bar.innerHTML='<span style="font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-right:4px;white-space:nowrap">Herramienta:</span>'+STATUSES.map(s=>`<button class="tool-btn ${s.key===activeTool?'active':''}" data-tool="${s.key}" onclick="setTool('${s.key}')" style="${s.key===activeTool?`color:${s.color};border-color:${s.color};background:${s.color}18`:''}"><span class="tool-swatch" style="background:${s.color}"></span>${s.label}</button>`).join('')+'<div class="tool-sep"></div><button class="tool-btn" onclick="clearAllOdo()" style="color:var(--red)">🗑 Limpiar</button>';}
+function renderLegend(){document.getElementById('legendWrap').innerHTML=STATUSES.filter(s=>s.key!=='sano').map(s=>`<div class="legend-pill"><span class="legend-pip" style="background:${s.color}"></span>${s.label}</div>`).join('');}
+function setTool(t){activeTool=t;renderToolbar();}
+function clearAllOdo(){if(!selectedPxId)return;if(!confirm('¿Limpiar todo el odontograma?'))return;odoData={};if(currentDenticion==='nino')odoDataChild={};else odoDataAdult={};markDirty();renderOdontograma();renderOdoStats();showToast('Odontograma limpiado','info');}
+
+function renderOdontograma(){const upper=document.getElementById('upperRow'),lower=document.getElementById('lowerRow');if(!upper||!lower)return;const container=document.getElementById('odoGrid');container.innerHTML=`<div class="arch-header"><div class="quad-label">Q1 Sup Der</div><div class="arch-label">Arcada Superior</div><div class="quad-label">Q2 Sup Izq</div></div><div class="teeth-row" id="upperRow"></div><div class="arch-divider"></div><div class="arch-divider lower"></div><div class="teeth-row" id="lowerRow"></div><div class="arch-header" style="margin-top:5px"><div class="quad-label">Q4 Inf Der</div><div class="arch-label">Arcada Inferior</div><div class="quad-label">Q3 Inf Izq</div></div>`;const ur=document.getElementById('upperRow'),lr=document.getElementById('lowerRow');UPPER_RIGHT.forEach(n=>ur.appendChild(createToothEl(n,'upper')));ur.appendChild(midlineEl());UPPER_LEFT.forEach(n=>ur.appendChild(createToothEl(n,'upper')));LOWER_RIGHT.forEach(n=>lr.appendChild(createToothEl(n,'lower')));lr.appendChild(midlineEl());LOWER_LEFT.forEach(n=>lr.appendChild(createToothEl(n,'lower')));}
+function midlineEl(){const d=document.createElement('div');d.className='midline-gap';return d;}
+
+function createToothEl(num,arch){const wrap=document.createElement('div');wrap.className=`tooth ${selectedTooth===num?'active':''}`;wrap.id=`tooth-${num}`;const data=odoData[num]||{},faces=data.faces||{},status=data.status||'sano',st=STATUS_MAP[status]||STATUS_MAP.sano,isAbsent=status==='ausente',hasBridge=status==='puente',hasImpl=status==='implante',hasEndo=status==='endodoncia',vIsUp=arch==='upper',fV=getFaceColor(faces.V,status),fL=getFaceColor(faces.L,status),fM=getFaceColor(faces.M,status),fD=getFaceColor(faces.D,status),fO=getFaceColor(faces.O,status),numHtml=`<div class="tooth-num">${num}</div>`,svgHtml=`<svg class="tooth-svg" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="24" height="32" rx="5" fill="${isAbsent?'rgba(59,130,246,.08)':'rgba(255,255,255,.03)'}" stroke="${isAbsent?'rgba(59,130,246,.4)':'rgba(255,255,255,.14)'}" stroke-width="1.5"/>${isAbsent?`<line x1="4" y1="4" x2="22" y2="30" stroke="#3B82F6" stroke-width="1.5" opacity=".7"/><line x1="22" y1="4" x2="4" y2="30" stroke="#3B82F6" stroke-width="1.5" opacity=".7"/>`:`<rect class="t-face" data-face="D" x="1" y="1" width="6" height="32" rx="3" fill="${fD}" opacity=".85"/><rect class="t-face" data-face="M" x="19" y="1" width="6" height="32" rx="3" fill="${fM}" opacity=".85"/><rect class="t-face" data-face="V" x="1" y="${vIsUp?1:26}" width="24" height="7" rx="3" fill="${fV}" opacity=".85"/><rect class="t-face" data-face="L" x="1" y="${vIsUp?26:1}" width="24" height="7" rx="3" fill="${fL}" opacity=".85"/><rect class="t-face" data-face="O" x="8" y="9" width="10" height="16" rx="2" fill="${fO}" opacity=".95"/>`}${hasImpl?`<circle cx="13" cy="17" r="6" fill="none" stroke="#10B981" stroke-width="1.5"/><circle cx="13" cy="17" r="2" fill="#10B981"/><line x1="13" y1="1" x2="13" y2="11" stroke="#10B981" stroke-width="1.5"/>`:''} ${hasEndo?`<line x1="13" y1="${vIsUp?3:31}" x2="13" y2="${vIsUp?31:3}" stroke="#EC4899" stroke-width="1.5" stroke-dasharray="2,2"/><circle cx="13" cy="${vIsUp?31:3}" r="2.5" fill="#EC4899"/>`:''} ${hasBridge?`<rect x="0" y="${vIsUp?13:18}" width="26" height="3" fill="#8B5CF6" opacity=".6"/>`:''} ${status==='fractura'?`<line x1="9" y1="2" x2="17" y2="32" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="3,2"/>`:''}${!isAbsent&&status!=='sano'?`<rect x="1" y="1" width="24" height="32" rx="5" fill="transparent" class="t-face" data-face="O"/>`:''}</svg>`,badge=!isAbsent&&status!=='sano'?`<div class="tooth-badge" style="background:${st.color}20;color:${st.color}">${st.icon}</div>`:'';wrap.innerHTML=arch==='upper'?numHtml+svgHtml+badge:svgHtml+badge+numHtml;wrap.addEventListener('click',e=>{e.stopPropagation();const face=e.target.closest('[data-face]')?.getAttribute('data-face');if(face&&!isAbsent&&selectedPxId)applyToFace(num,face);else selectOdoTooth(num);});return wrap;}
+function getFaceColor(fs,ts){if(fs&&fs!=='sano')return STATUS_MAP[fs]?.color||'rgba(255,255,255,.08)';if(ts&&ts!=='sano')return STATUS_MAP[ts]?.color||'rgba(255,255,255,.08)';return'rgba(255,255,255,.08)';}
+
+function applyToFace(num,face){if(!selectedPxId){showToast('Selecciona un paciente','error');return;}if(!odoData[num])odoData[num]={faces:{},status:'sano'};if(!odoData[num].faces)odoData[num].faces={};odoData[num].faces[face]=activeTool;if(activeTool!=='sano')odoData[num].status=activeTool;else{const allSano=Object.values(odoData[num].faces).every(f=>!f||f==='sano');if(allSano)odoData[num].status='sano';}markDirty();refreshTooth(num);if(selectedTooth===num)updateToothDetail(num);renderOdoStats();if(activeTool==='ausente')setTimeout(()=>renderImplants(),100);}
+function applyStatus(num,status){if(!selectedPxId){showToast('Selecciona un paciente','error');return;}if(!odoData[num])odoData[num]={faces:{},status};else odoData[num].status=status;if(!odoData[num].faces)odoData[num].faces={};if(status!=='sano')['O','V','L','M','D'].forEach(f=>{odoData[num].faces[f]=status;});else odoData[num].faces={};markDirty();refreshTooth(num);updateToothDetail(num);renderOdoStats();if(status==='ausente'||status==='sano')setTimeout(()=>renderImplants(),100);}
+function refreshTooth(num){const old=document.getElementById(`tooth-${num}`);if(!old)return;const isUpper=[...ADULT_UPPER_RIGHT,...ADULT_UPPER_LEFT,...CHILD_UPPER_RIGHT,...CHILD_UPPER_LEFT].includes(num);const newEl=createToothEl(num,isUpper?'upper':'lower');old.replaceWith(newEl);}
+
+function selectOdoTooth(num){if(selectedTooth!==null){const p=document.getElementById(`tooth-${selectedTooth}`);if(p)p.classList.remove('active');}selectedTooth=num;const el=document.getElementById(`tooth-${num}`);if(el)el.classList.add('active');updateToothDetail(num);const hist=(toothHistory[num]||[]).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));document.getElementById('toothHistory').innerHTML=hist.length?hist.map(h=>`<div class="hist-item"><div class="hist-action">${esc(h.accion||'Actualización')} — <span style="color:${STATUS_MAP[h.status]?.color||'var(--text-muted)'}">${h.status||'—'}</span></div><div class="hist-meta">${h.fecha||'—'} · ${esc(h.usuario||'—')}</div></div>`).join(''):'<div style="font-size:.7rem;color:var(--text-dim);padding:4px">Sin historial</div>';}
+
+function updateToothDetail(num){const data=odoData[num]||{},status=data.status||'sano',faces=data.faces||{},st=STATUS_MAP[status]||STATUS_MAP.sano;document.getElementById('toothDetailWrap').innerHTML=`<div style="font-family:var(--font-mono);font-size:1.6rem;font-weight:700;color:var(--teal);line-height:1">${num}</div><div style="font-size:.7rem;color:var(--text-muted);margin-bottom:10px">${TOOTH_NAMES[num]||'Diente '+num}</div><div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:6px 9px;border-radius:7px;background:${st.color}18;border:1px solid ${st.color}40"><span style="width:9px;height:9px;border-radius:2px;background:${st.color};flex-shrink:0;display:inline-block"></span><span style="font-size:.74rem;font-weight:600;color:${st.color}">${st.label}</span></div><div class="p-label" style="margin-bottom:5px">Cambiar estado</div><div class="status-grid">${STATUSES.map(s=>`<div class="status-chip ${status===s.key?'active':''}" onclick="applyStatus(${num},'${s.key}')" style="${status===s.key?`border-color:${s.color};background:${s.color}18;color:${s.color}`:''}"><span class="status-dot" style="background:${s.color}"></span>${s.label}</div>`).join('')}</div><div class="p-label" style="margin-bottom:5px">Caras</div><div class="faces-grid">${['V','O','L','M','D'].map(f=>{const fs=faces[f],fc=fs&&fs!=='sano'?STATUS_MAP[fs]:null;return`<div class="face-chip ${fc?'has-status':''}" onclick="setTool('${activeTool}');applyToFace(${num},'${f}')" style="${fc?`color:${fc.color};background:${fc.color}18;border-color:${fc.color}40`:''}"><div>${f==='O'?'Ocl':f==='V'?'Vest':f==='L'?'Ling':f==='M'?'Mes':'Dis'}</div><span class="face-chip-label">${fc?fc.label:'Sana'}</span></div>`;}).join('')}</div><textarea class="form-textarea" id="toothNota" rows="2" placeholder="Nota de esta pieza..." style="font-size:.72rem;margin-top:6px">${esc(data.notas||'')}</textarea><button class="btn btn-ghost btn-sm" style="width:100%;margin-top:5px" onclick="saveToothNota(${num})">Guardar nota</button>`;}
+
+window.saveToothNota=function(num){if(!odoData[num])odoData[num]={faces:{},status:'sano'};odoData[num].notas=document.getElementById('toothNota')?.value||'';markDirty();showToast('Nota guardada','info');};
+
+function renderOdoStats(){const total=currentDenticion==='nino'?20:32,counts={};Object.values(odoData).forEach(d=>{const s=d.status||'sano';counts[s]=(counts[s]||0)+1;});const sanos=total-Object.values(odoData).filter(d=>d.status&&d.status!=='sano').length;const rows=[{key:'sano',label:'Sanas',val:sanos,color:'var(--text-muted)'},{key:'caries',label:'Caries',val:counts.caries||0,color:'#EF4444'},{key:'obturado',label:'Obturadas',val:counts.obturado||0,color:'#00C2A8'},{key:'corona',label:'Coronas',val:counts.corona||0,color:'#F59E0B'},{key:'ausente',label:'Ausentes',val:counts.ausente||0,color:'#3B82F6'},{key:'implante',label:'Implantes',val:counts.implante||0,color:'#10B981'},{key:'endodoncia',label:'Endodoncia',val:counts.endodoncia||0,color:'#EC4899'},{key:'puente',label:'Puentes',val:counts.puente||0,color:'#8B5CF6'},{key:'extraccion',label:'Extrac.',val:counts.extraccion||0,color:'#F97316'},{key:'fractura',label:'Fracturas',val:counts.fractura||0,color:'#94A3B8'}].filter(r=>r.val>0);const el=document.getElementById('odoStats');if(!rows.length){el.innerHTML=`<div style="text-align:center;color:var(--text-dim);padding:8px;font-size:.74rem">Sin hallazgos<br><span style="font-size:.62rem">${total} piezas ${currentDenticion==='nino'?'primarias':'permanentes'}</span></div>`;return;}el.innerHTML=rows.map(r=>`<div class="stat-row"><span style="color:var(--text-muted);min-width:62px;font-size:.68rem">${r.label}</span><div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(r.val/total*100)}%;background:${r.color}"></div></div><span class="stat-val" style="color:${r.color}">${r.val}</span></div>`).join('');}
+</script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// TAB 2: PERIODONCIA (código migrado)
+// ══════════════════════════════════════════════════════════════
+const PERI_UPPER_RIGHT=[18,17,16,15,14,13,12,11],PERI_UPPER_LEFT=[21,22,23,24,25,26,27,28],PERI_LOWER_LEFT=[31,32,33,34,35,36,37,38],PERI_LOWER_RIGHT=[48,47,46,45,44,43,42,41];
+const PERI_ALL=[...PERI_UPPER_RIGHT,...PERI_UPPER_LEFT,...PERI_LOWER_LEFT,...PERI_LOWER_RIGHT];
+const MOLARES=[16,17,18,26,27,28,36,37,38,46,47,48];
+let periData={},periSelectedTooth=null,vistaActual='V',modoActual='PS';
+
+function defaultPeriTooth(){return{V:{ps:[0,0,0],rec:[0,0,0],bop:[0,0,0],placa:0},L:{ps:[0,0,0],rec:[0,0,0],bop:[0,0,0],placa:0},movilidad:0,furcacion:0,ausente:false};}
+function getPeriTooth(n){if(!periData[n])periData[n]=defaultPeriTooth();return periData[n];}
+
+function setVista(v){vistaActual=v;document.getElementById('btnVestibular').classList.toggle('active',v==='V');document.getElementById('btnLingual').classList.toggle('active',v==='L');renderGrid();}
+function setPModo(m){modoActual=m;const labels={PS:'Profundidad de bolsa',REC:'Recesión gingival',BOP:'Sangrado al sondaje',PLACA:'Índice de placa'};document.getElementById('periModoActivo').textContent=labels[m];['btnPS','btnREC','btnBOP','btnPLACA'].forEach(id=>{const mo=id.replace('btn','');document.getElementById(id).classList.toggle('active',mo===m);});renderGrid();}
+
+function renderGrid(){const container=document.getElementById('periGrid');if(!selectedPxId)return;container.innerHTML=renderArch([...PERI_UPPER_RIGHT,...PERI_UPPER_LEFT],'Arcada Superior')+renderArch([...PERI_LOWER_RIGHT,...PERI_LOWER_LEFT],'Arcada Inferior');}
+
+function renderArch(teeth,label){const v=vistaActual;const ROWS=[{key:'ps_bar',isBar:true,label:'PS(mm)'},{key:'rec',isInput:true,label:'Rec'},{key:'nic',isComputed:true,label:'NIC'},{key:'bop',isDots:true,dotType:'bop',label:'BOP'},{key:'placa',isDots:true,dotType:'placa',isPerTooth:true,label:'Placa'},{key:'num',isNum:true,label:''},{key:'mov',isSelect:true,selectKey:'movilidad',opts:['0','I','II','III'],label:'Mov'},{key:'furc',isSelect:true,selectKey:'furcacion',opts:['—','I','II','III'],onlyMolares:true,label:'Furc'}];
+let html=`<div style="margin-bottom:8px"><div class="arch-divider-row"><div class="arch-line"></div><div class="arch-pill">${label}</div><div class="arch-line"></div></div><div style="display:flex;align-items:stretch">`;
+html+=`<div style="display:flex;flex-direction:column;margin-right:4px">`;
+ROWS.forEach(row=>{html+=`<div class="row-label">${row.label}</div>`;});
+html+=`</div><div style="display:flex;gap:1px">`;
+teeth.forEach(num=>{const td=getPeriTooth(num),side=td[v]||{ps:[0,0,0],rec:[0,0,0],bop:[0,0,0],placa:0},ps=side.ps||[0,0,0],rec=side.rec||[0,0,0],bop=side.bop||[0,0,0],isMolar=MOLARES.includes(num);
+html+=`<div class="tooth-col ${periSelectedTooth===num?'selected':''}" onclick="periSelectTooth(${num})" id="ptc-${num}">`;
+ROWS.forEach(row=>{
+if(row.isBar){html+=`<div class="bar-cell" id="pbar-${num}-${v}">`;[0,1,2].forEach(i=>{const val=Math.max(0,Math.min(12,ps[i]||0)),color=val>=6?'#EF4444':val>=4?'#F59E0B':'#10B981',maxH=72,h=val>0?Math.max(4,(val/10)*maxH):2;html+=`<div class="bar-point"><div class="bar-val" style="color:${color}">${val||''}</div><div class="bar-fill" style="height:${h}px;background:${color};width:100%"></div></div>`;});html+=`</div>`;}
+else if(row.isInput){const arr=row.key==='rec'?rec:ps;html+=`<div class="cell">`;[0,1,2].forEach(i=>{const val=arr[i]||0;html+=`<input type="number" class="pt-input ${val>=6?'val-danger':val>=4?'val-warn':'val-ok'}" id="pi-${num}-${v}-${row.key}-${i}" value="${val||''}" min="0" max="12" placeholder="0" oninput="periOnInput(event,${num},'${v}','${row.key}',${i})" onkeydown="periNav(event,${num},'${v}','${row.key}',${i})" onclick="periSelectTooth(${num})"/>`;});html+=`</div>`;}
+else if(row.isComputed){html+=`<div class="cell" style="gap:1px">`;[0,1,2].forEach(i=>{const nic=(ps[i]||0)+(rec[i]||0),c=nic>=5?'#EF4444':nic>=3?'#F59E0B':'var(--text-dim)';html+=`<div style="width:10px;font-size:.48rem;font-family:var(--font-mono);text-align:center;color:${c}">${nic||0}</div>`;});html+=`</div>`;}
+else if(row.isDots&&!row.isPerTooth){const arr=row.dotType==='bop'?bop:[];html+=`<div class="toggle-cell">`;[0,1,2].forEach(i=>{const on=arr[i]||0;html+=`<div class="${row.dotType}-dot bop-dot ${on?'active':''}" id="pdot-${num}-${v}-${row.dotType}-${i}" onclick="event.stopPropagation();periToggleDot(${num},'${v}','${row.dotType}',${i})"></div>`;});html+=`</div>`;}
+else if(row.isDots&&row.isPerTooth){const on=side.placa||0;html+=`<div class="toggle-cell"><div class="placa-dot bop-dot ${on?'active':''}" style="width:11px;height:11px" id="pplaca-${num}-${v}" onclick="event.stopPropagation();periTogglePlaca(${num},'${v}')"></div></div>`;}
+else if(row.isNum){html+=`<div class="tooth-num-label" style="color:${periSelectedTooth===num?'var(--teal)':'var(--text-dim)'}">${num}</div>`;}
+else if(row.isSelect){const cur=td[row.selectKey]||'0';if(row.selectKey==='furcacion'&&!isMolar){html+=`<div class="select-cell"><div style="width:32px;height:18px"></div></div>`;}else{html+=`<div class="select-cell"><select class="mini-select" onchange="periSelectChange(${num},'${row.selectKey}',this.value)" onclick="event.stopPropagation()">${row.opts.map(o=>`<option value="${o}" ${cur==o?'selected':''}>${o}</option>`).join('')}</select></div>`;}}
+});
+html+=`</div>`;});
+html+=`</div></div></div>`;return html;}
+
+function periOnInput(e,num,vista,field,idx){const val=Math.max(0,Math.min(12,parseInt(e.target.value)||0));const td=getPeriTooth(num);if(!td[vista])td[vista]={ps:[0,0,0],rec:[0,0,0],bop:[0,0,0],placa:0};if(!td[vista][field])td[vista][field]=[0,0,0];td[vista][field][idx]=val;e.target.className=`pt-input ${val>=6?'val-danger':val>=4?'val-warn':'val-ok'}`;periUpdateBar(num,vista);periUpdateNIC(num,vista);markDirty();renderPeriStats();renderAAP();if(periSelectedTooth===num)periUpdateToothPanel(num);}
+function periSelectChange(num,field,val){const td=getPeriTooth(num);td[field]=val;markDirty();if(periSelectedTooth===num)periUpdateToothPanel(num);}
+function periToggleDot(num,vista,type,idx){const td=getPeriTooth(num);if(!td[vista])td[vista]={ps:[0,0,0],rec:[0,0,0],bop:[0,0,0],placa:0};if(!td[vista][type])td[vista][type]=[0,0,0];td[vista][type][idx]=td[vista][type][idx]?0:1;const el=document.getElementById(`pdot-${num}-${vista}-${type}-${idx}`);if(el)el.classList.toggle('active',!!td[vista][type][idx]);markDirty();renderPeriStats();renderAAP();}
+function periTogglePlaca(num,vista){const td=getPeriTooth(num);if(!td[vista])td[vista]={ps:[0,0,0],rec:[0,0,0],bop:[0,0,0],placa:0};td[vista].placa=td[vista].placa?0:1;const el=document.getElementById(`pplaca-${num}-${vista}`);if(el)el.classList.toggle('active',!!td[vista].placa);markDirty();renderPeriStats();renderAAP();}
+function periNav(e,num,vista,field,idx){if(e.key==='Tab'||e.key==='Enter'||e.key==='ArrowRight'){e.preventDefault();const ni=idx+1;if(ni<3)document.getElementById(`pi-${num}-${vista}-${field}-${ni}`)?.focus();else{const allT=[...PERI_UPPER_RIGHT,...PERI_UPPER_LEFT,...PERI_LOWER_LEFT,...PERI_LOWER_RIGHT];const i=allT.indexOf(num);const nt=allT[i+1];if(nt)document.getElementById(`pi-${nt}-${vista}-${field}-0`)?.focus();}}if(e.key==='ArrowLeft'){const pi=idx-1;if(pi>=0)document.getElementById(`pi-${num}-${vista}-${field}-${pi}`)?.focus();}}
+function periUpdateBar(num,vista){const td=getPeriTooth(num),ps=td[vista]?.ps||[0,0,0],barEl=document.getElementById(`pbar-${num}-${vista}`);if(!barEl)return;const maxH=72;barEl.querySelectorAll('.bar-point').forEach((pt,i)=>{const val=Math.max(0,Math.min(12,ps[i]||0)),color=val>=6?'#EF4444':val>=4?'#F59E0B':'#10B981',h=val>0?Math.max(4,(val/10)*maxH):2,fill=pt.querySelector('.bar-fill'),label=pt.querySelector('.bar-val');if(fill){fill.style.height=h+'px';fill.style.background=color;}if(label){label.textContent=val||'';label.style.color=color;}});}
+function periUpdateNIC(num,vista){const td=getPeriTooth(num),ps=td[vista]?.ps||[0,0,0],rec=td[vista]?.rec||[0,0,0];const col=document.querySelector(`#ptc-${num} .cell:nth-child(3)`);if(!col)return;col.querySelectorAll('div').forEach((d,i)=>{const nic=(ps[i]||0)+(rec[i]||0);d.textContent=nic||0;d.style.color=nic>=5?'#EF4444':nic>=3?'#F59E0B':'var(--text-dim)';});}
+function periSelectTooth(num){if(periSelectedTooth!==null){const p=document.getElementById(`ptc-${periSelectedTooth}`);if(p)p.classList.remove('selected');}periSelectedTooth=num;const el=document.getElementById(`ptc-${num}`);if(el)el.classList.add('selected');periUpdateToothPanel(num);}
+function periUpdateToothPanel(num){const td=getPeriTooth(num),vd=td['V']||{},ld=td['L']||{},ps6V=vd.ps||[0,0,0],ps6L=ld.ps||[0,0,0],rec6V=vd.rec||[0,0,0],rec6L=ld.rec||[0,0,0],bopV=vd.bop||[0,0,0],bopL=ld.bop||[0,0,0],maxPS=Math.max(...ps6V,...ps6L),col=maxPS>=6?'#EF4444':maxPS>=4?'#F59E0B':'#10B981';document.getElementById('periToothPanel').innerHTML=`<div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:${col};line-height:1">${num}</div><div style="font-size:.68rem;color:var(--text-muted);margin-bottom:8px">${TOOTH_NAMES?.[num]||'Pieza '+num}</div><div style="font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Vestibular</div><div style="display:flex;gap:4px;margin-bottom:8px">${[0,1,2].map(i=>{const ps=ps6V[i]||0,r=rec6V[i]||0,nic=ps+r,c=ps>=6?'#EF4444':ps>=4?'#F59E0B':'#10B981';return`<div style="flex:1;background:var(--surface2);border-radius:5px;padding:4px 3px;text-align:center;border:1px solid ${bopV[i]?'#EF4444':'transparent'}"><div style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${c}">${ps}</div><div style="font-size:.5rem;color:var(--text-dim)">PS</div><div style="font-size:.6rem;font-weight:600;color:${nic>=5?'#EF4444':'var(--text-dim)'}">NIC:${nic}</div></div>`;}).join('')}</div><div style="font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Lingual</div><div style="display:flex;gap:4px;margin-bottom:8px">${[0,1,2].map(i=>{const ps=ps6L[i]||0,r=rec6L[i]||0,nic=ps+r,c=ps>=6?'#EF4444':ps>=4?'#F59E0B':'#10B981';return`<div style="flex:1;background:var(--surface2);border-radius:5px;padding:4px 3px;text-align:center;border:1px solid ${bopL[i]?'#EF4444':'transparent'}"><div style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${c}">${ps}</div><div style="font-size:.5rem;color:var(--text-dim)">PS</div><div style="font-size:.6rem;font-weight:600;color:${nic>=5?'#EF4444':'var(--text-dim)'}">NIC:${nic}</div></div>`;}).join('')}</div><div style="display:flex;gap:6px;font-size:.7rem"><div style="flex:1;background:var(--surface2);padding:5px 7px;border-radius:5px"><div style="color:var(--text-dim);font-size:.58rem">Movilidad</div><div style="font-weight:700">${td.movilidad||0}</div></div>${MOLARES.includes(num)?`<div style="flex:1;background:var(--surface2);padding:5px 7px;border-radius:5px"><div style="color:var(--text-dim);font-size:.58rem">Furcación</div><div style="font-weight:700">${td.furcacion||'—'}</div></div>`:''}</div>`;}
+
+function calcPeriStats(){let totalSites=0,bopCount=0,placaCount=0,ps_all=[],nic_all=[],maxPS=0;PERI_ALL.forEach(n=>{const td=periData[n];if(!td)return;['V','L'].forEach(v=>{const sd=td[v];if(!sd)return;(sd.ps||[]).forEach((p,i)=>{if(p>0){ps_all.push(p);const nic=p+(sd.rec?sd.rec[i]:0);nic_all.push(nic);if(p>maxPS)maxPS=p;totalSites++;}if(sd.bop&&sd.bop[i])bopCount++;if(p>0)totalSites++;});if(sd.placa)placaCount++;});});const avgPS=ps_all.length?(ps_all.reduce((s,v)=>s+v,0)/ps_all.length).toFixed(1):0,avgNIC=nic_all.length?(nic_all.reduce((s,v)=>s+v,0)/nic_all.length).toFixed(1):0,bopPct=totalSites>0?Math.round(bopCount/totalSites*100):0,placaPct=totalSites>0?Math.round(placaCount/(PERI_ALL.length*2)*100):0,depth_3=ps_all.filter(p=>p<=3).length,depth_46=ps_all.filter(p=>p>=4&&p<=5).length,depth_6=ps_all.filter(p=>p>=6).length;return{avgPS,avgNIC,bopPct,placaPct,maxPS,depth_3,depth_46,depth_6,totalSites};}
+
+function renderPeriStats(){const st=calcPeriStats();if(st.totalSites===0){document.getElementById('periStatsPanel').innerHTML='<div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Sin datos ingresados</div>';return;}document.getElementById('periStatsPanel').innerHTML=`<div class="stat-mini"><span style="color:var(--text-muted)">PS promedio</span><span class="stat-val" style="color:${st.avgPS>=4?'#EF4444':'#10B981'}">${st.avgPS}mm</span></div><div class="stat-mini"><span style="color:var(--text-muted)">NIC promedio</span><span class="stat-val">${st.avgNIC}mm</span></div><div class="stat-mini"><span style="color:var(--text-muted)">PS máxima</span><span class="stat-val" style="color:${st.maxPS>=6?'#EF4444':st.maxPS>=4?'#F59E0B':'#10B981'}">${st.maxPS}mm</span></div><div class="stat-mini"><span style="color:var(--text-muted)">BOP</span><span class="stat-val" style="color:${st.bopPct>=30?'#EF4444':st.bopPct>=10?'#F59E0B':'#10B981'}">${st.bopPct}%</span></div><div class="stat-mini"><span style="color:var(--text-muted)">Placa</span><span class="stat-val" style="color:${st.placaPct>=50?'#EF4444':'#F59E0B'}">${st.placaPct}%</span></div><div style="margin-top:8px">${periBar('≤3mm',st.depth_3,st.depth_3+st.depth_46+st.depth_6,'#10B981')+periBar('4-5mm',st.depth_46,st.depth_3+st.depth_46+st.depth_6,'#F59E0B')+periBar('≥6mm',st.depth_6,st.depth_3+st.depth_46+st.depth_6,'#EF4444')}</div>`;}
+function periBar(label,val,total,color){const pct=total>0?Math.round(val/total*100):0;return`<div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--text-muted);margin-bottom:2px"><span>${label}</span><span style="font-family:var(--font-mono);color:${color}">${val}</span></div><div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${pct}%;background:${color};border-radius:2px"></div></div></div>`;}
+
+function renderAAP(){const st=calcPeriStats();if(st.totalSites===0){document.getElementById('aapPanel').innerHTML='<div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Ingresa datos de sondaje</div>';return;}let stage='I',sc='#10B981',sl='Estadio I — Leve';if(st.maxPS>=6||parseFloat(st.avgNIC)>=5){stage='IV';sc='#EF4444';sl='Estadio IV — Muy severo';}else if(st.maxPS>=5||parseFloat(st.avgNIC)>=4){stage='III';sc='#F97316';sl='Estadio III — Severo';}else if(st.maxPS>=4||parseFloat(st.avgNIC)>=3){stage='II';sc='#F59E0B';sl='Estadio II — Moderado';}let grade='A',gc='#10B981',gl='Grado A — Progresión lenta';if(st.bopPct>=30){grade='C';gc='#EF4444';gl='Grado C — Progresión rápida';}else if(st.bopPct>=15){grade='B';gc='#F59E0B';gl='Grado B — Progresión moderada';}const advice={'I-A':'Control de placa e instrucción de higiene.','II-A':'Raspado y alisado radicular. Reevaluación 6-8 semanas.','II-B':'Terapia periodontal intensiva. Control de factores de riesgo.','III-B':'Terapia periodontal compleja. Considerar cirugía.','III-C':'Derivación urgente a periodoncista.','IV-C':'Periodoncista. Terapia multidisciplinaria.'};const adviceKey=`${stage}-${grade}`;document.getElementById('aapPanel').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px"><div style="background:${sc}18;border:1px solid ${sc}40;border-radius:7px;padding:7px;text-align:center"><div style="font-size:.52rem;font-weight:700;text-transform:uppercase;color:${sc};margin-bottom:2px">Estadio</div><div style="font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:${sc}">${stage}</div></div><div style="background:${gc}18;border:1px solid ${gc}40;border-radius:7px;padding:7px;text-align:center"><div style="font-size:.52rem;font-weight:700;text-transform:uppercase;color:${gc};margin-bottom:2px">Grado</div><div style="font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:${gc}">${grade}</div></div></div><div style="font-size:.68rem;font-weight:600;color:var(--text);margin-bottom:3px">${sl}</div><div style="font-size:.65rem;color:var(--text-muted);margin-bottom:8px">${gl}</div><div style="background:var(--surface2);border-radius:5px;padding:7px 9px;font-size:.68rem;color:var(--text-muted);border-left:3px solid ${sc}">${advice[adviceKey]||advice[stage+'-B']||'Reevaluar tras terapia inicial.'}</div><div style="font-size:.56rem;color:var(--text-dim);margin-top:7px;padding-top:6px;border-top:1px solid var(--border)">AAP/EFP 2018. Confirmar con evaluación clínica.</div>`;}
+</script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// TAB 3: ORTODONCIA
+// ══════════════════════════════════════════════════════════════
+let orthoData = { brackets:[], arcos:{}, notas:'', inicio:'', fin:'', progreso:0 };
+
+function loadOrthoUI() {
+  // Arcos
+  const a = orthoData.arcos || {};
+  if (a.supMat) document.getElementById('arcoSupMat').value = a.supMat;
+  if (a.supFecha) document.getElementById('arcoSupFecha').value = a.supFecha;
+  if (a.supNota) document.getElementById('arcoSupNota').value = a.supNota;
+  if (a.infMat) document.getElementById('arcoInfMat').value = a.infMat;
+  if (a.infFecha) document.getElementById('arcoInfFecha').value = a.infFecha;
+  if (a.infNota) document.getElementById('arcoInfNota').value = a.infNota;
+  if (orthoData.inicio) document.getElementById('orthoInicio').value = orthoData.inicio;
+  if (orthoData.fin) document.getElementById('orthoFin').value = orthoData.fin;
+  const prog = orthoData.progreso || 0;
+  document.getElementById('orthoProgreso').value = prog;
+  document.getElementById('orthoProgresoVal').textContent = prog + '%';
+  renderBracketsTable();
+}
+
+function collectArcosData() {
+  return {
+    supMat: document.getElementById('arcoSupMat').value,
+    supFecha: document.getElementById('arcoSupFecha').value,
+    supNota: document.getElementById('arcoSupNota').value,
+    infMat: document.getElementById('arcoInfMat').value,
+    infFecha: document.getElementById('arcoInfFecha').value,
+    infNota: document.getElementById('arcoInfNota').value,
+  };
+}
+
+function renderBracketsTable() {
+  const container = document.getElementById('bracketsTable');
+  const brackets = orthoData.brackets || [];
+  if (!brackets.length) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:.75rem">Sin brackets registrados. Haz clic en "+ Agregar".</div>';
+    return;
+  }
+  container.innerHTML = brackets.map((b, i) => `
+    <div style="display:grid;grid-template-columns:44px 1fr 1fr 1fr 60px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)" id="brow-${i}">
+      <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--teal);font-weight:700">${b.pieza||'—'}</div>
+      <input class="form-input" style="font-size:.7rem;padding:3px 6px;height:28px" value="${esc(b.tipo||'')}" placeholder="Marca/Tipo" oninput="updateBracket(${i},'tipo',this.value)">
+      <input class="form-input" style="font-size:.7rem;padding:3px 6px;height:28px" value="${esc(b.slot||'')}" placeholder=".022" oninput="updateBracket(${i},'slot',this.value)">
+      <input type="date" class="form-input" style="font-size:.68rem;padding:3px 6px;height:28px" value="${b.fecha||''}" oninput="updateBracket(${i},'fecha',this.value)">
+      <button class="btn btn-ghost btn-sm" style="padding:3px 6px;font-size:.65rem;color:var(--red)" onclick="removeBracket(${i})">Quitar</button>
+    </div>`).join('');
+}
+
+function addBracketRow() {
+  if (!orthoData.brackets) orthoData.brackets = [];
+  // Suggest next tooth
+  const usedPiezas = new Set(orthoData.brackets.map(b => b.pieza));
+  const allTeeth = [...ADULT_UPPER_RIGHT, ...ADULT_UPPER_LEFT, ...ADULT_LOWER_LEFT, ...ADULT_LOWER_RIGHT];
+  const nextPieza = allTeeth.find(t => !usedPiezas.has(String(t))) || '';
+  orthoData.brackets.push({ pieza: String(nextPieza), tipo: '', slot: '.022', fecha: todayISO() });
+  markDirty();
+  renderBracketsTable();
+}
+
+function updateBracket(i, field, val) {
+  if (orthoData.brackets[i]) orthoData.brackets[i][field] = val;
+  markDirty();
+}
+
+function removeBracket(i) {
+  orthoData.brackets.splice(i, 1);
+  markDirty();
+  renderBracketsTable();
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 4: IMPLANTOLOGÍA
+// ══════════════════════════════════════════════════════════════
+let implantData = {};
+
+function renderImplants() {
+  // Gather absent teeth from odontogram
+  const absentFromOdo = [];
+  const allAdultTeeth = [...ADULT_UPPER_RIGHT, ...ADULT_UPPER_LEFT, ...ADULT_LOWER_LEFT, ...ADULT_LOWER_RIGHT];
+  allAdultTeeth.forEach(n => {
+    if (odoDataAdult[n]?.status === 'ausente') absentFromOdo.push(n);
+  });
+
+  // Merge with manually added implants
+  absentFromOdo.forEach(n => {
+    if (!implantData[n]) implantData[n] = { pieza: n, fromOdo: true };
+  });
+
+  // Also show existing implant data for teeth not currently absent
+  const allKeys = new Set([...absentFromOdo.map(String), ...Object.keys(implantData)]);
+
+  if (allKeys.size === 0) {
+    document.getElementById('implantsList').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--text-dim);font-size:.8rem">
+        <div style="font-size:1.5rem;margin-bottom:8px;opacity:.3">🔩</div>
+        Marca piezas como "ausente" en el odontograma o agrega manualmente.
+      </div>`;
+    document.getElementById('implantStats').innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Sin implantes registrados</div>';
+    return;
+  }
+
+  const OSTEO_STATES = [
+    { val:'planeado', label:'Planeado', color:'#9BA3B0' },
+    { val:'colocado', label:'Colocado', color:'#3B82F6' },
+    { val:'oseointegrado', label:'Oseointegrado', color:'#10B981' },
+    { val:'carga', label:'En carga', color:'#F59E0B' },
+    { val:'corona', label:'Corona colocada', color:'#00C2A8' },
+    { val:'complicacion', label:'Complicación', color:'#EF4444' },
+  ];
+
+  const sorted = [...allKeys].map(Number).sort((a,b)=>a-b);
+  document.getElementById('implantsList').innerHTML = sorted.map(num => {
+    const d = implantData[num] || { pieza: num };
+    const estado = d.estado || 'planeado';
+    const stateInfo = OSTEO_STATES.find(s=>s.val===estado) || OSTEO_STATES[0];
+    const semanas = d.semanas || 0;
+    const maxSemanas = 24;
+    const pct = Math.min(100, Math.round(semanas/maxSemanas*100));
+
+    return `<div class="imp-card">
+      <div class="imp-header">
+        <div>
+          <div class="imp-num">${num}</div>
+          <div class="imp-name">${TOOTH_NAMES[num]||'Diente '+num} · Q${Math.floor(num/10)}</div>
+        </div>
+        <div class="status-badge" style="background:${stateInfo.color}18;color:${stateInfo.color};border:1px solid ${stateInfo.color}40">
+          ${stateInfo.label}
+        </div>
+      </div>
+      <div class="imp-grid">
+        <div class="imp-field">
+          <label>Marca / Sistema</label>
+          <input class="form-input" style="font-size:.72rem" value="${esc(d.marca||'')}" placeholder="Nobel, Straumann, Zimmer..." oninput="updateImplant(${num},'marca',this.value)">
+        </div>
+        <div class="imp-field">
+          <label>Diámetro / Longitud</label>
+          <input class="form-input" style="font-size:.72rem" value="${esc(d.medida||'')}" placeholder="Ej: 4.1x10mm" oninput="updateImplant(${num},'medida',this.value)">
+        </div>
+        <div class="imp-field">
+          <label>Torque inserción</label>
+          <input class="form-input" style="font-size:.72rem" value="${esc(d.torque||'')}" placeholder="35 Ncm" oninput="updateImplant(${num},'torque',this.value)">
+        </div>
+        <div class="imp-field">
+          <label>Fecha colocación</label>
+          <input type="date" class="form-input" style="font-size:.72rem" value="${d.fecha||''}" oninput="updateImplant(${num},'fecha',this.value)">
+        </div>
+        <div class="imp-field" style="grid-column:1/-1">
+          <label>Estado de oseointegración</label>
+          <select class="form-select" style="font-size:.72rem" onchange="updateImplant(${num},'estado',this.value)">
+            ${OSTEO_STATES.map(s=>`<option value="${s.val}" ${estado===s.val?'selected':''}>${s.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="imp-field" style="grid-column:1/-1">
+          <label>Semanas de oseointegración (${semanas}/${maxSemanas})</label>
+          <input type="range" min="0" max="${maxSemanas}" value="${semanas}" style="width:100%" oninput="updateImplant(${num},'semanas',parseInt(this.value));this.previousElementSibling.textContent='Semanas de oseointegración ('+this.value+'/${maxSemanas})'">
+          <div class="osteoint-bar"><div class="osteoint-fill" style="width:${pct}%;background:${stateInfo.color}"></div></div>
+        </div>
+        <div class="imp-field" style="grid-column:1/-1">
+          <label>Notas</label>
+          <input class="form-input" style="font-size:.72rem" value="${esc(d.notas||'')}" placeholder="Protocolo, complicaciones, plan prostodontico..." oninput="updateImplant(${num},'notas',this.value)">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Stats
+  const total = allKeys.size;
+  const byState = {};
+  [...allKeys].forEach(n => {
+    const est = implantData[n]?.estado || 'planeado';
+    byState[est] = (byState[est]||0)+1;
+  });
+  document.getElementById('implantStats').innerHTML = `
+    <div class="stat-mini"><span style="color:var(--text-muted)">Total implantes</span><span class="stat-val" style="color:var(--teal)">${total}</span></div>
+    ${Object.entries(byState).map(([k,v])=>{const si=OSTEO_STATES.find(s=>s.val===k)||{label:k,color:'#9BA3B0'};return`<div class="stat-mini"><span style="color:var(--text-muted)">${si.label}</span><span class="stat-val" style="color:${si.color}">${v}</span></div>`;}).join('')}
+  `.replace(/OSTEO_STATES/g,'[{val:"planeado",label:"Planeado",color:"#9BA3B0"},{val:"colocado",label:"Colocado",color:"#3B82F6"},{val:"oseointegrado",label:"Oseointegrado",color:"#10B981"},{val:"carga",label:"En carga",color:"#F59E0B"},{val:"corona",label:"Corona colocada",color:"#00C2A8"},{val:"complicacion",label:"Complicación",color:"#EF4444"}]');
+}
+
+function updateImplant(num, field, val) {
+  if (!implantData[num]) implantData[num] = { pieza: num };
+  implantData[num][field] = val;
+  markDirty();
+}
+
+function addImplantManual() {
+  const numStr = prompt('Número de pieza FDI (ej: 46):');
+  const num = parseInt(numStr);
+  if (!num || num < 11 || num > 48) { showToast('Número de pieza inválido', 'error'); return; }
+  if (!implantData[num]) implantData[num] = { pieza: num, fromManual: true };
+  markDirty();
+  renderImplants();
+}
+
+const OSTEO_STATES = [
+  { val:'planeado', label:'Planeado', color:'#9BA3B0' },
+  { val:'colocado', label:'Colocado', color:'#3B82F6' },
+  { val:'oseointegrado', label:'Oseointegrado', color:'#10B981' },
+  { val:'carga', label:'En carga', color:'#F59E0B' },
+  { val:'corona', label:'Corona colocada', color:'#00C2A8' },
+  { val:'complicacion', label:'Complicación', color:'#EF4444' },
+];
+
+// ══════════════════════════════════════════════════════════════
+// TAB 5: RADIOGRAFÍAS (links, no storage)
+// ══════════════════════════════════════════════════════════════
+let rxData = [];
+
+const RX_ICONS = { panoramica:'🦷', periapical:'🔍', aleta:'📐', cefalometria:'👤', cbct:'🧠', otro:'📄' };
+
+function addRx() {
+  const nombre = document.getElementById('rxNombre').value.trim();
+  const url    = document.getElementById('rxUrl').value.trim();
+  const tipo   = document.getElementById('rxTipo').value;
+  const fecha  = document.getElementById('rxFecha').value;
+  const nota   = document.getElementById('rxNota').value.trim();
+
+  if (!nombre) { showToast('Escribe un nombre para la radiografía', 'error'); return; }
+  if (!url)    { showToast('Pega el enlace de Google Drive', 'error'); return; }
+  if (!url.startsWith('http')) { showToast('El enlace debe empezar con https://', 'error'); return; }
+
+  rxData.push({ id: Date.now(), nombre, url, tipo, fecha, nota });
+  markDirty();
+
+  // Clear form
+  document.getElementById('rxNombre').value = '';
+  document.getElementById('rxUrl').value = '';
+  document.getElementById('rxNota').value = '';
+  document.getElementById('rxFecha').value = todayISO();
+
+  renderRxGrid();
+  showToast('Radiografía agregada', 'success');
+}
+
+function removeRx(id) {
+  rxData = rxData.filter(r => r.id !== id);
+  markDirty();
+  renderRxGrid();
+}
+
+function renderRxGrid() {
+  const grid = document.getElementById('rxGrid');
+  if (!rxData.length) {
+    grid.innerHTML = `<div class="rx-empty"><div style="font-size:2rem;margin-bottom:8px;opacity:.3">🩻</div>Sin radiografías. Agrega el enlace de Google Drive arriba.</div>`;
+    renderRxStats();
+    return;
+  }
+
+  grid.innerHTML = rxData.map(r => `
+    <div class="rx-card">
+      <div class="rx-icon">${RX_ICONS[r.tipo]||'📄'}</div>
+      <div class="rx-name">${esc(r.nombre)}</div>
+      <div class="rx-meta">${r.fecha||'—'} · ${r.tipo||'otro'}</div>
+      ${r.nota ? `<div style="font-size:.65rem;color:var(--text-dim);margin-bottom:8px;font-style:italic">${esc(r.nota)}</div>` : ''}
+      <div style="display:flex;gap:6px">
+        <a href="${esc(r.url)}" target="_blank" class="btn btn-primary btn-sm" style="flex:1;text-align:center;text-decoration:none;font-size:.68rem">
+          🔗 Abrir
+        </a>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:.68rem" onclick="removeRx(${r.id})">Quitar</button>
+      </div>
+    </div>`).join('');
+
+  renderRxStats();
+}
+
+function renderRxStats() {
+  const el = document.getElementById('rxStats');
+  if (!rxData.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:.73rem;padding:8px">Sin radiografías</div>'; return; }
+  const byType = {};
+  rxData.forEach(r => { byType[r.tipo] = (byType[r.tipo]||0)+1; });
+  const typeLabels = { panoramica:'Panorámica', periapical:'Periapical', aleta:'Aleta', cefalometria:'Cefalometría', cbct:'CBCT', otro:'Otro' };
+  el.innerHTML = `<div class="stat-mini"><span style="color:var(--text-muted)">Total</span><span class="stat-val" style="color:var(--teal)">${rxData.length}</span></div>` +
+    Object.entries(byType).map(([k,v]) => `<div class="stat-mini"><span style="color:var(--text-muted)">${RX_ICONS[k]||''} ${typeLabels[k]||k}</span><span class="stat-val">${v}</span></div>`).join('');
+}
+
+function loadRxUI() {
+  document.getElementById('rxFecha').value = todayISO();
+  renderRxGrid();
+}
+
+// ══════════════════════════════════════════════════════════════
+// PWA
+// ══════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { scope:'/dental-system/' })
+      .then(r => setInterval(()=>r.update(),600000))
+      .catch(e => console.warn('[PWA]', e.message));
+  });
+}
+</script>
+</body>
+</html>

@@ -116,7 +116,7 @@ const PLANES = {
   trial: {
     nombre:'Trial', color:'#9CA3AF', maxPacientes:5, maxUsuarios:1,
     maxDoctores:0, maxRecepcion:0,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','inventario','reportes','recetas','consentimientos'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','mapa-dental','inventario','reportes','recetas','consentimientos'],
     diasPrueba:7,
   },
   basico: {
@@ -127,28 +127,28 @@ const PLANES = {
   profesional: {
     nombre:'Profesional', color:'#00C2A8', maxPacientes:Infinity, maxUsuarios:4,
     maxDoctores:2, maxRecepcion:1,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','inventario','reportes','ofertas','usuarios','recetas','consentimientos'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','mapa-dental','inventario','reportes','ofertas','usuarios','recetas','consentimientos'],
   },
   premium: {
     nombre:'Premium', color:'#F4B942', maxPacientes:Infinity, maxUsuarios:Infinity,
     maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:1,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','mapa-dental','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
   },
   // ── Planes multi-sucursal ─────────────────────────────────
   'multi-3': {
     nombre:'Multi 3', color:'#a078ff', maxPacientes:Infinity, maxUsuarios:Infinity,
     maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:3,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','mapa-dental','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
   },
   'multi-10': {
     nombre:'Multi 10', color:'#FF8C00', maxPacientes:Infinity, maxUsuarios:Infinity,
     maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:10,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','mapa-dental','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
   },
   enterprise: {
     nombre:'Enterprise', color:'#E24B4A', maxPacientes:Infinity, maxUsuarios:Infinity,
     maxDoctores:Infinity, maxRecepcion:Infinity, maxSucursales:Infinity,
-    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
+    features:['agenda','pacientes','tratamientos','abonos','cotizacion','catalogo','corte-caja','busqueda','metricas','odontograma','periodontograma','mapa-dental','inventario','reportes','ofertas','usuarios','kpi-avanzado','expediente','recetas','consentimientos','multisucursal','grupo'],
   }
 };
 
@@ -406,7 +406,7 @@ async function initSession(requiredPage) {
               //            2) ROL_DEFAULT (fallback si no tiene permisos guardados)
               var ROL_DEFAULT_PERMS = {
                 admin:     null, // null = acceso total
-                doctor:    ['agenda','pacientes','tratamientos','odontograma','periodontograma',
+                doctor:    ['agenda','pacientes','tratamientos','odontograma','periodontograma','mapa-dental',
                             'expediente','recetas','inventario'],
                 recepcion: ['agenda','pacientes','cotizacion','abonos','catalogo',
                             'recordatorios','expediente','recibo','busqueda',
@@ -651,8 +651,7 @@ function renderSidebar() {
     ${navItem('cotizacion',   '📝','Cotizaciones',      'any')}
 
     <div class="nav-section">Clínica</div>
-    ${navItem('odontograma',      '🦷','Odontograma',        'odontograma')}
-    ${navItem('periodontograma',  '🔬','Periodontograma',    'periodontograma')}
+    ${navItem('mapa-dental',     '🗺️','Mapa Dental',  'odontograma')}
     ${navItem('recetas',          '💊','Recetas médicas',    'any')}
     ${navItem('inventario',   '📦','Inventario',        'inventario')}
 
@@ -900,6 +899,7 @@ var COL_MAP = {
   'recibos':         'receipts',
   'inventario':      'inventory',
   'odontogramas':    'odontograms',
+  'mapas-dentales':  'mapas-dentales',
   'rx':              'prescriptions',
   'notas-clinicas':  'clinicalNotes',
   'cortes':          'cashClosings',
@@ -1607,7 +1607,7 @@ function hasFeature(feat) {
 
 function showUpgradeBanner(feat) {
   const map = {
-    metricas:'Profesional', odontograma:'Profesional', periodontograma:'Profesional',
+    metricas:'Profesional', odontograma:'Profesional', periodontograma:'Profesional', 'mapa-dental':'basico',
     consentimientos:'basico',
     inventario:'Profesional',
     reportes:'Profesional', usuarios:'Profesional', 'kpi-avanzado':'Premium', multisucursal:'Premium'
