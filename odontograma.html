@@ -216,6 +216,15 @@
 <main class="main">
   <div class="topbar">
     <div class="topbar-title">🦷 Odontograma</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span style="font-size:.68rem;color:var(--text-muted);font-weight:600">Dentición:</span>
+      <button id="btnAdulto" onclick="setDenticion('adulto')"
+        class="btn btn-primary btn-sm"
+        style="font-size:.72rem;padding:4px 12px">Adulto</button>
+      <button id="btnNino" onclick="setDenticion('nino')"
+        class="btn btn-ghost btn-sm"
+        style="font-size:.72rem;padding:4px 12px">Niño 🧒</button>
+    </div>
     <div class="topbar-actions">
       <select class="form-select" id="selectPaciente" style="width:220px">
         <option value="">— Seleccionar paciente —</option>
@@ -236,6 +245,17 @@
           <div class="odo-toolbar" id="toolBar">
             <span style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-right:4px">Herramienta:</span>
             <!-- Tools rendered by JS -->
+          </div>
+
+          <!-- MODE INDICATOR -->
+          <div style="display:flex;align-items:center;justify-content:space-between;
+            padding:6px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+            <div id="odoModeLabel" style="font-size:.72rem;font-weight:600;color:var(--teal)">
+              🦷 Dentición Permanente (Adulto)
+            </div>
+            <div style="font-size:.62rem;color:var(--text-dim)">
+              Notación FDI | Clic en cara para aplicar herramienta
+            </div>
           </div>
 
           <!-- CANVAS DEL ODONTOGRAMA -->
@@ -330,10 +350,25 @@
 window.CURRENT_PAGE = 'odontograma';
 
 // ── FDI NOTATION ─────────────────────────────────────────────
-const UPPER_RIGHT = [18,17,16,15,14,13,12,11];
-const UPPER_LEFT  = [21,22,23,24,25,26,27,28];
-const LOWER_LEFT  = [31,32,33,34,35,36,37,38];
-const LOWER_RIGHT = [48,47,46,45,44,43,42,41];
+// ADULTO (32 piezas permanentes)
+const ADULT_UPPER_RIGHT = [18,17,16,15,14,13,12,11];
+const ADULT_UPPER_LEFT  = [21,22,23,24,25,26,27,28];
+const ADULT_LOWER_LEFT  = [31,32,33,34,35,36,37,38];
+const ADULT_LOWER_RIGHT = [48,47,46,45,44,43,42,41];
+
+// NIÑO — Dentición primaria (20 piezas, FDI cuadrantes 5-8)
+// Q5: 55-51 sup der | Q6: 61-65 sup izq | Q7: 71-75 inf izq | Q8: 85-81 inf der
+const CHILD_UPPER_RIGHT = [55,54,53,52,51];
+const CHILD_UPPER_LEFT  = [61,62,63,64,65];
+const CHILD_LOWER_LEFT  = [71,72,73,74,75];
+const CHILD_LOWER_RIGHT = [85,84,83,82,81];
+
+// Active dentition (switches between adult/child)
+let currentDenticion = 'adulto';
+let UPPER_RIGHT = ADULT_UPPER_RIGHT;
+let UPPER_LEFT  = ADULT_UPPER_LEFT;
+let LOWER_LEFT  = ADULT_LOWER_LEFT;
+let LOWER_RIGHT = ADULT_LOWER_RIGHT;
 
 const TOOTH_NAMES = {
   11:'Inc. central sup der',12:'Inc. lateral sup der',13:'Canino sup der',
@@ -348,6 +383,15 @@ const TOOTH_NAMES = {
   41:'Inc. central inf der',42:'Inc. lateral inf der',43:'Canino inf der',
   44:'1er premolar inf der',45:'2do premolar inf der',46:'1er molar inf der',
   47:'2do molar inf der',48:'3er molar inf der (juicio)',
+  // Dentición primaria (niños)
+  51:'Inc. central sup der',52:'Inc. lateral sup der',53:'Canino sup der',
+  54:'1er molar sup der',55:'2do molar sup der',
+  61:'Inc. central sup izq',62:'Inc. lateral sup izq',63:'Canino sup izq',
+  64:'1er molar sup izq',65:'2do molar sup izq',
+  71:'Inc. central inf izq',72:'Inc. lateral inf izq',73:'Canino inf izq',
+  74:'1er molar inf izq',75:'2do molar inf izq',
+  81:'Inc. central inf der',82:'Inc. lateral inf der',83:'Canino inf der',
+  84:'1er molar inf der',85:'2do molar inf der',
 };
 
 // ── STATUSES ────────────────────────────────────────────────
@@ -370,7 +414,9 @@ const STATUS_MAP = Object.fromEntries(STATUSES.map(s=>[s.key,s]));
 // ── STATE ────────────────────────────────────────────────────
 let activeTool    = 'caries';
 let selectedPxId  = null;
-let odoData       = {};   // { toothNum: { faces:{O,V,L,M,D}, status, notas } }
+let odoDataAdult  = {};   // Adult dentition data
+let odoDataChild  = {};   // Child dentition data
+let odoData       = odoDataAdult; // Active reference (switches with denticion)
 let selectedTooth = null;
 let toothHistory  = {};
 let isDirty       = false;
@@ -409,6 +455,72 @@ initSession('odontograma').then(async session => {
   renderOdontograma();
 });
 
+// ── DENTICIÓN SWITCH ─────────────────────────────────────────
+function setDenticion(tipo) {
+  if (currentDenticion === tipo) return;
+
+  // Guard dirty state
+  if (isDirty) {
+    if (!confirm('Hay cambios sin guardar en esta dentición. ¿Continuar sin guardar?')) return;
+    isDirty = false;
+  }
+
+  currentDenticion = tipo;
+
+  // Switch active tooth arrays
+  if (tipo === 'nino') {
+    UPPER_RIGHT = CHILD_UPPER_RIGHT;
+    UPPER_LEFT  = CHILD_UPPER_LEFT;
+    LOWER_LEFT  = CHILD_LOWER_LEFT;
+    LOWER_RIGHT = CHILD_LOWER_RIGHT;
+  } else {
+    UPPER_RIGHT = ADULT_UPPER_RIGHT;
+    UPPER_LEFT  = ADULT_UPPER_LEFT;
+    LOWER_LEFT  = ADULT_LOWER_LEFT;
+    LOWER_RIGHT = ADULT_LOWER_RIGHT;
+  }
+
+  // Swap odoData reference
+  odoData = currentDenticion === 'nino' ? odoDataChild : odoDataAdult;
+
+  // Update buttons
+  document.getElementById('btnAdulto').className =
+    `btn btn-sm${tipo === 'adulto' ? ' btn-primary' : ' btn-ghost'}`;
+  document.getElementById('btnAdulto').style.fontSize = '.72rem';
+  document.getElementById('btnAdulto').style.padding  = '4px 12px';
+  document.getElementById('btnNino').className =
+    `btn btn-sm${tipo === 'nino' ? ' btn-primary' : ' btn-ghost'}`;
+  document.getElementById('btnNino').style.fontSize = '.72rem';
+  document.getElementById('btnNino').style.padding  = '4px 12px';
+
+  // Re-render
+  selectedTooth = null;
+  document.getElementById('toothDetailWrap').innerHTML =
+    '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:.78rem">Haz clic en un diente para ver detalles</div>';
+  document.getElementById('toothHistory').innerHTML =
+    '<div style="padding:8px 0;font-size:.72rem;color:var(--text-dim)">Selecciona un diente</div>';
+
+  // Show/hide empty state
+  if (selectedPxId) {
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('odoGrid').style.display    = 'block';
+  }
+
+  // Update arch labels for child mode
+  const archDivider = document.querySelectorAll('.arch-divider');
+  if (tipo === 'nino') {
+    document.getElementById('odoModeLabel').textContent = '🧒 Dentición Primaria (Niño)';
+    document.getElementById('odoModeLabel').style.color = 'var(--gold)';
+  } else {
+    document.getElementById('odoModeLabel').textContent = '🦷 Dentición Permanente (Adulto)';
+    document.getElementById('odoModeLabel').style.color = 'var(--teal)';
+  }
+
+  renderOdontograma();
+  renderStats();
+  showToast(`Dentición ${tipo === 'nino' ? 'primaria (niño) — 20 piezas' : 'permanente (adulto) — 32 piezas'}`, 'info');
+}
+
 // ── TOOLBAR ──────────────────────────────────────────────────
 function renderToolbar() {
   const bar = document.getElementById('toolBar');
@@ -446,12 +558,17 @@ async function loadOdoPx(pxId) {
     const snap = await clinicaCol('odontogramas').doc(pxId).get();
     if (snap.exists) {
       const d = snap.data();
-      odoData = d.dientes || {};
+      // Load both dentitions from Firestore
+      odoDataAdult = d.dientes       || d.dientesAdulto || {};
+      odoDataChild = d.dientesNino   || {};
       document.getElementById('odoNotas').value = d.notas || '';
     } else {
-      odoData = {};
+      odoDataAdult = {};
+      odoDataChild = {};
       document.getElementById('odoNotas').value = '';
     }
+    // Point active odoData to the right dentition
+    odoData = currentDenticion === 'nino' ? odoDataChild : odoDataAdult;
 
     // Load history (no orderBy to avoid index requirement)
     const histSnap = await clinicaCol('odontogramas').doc(pxId)
@@ -688,7 +805,8 @@ function markDirty() {
 function refreshTooth(num) {
   const old = document.getElementById(`tooth-${num}`);
   if (!old) return;
-  const isUpper = [...UPPER_RIGHT,...UPPER_LEFT].includes(num);
+  const isUpper = [...ADULT_UPPER_RIGHT,...ADULT_UPPER_LEFT,
+    ...CHILD_UPPER_RIGHT,...CHILD_UPPER_LEFT].includes(num);
   const newEl = createToothEl(num, isUpper?'upper':'lower');
   old.replaceWith(newEl);
 }
@@ -789,7 +907,10 @@ async function saveOdo() {
   try {
     const notas = document.getElementById('odoNotas').value;
     await clinicaCol('odontogramas').doc(selectedPxId).set({
-      dientes: odoData, notas,
+      dientes:      odoDataAdult,   // backward compat: 'dientes' = adult
+      dientesAdulto: odoDataAdult,
+      dientesNino:   odoDataChild,
+      notas,
       pacienteId: selectedPxId,
       actualizadoPor: SESSION.user.nombre || SESSION.user.email,
       actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
@@ -816,7 +937,7 @@ async function saveOdo() {
 
 // ── STATS ─────────────────────────────────────────────────────
 function renderStats() {
-  const total  = 32;
+  const total  = currentDenticion === 'nino' ? 20 : 32;
   const counts = {};
   Object.values(odoData).forEach(d => {
     const s = d.status || 'sano';
@@ -838,9 +959,14 @@ function renderStats() {
     { key:'movilidad',  label:'Movilidad', val:counts.movilidad||0,  color:'#FBBF24' },
   ].filter(r => r.val > 0);
 
+  const totalTeeth = currentDenticion === 'nino' ? 20 : 32;
+
   if (!rows.length) {
     document.getElementById('odoStats').innerHTML =
-      '<div style="text-align:center;color:var(--text-dim);padding:10px;font-size:.78rem">Sin datos registrados</div>';
+      `<div style="text-align:center;color:var(--text-dim);padding:10px;font-size:.78rem">
+        Sin hallazgos registrados<br>
+        <span style="font-size:.65rem">${totalTeeth} piezas ${currentDenticion==='nino'?'primarias':'permanentes'}</span>
+      </div>`;
     return;
   }
 
