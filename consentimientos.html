@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}@media(min-width:768px){.main{margin-left:240px}}</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C2A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hersantych · Consentimientos</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.con-layout { display:grid; grid-template-columns:280px 1fr; gap:16px; align-items:start; }
+.con-card   { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+
+/* ── TYPE LIST ──────────────────────────────────────────── */
+.type-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,.04);
+  transition:background .12s; position:relative;
+}
+.type-item:last-child { border-bottom:none; }
+.type-item:hover  { background:rgba(255,255,255,.04); }
+.type-item.active { background:rgba(0,194,168,.08); }
+.type-item.active::before {
+  content:''; position:absolute; left:0; top:0; bottom:0;
+  width:3px; background:var(--teal);
+}
+.type-icon { font-size:1.1rem; flex-shrink:0; width:24px; text-align:center; }
+.type-info { flex:1; min-width:0; }
+.type-name  { font-size:.78rem; font-weight:600; color:var(--text); }
+.type-count { font-size:.62rem; color:var(--text-dim); margin-top:1px; }
+.type-badge {
+  font-size:.55rem; font-weight:700; padding:2px 6px;
+  border-radius:4px; flex-shrink:0; letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+/* ── CONSENT FORM ───────────────────────────────────────── */
+.form-header {
+  padding:16px 18px; border-bottom:1px solid var(--border);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+}
+.form-title { font-size:1rem; font-weight:600; color:var(--text); margin-bottom:3px; }
+.form-subtitle { font-size:.72rem; color:var(--text-muted); }
+.form-body { padding:18px; }
+
+/* ── CONSENT TEXT PREVIEW ───────────────────────────────── */
+.consent-text {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--r); padding:14px 16px;
+  font-size:.78rem; color:var(--text-muted); line-height:1.7;
+  max-height:220px; overflow-y:auto; margin-bottom:16px;
+}
+.consent-text h4 {
+  font-size:.75rem; font-weight:700; color:var(--text);
+  text-transform:uppercase; letter-spacing:.08em; margin:12px 0 5px;
+}
+.consent-text h4:first-child { margin-top:0; }
+.consent-text p { margin:0 0 8px; }
+.consent-text ul { padding-left:16px; margin:4px 0 8px; }
+.consent-text li { margin-bottom:3px; }
+
+/* ── SIGNED BADGE ───────────────────────────────────────── */
+.signed-banner {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.3);
+  border-radius:8px; padding:10px 14px; margin-bottom:16px;
+}
+.pending-banner {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.25);
+  border-radius:8px; padding:10px 14px; margin-bottom:16px;
+}
+
+/* ── HISTORY TABLE ──────────────────────────────────────── */
+.hist-row {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 0; border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:.73rem;
+}
+.hist-row:last-child { border-bottom:none; }
+
+/* ── MODAL CONSENT ──────────────────────────────────────── */
+.sign-field {
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:8px; padding:12px 14px; margin-bottom:12px;
+}
+.sign-field label {
+  font-size:.65rem; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--text-dim); display:block;
+  margin-bottom:6px;
+}
+
+/* ── PRINT ──────────────────────────────────────────────── */
+@media print {
+  .sidebar,.hamburger,.topbar-actions,.con-layout > :first-child,
+  .btn:not(.btn-print),.form-header .btn { display:none!important; }
+  .con-layout { grid-template-columns:1fr; }
+  .main { margin-left:0!important; }
+  .consent-text { max-height:none; border:none; background:white; color:black; }
+  .print-sign-area { display:block!important; }
+}
+.print-sign-area {
+  display:none;
+  margin-top:32px; padding-top:16px; border-top:1px solid #ccc;
+}
+
+@media(max-width:900px) {
+  .con-layout { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar"></aside>
+<button class="hamburger" id="hamburger">☰</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">📋 Consentimientos Informados</div>
+    <div class="topbar-actions">
+      <select class="form-select" id="selectPaciente" style="width:220px">
+        <option value="">— Seleccionar paciente —</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="printConsent()">🖨️ Imprimir</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Empty state -->
+    <div id="emptyState" style="text-align:center;padding:80px 20px;color:var(--text-dim)">
+      <div style="font-size:3rem;margin-bottom:16px;opacity:.3">📋</div>
+      <div style="font-size:.95rem;color:var(--text-muted);margin-bottom:6px">Selecciona un paciente</div>
+      <div style="font-size:.8rem">Los consentimientos firmados aparecerán aquí</div>
+    </div>
+
+    <div id="mainLayout" class="con-layout" style="display:none">
+
+      <!-- ══ LEFT: TYPE LIST ═══════════════════════════════ -->
+      <div>
+        <div class="con-card">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)">Tipos de consentimiento</div>
+            <div id="signedCount" style="font-size:.65rem;color:var(--teal);font-weight:700"></div>
+          </div>
+          <div id="typeList"></div>
+        </div>
+
+        <!-- Legal notice -->
+        <div style="padding:12px 14px;font-size:.65rem;color:var(--text-dim);line-height:1.6;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);margin-top:10px">
+          <div style="font-weight:700;color:var(--text-muted);margin-bottom:4px">⚖️ Marco legal</div>
+          NOM-004-SSA3-2012 · Ley General de Salud Arts. 80-82 · LFPDPPP · Reglamento LGS Servicios de Salud · México 2026
+        </div>
+      </div>
+
+      <!-- ══ RIGHT: FORM ═══════════════════════════════════ -->
+      <div id="rightPanel">
+        <div class="con-card">
+          <div style="text-align:center;padding:50px;color:var(--text-dim);font-size:.82rem">
+            Selecciona un tipo de consentimiento
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- MODAL FIRMA -->
+<div class="modal-overlay" id="modalFirma">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title">✍️ Registrar consentimiento</div>
+      <button class="modal-close" onclick="closeModal('modalFirma')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalConsentName" style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:14px;padding:10px 12px;background:var(--surface2);border-radius:8px"></div>
+
+      <div class="sign-field">
+        <label>Nombre completo del paciente *</label>
+        <input type="text" class="form-input" id="firmaNombre" placeholder="Escribe tu nombre completo">
+      </div>
+
+      <div class="sign-field">
+        <label>Relación con el paciente</label>
+        <select class="form-select" id="firmaRelacion">
+          <option value="paciente">Paciente (mayor de edad)</option>
+          <option value="tutor">Tutor / Padre (menor de edad)</option>
+          <option value="representante">Representante legal</option>
+        </select>
+      </div>
+
+      <div class="sign-field" id="tutorField" style="display:none">
+        <label>Nombre completo del tutor / padre *</label>
+        <input type="text" class="form-input" id="firmaTutor" placeholder="Nombre completo del tutor">
+      </div>
+
+      <div class="sign-field">
+        <label>Fecha del consentimiento</label>
+        <input type="date" class="form-input" id="firmaFecha">
+      </div>
+
+      <div style="background:rgba(0,194,168,.08);border:1px solid rgba(0,194,168,.2);border-radius:8px;padding:10px 12px;font-size:.72rem;color:var(--text-muted);margin-bottom:14px">
+        Al registrar, el sistema genera un registro digital con timestamp y datos del expediente. Se recomienda imprimir y obtener firma física para el archivo físico del consultorio.
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalFirma')">Cancelar</button>
+        <button class="btn btn-primary" onclick="registrarFirma()">✅ Registrar consentimiento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-firestore-compat.min.js"></script>
+<script src="shared.js"></script>
+<script src="dataService.js"></script>
+<script>
+window.CURRENT_PAGE = 'consentimientos';
+
+// ── CONSENT TYPES — México 2026 ──────────────────────────────
+const CONSENT_TYPES = [
+  {
+    id:'general', icon:'📄', name:'Consentimiento general', badge:'OBLIGATORIO', badgeColor:'#EF4444',
+    shortDesc:'Tratamiento dental general',
+    text:`
+<h4>Consentimiento Informado para Tratamiento Dental General</h4>
+<p>Conforme a la <strong>NOM-004-SSA3-2012</strong> y los artículos <strong>80, 81 y 82 de la Ley General de Salud</strong>, yo, paciente abajo firmante, manifiesto que:</p>
+<h4>He sido informado sobre:</h4>
+<ul>
+  <li>El diagnóstico de mi condición bucal actual.</li>
+  <li>El plan de tratamiento propuesto, sus objetivos y procedimientos.</li>
+  <li>Los riesgos y posibles complicaciones del tratamiento.</li>
+  <li>Las alternativas de tratamiento existentes.</li>
+  <li>El pronóstico esperado con y sin tratamiento.</li>
+  <li>Los cuidados postoperatorios requeridos.</li>
+</ul>
+<h4>Declaro que:</h4>
+<ul>
+  <li>He tenido la oportunidad de hacer preguntas y estas han sido respondidas satisfactoriamente.</li>
+  <li>Entiendo que puedo retirar este consentimiento en cualquier momento antes de que inicie el procedimiento.</li>
+  <li>Autorizo al profesional de la salud a realizar el tratamiento descrito en mi expediente clínico.</li>
+  <li>En caso de complicaciones imprevistas durante el procedimiento, autorizo las medidas necesarias para salvaguardar mi salud.</li>
+</ul>
+<p>Este documento forma parte de mi expediente clínico conforme a la NOM-004-SSA3-2012.</p>`,
+  },
+  {
+    id:'anestesia', icon:'💉', name:'Anestesia local', badge:'OBLIGATORIO', badgeColor:'#EF4444',
+    shortDesc:'Aplicación de anestesia local',
+    text:`
+<h4>Consentimiento Informado para Anestesia Local</h4>
+<p>Autorizo la aplicación de <strong>anestesia local</strong> para el procedimiento dental indicado en mi expediente clínico.</p>
+<h4>He sido informado sobre los posibles efectos:</h4>
+<ul>
+  <li>Sensación de adormecimiento temporal en la zona tratada (2-4 horas aprox.).</li>
+  <li>Hematoma o inflamación local transitoria.</li>
+  <li>Raramente: reacción alérgica (se ha verificado mi historial médico previo).</li>
+  <li>Muy raramente: parestesia temporal del nervio.</li>
+  <li>Palpitaciones leves si el anestésico contiene vasoconstrictor.</li>
+</ul>
+<h4>Contraindicaciones verificadas:</h4>
+<ul>
+  <li>He informado al dentista sobre alergias, medicamentos y condiciones médicas relevantes.</li>
+  <li>El profesional ha verificado las contraindicaciones aplicables a mi caso.</li>
+</ul>
+<p>Conforme a la <strong>NOM-004-SSA3-2012</strong> y el <strong>Reglamento de la Ley General de Salud en Materia de Prestación de Servicios de Atención Médica</strong>.</p>`,
+  },
+  {
+    id:'extraccion', icon:'🦷', name:'Extracción dental', badge:'OBLIGATORIO', badgeColor:'#EF4444',
+    shortDesc:'Extracción simple o compleja',
+    text:`
+<h4>Consentimiento Informado para Extracción Dental</h4>
+<p>Autorizo la extracción del (los) diente(s) indicado(s) en mi expediente clínico, conforme a la <strong>NOM-004-SSA3-2012</strong>.</p>
+<h4>He sido informado sobre:</h4>
+<ul>
+  <li>Inflamación, dolor e incomodidad post-extracción (normal durante 3-5 días).</li>
+  <li>Sangrado controlado en las primeras 24 horas.</li>
+  <li>Riesgo de alveolitis (hueco seco), especialmente en terceros molares.</li>
+  <li>Posible entumecimiento temporal de labio/mentón (extracciones inferiores).</li>
+  <li>Comunicación bucosinusal en extracciones superiores posteriores (raro).</li>
+  <li>Fractura radicular que podría requerir cirugía adicional.</li>
+  <li>Necesidad de reemplazo protésico o implante en el futuro.</li>
+</ul>
+<h4>Me comprometo a:</h4>
+<ul>
+  <li>Seguir las instrucciones postoperatorias indicadas.</li>
+  <li>No fumar ni consumir alcohol las primeras 48 horas.</li>
+  <li>Acudir de urgencia si hay sangrado excesivo o dolor intenso.</li>
+</ul>`,
+  },
+  {
+    id:'endodoncia', icon:'🔬', name:'Tratamiento de conductos', badge:'RECOMENDADO', badgeColor:'#F59E0B',
+    shortDesc:'Endodoncia / conductos radiculares',
+    text:`
+<h4>Consentimiento Informado para Tratamiento de Conductos (Endodoncia)</h4>
+<p>Autorizo el tratamiento de conductos radiculares del diente indicado en mi expediente clínico.</p>
+<h4>He sido informado sobre el procedimiento:</h4>
+<ul>
+  <li>Remoción de la pulpa dental y limpieza de los conductos radiculares.</li>
+  <li>El tratamiento puede requerir 1-3 sesiones según la complejidad.</li>
+  <li>Se requiere restauración posterior (corona o resina) para proteger el diente.</li>
+</ul>
+<h4>Riesgos informados:</h4>
+<ul>
+  <li>Sensibilidad o dolor postoperatorio (normal 2-5 días).</li>
+  <li>Fractura de instrumentos endodóncicos (raro, requiere manejo especializado).</li>
+  <li>Perforación radicular (raro).</li>
+  <li>Necesidad de retratamiento o apicectomía en casos complejos.</li>
+  <li>Fractura del diente a largo plazo si no se coloca restauración adecuada.</li>
+</ul>
+<h4>Pronóstico:</h4>
+<ul>
+  <li>Con tratamiento y restauración adecuada: pronóstico favorable a largo plazo.</li>
+  <li>La alternativa es la extracción dental.</li>
+</ul>`,
+  },
+  {
+    id:'blanqueamiento', icon:'✨', name:'Blanqueamiento dental', badge:'RECOMENDADO', badgeColor:'#F59E0B',
+    shortDesc:'Blanqueamiento en consultorio u hogar',
+    text:`
+<h4>Consentimiento Informado para Blanqueamiento Dental</h4>
+<p>Autorizo el tratamiento de blanqueamiento dental, entendiendo que es un procedimiento <strong>estético</strong>, no terapéutico.</p>
+<h4>He sido informado sobre:</h4>
+<ul>
+  <li>El blanqueamiento dental no está indicado en embarazadas o lactantes.</li>
+  <li>Sensibilidad dental transitoria durante y después del tratamiento (días a semanas).</li>
+  <li>Los resultados varían según el tipo de manchas y el esmalte de cada paciente.</li>
+  <li>Las restauraciones existentes (resinas, coronas) no cambian de color.</li>
+  <li>El blanqueamiento no es permanente; los resultados duran 1-3 años con mantenimiento.</li>
+  <li>Irritación gingival temporal por contacto con el gel blanqueador.</li>
+</ul>
+<h4>Comprendo que:</h4>
+<ul>
+  <li>No se garantiza un tono específico de resultado.</li>
+  <li>Debo evitar alimentos/bebidas colorantes por 48 horas post-tratamiento.</li>
+  <li>Debo reportar sensibilidad severa o dolor al dentista.</li>
+</ul>`,
+  },
+  {
+    id:'implante', icon:'🔩', name:'Implante dental', badge:'OBLIGATORIO', badgeColor:'#EF4444',
+    shortDesc:'Colocación de implante oseointegrado',
+    text:`
+<h4>Consentimiento Informado para Implante Dental</h4>
+<p>Autorizo la colocación del implante dental oseointegrado conforme al plan de tratamiento en mi expediente.</p>
+<h4>He sido informado sobre el procedimiento:</h4>
+<ul>
+  <li>Cirugía para colocación del implante en el hueso alveolar (fase 1).</li>
+  <li>Período de oseointegración: 3-6 meses según el caso.</li>
+  <li>Colocación de corona sobre el implante (fase 2).</li>
+</ul>
+<h4>Factores de riesgo y complicaciones:</h4>
+<ul>
+  <li>Fracaso de oseointegración (4-8% de casos) que requeriría remoción.</li>
+  <li>Infección peri-implantaria (periimplantitis).</li>
+  <li>Lesión de nervio dentario inferior en implantes mandibulares (raro).</li>
+  <li>Comunicación sinusal en implantes maxilares posteriores.</li>
+  <li>Necesidad de injerto óseo previo si el hueso es insuficiente.</li>
+</ul>
+<h4>Contraindicaciones verificadas:</h4>
+<ul>
+  <li>He informado sobre tabaquismo, diabetes, medicamentos anticoagulantes, bifosfonatos y otras condiciones médicas relevantes.</li>
+  <li>Entiendo que fumar reduce significativamente el pronóstico del implante.</li>
+</ul>`,
+  },
+  {
+    id:'ortodoncia', icon:'🦿', name:'Ortodoncia', badge:'RECOMENDADO', badgeColor:'#F59E0B',
+    shortDesc:'Tratamiento ortodóncico fijo o removible',
+    text:`
+<h4>Consentimiento Informado para Tratamiento Ortodóncico</h4>
+<p>Autorizo el inicio del tratamiento de ortodoncia conforme al plan presentado en mi expediente clínico.</p>
+<h4>He sido informado sobre:</h4>
+<ul>
+  <li>Duración estimada del tratamiento (variable según complejidad).</li>
+  <li>Necesidad de visitas de control periódicas (cada 4-8 semanas).</li>
+  <li>Uso de retenedores al finalizar el tratamiento (de por vida en algunos casos).</li>
+</ul>
+<h4>Riesgos y limitaciones:</h4>
+<ul>
+  <li>Reabsorción radicular leve (mayoría de los casos; grave en predisposición genética).</li>
+  <li>Descalcificación dental (manchas blancas) por mala higiene durante el tratamiento.</li>
+  <li>Incomodidad y sensibilidad los primeros días tras cada ajuste.</li>
+  <li>Posibilidad de recaída si no se utilizan los retenedores indicados.</li>
+  <li>Decementado o rotura de brackets (requiere cita de urgencia para reparación).</li>
+</ul>
+<h4>Compromisos del paciente:</h4>
+<ul>
+  <li>Higiene oral exhaustiva (cepillado después de cada comida, uso de hilo).</li>
+  <li>Evitar alimentos duros, pegajosos o que puedan dañar el aparato.</li>
+  <li>Asistir a todas las citas programadas.</li>
+</ul>`,
+  },
+  {
+    id:'fotografia', icon:'📷', name:'Fotografías clínicas', badge:'RECOMENDADO', badgeColor:'#F59E0B',
+    shortDesc:'Uso de imágenes en expediente y publicaciones',
+    text:`
+<h4>Consentimiento para Fotografías Clínicas</h4>
+<p>Conforme a la <strong>Ley Federal de Protección de Datos Personales en Posesión de Particulares (LFPDPPP)</strong> y su Reglamento.</p>
+<h4>Autorizo al consultorio a:</h4>
+<ul>
+  <li>Tomar fotografías clínicas intra y extraorales para documentación del expediente.</li>
+</ul>
+<h4>Respecto al uso de las fotografías, marco las opciones que autorizo:</h4>
+<ul>
+  <li>✅ Uso interno: expediente clínico y planificación de tratamiento.</li>
+</ul>
+<h4>Autorización opcional (marcar si aplica):</h4>
+<ul>
+  <li>☐ Uso educativo: presentaciones, cursos o publicaciones científicas (sin identificar al paciente).</li>
+  <li>☐ Redes sociales del consultorio (antes/después de tratamiento, previa revisión del paciente).</li>
+</ul>
+<h4>Derechos ARCO:</h4>
+<p>Conforme a la LFPDPPP, tiene derecho de Acceso, Rectificación, Cancelación y Oposición al tratamiento de sus datos personales, contactando al responsable del consultorio.</p>`,
+  },
+  {
+    id:'menor', icon:'👶', name:'Tratamiento menor de edad', badge:'OBLIGATORIO', badgeColor:'#EF4444',
+    shortDesc:'Autorización de tutor para paciente menor',
+    text:`
+<h4>Consentimiento Informado para Tratamiento de Menor de Edad</h4>
+<p>Conforme a los artículos <strong>80 y 81 de la Ley General de Salud</strong> y la <strong>NOM-004-SSA3-2012</strong>, yo, tutor/padre/madre/representante legal del menor identificado en el expediente clínico, manifiesto:</p>
+<h4>Declaro que:</h4>
+<ul>
+  <li>Soy el padre/madre/tutor legal del menor de edad y cuento con plenas facultades para otorgar este consentimiento.</li>
+  <li>He sido informado sobre el diagnóstico, plan de tratamiento, riesgos y alternativas.</li>
+  <li>Autorizo la realización del tratamiento descrito en el expediente del menor.</li>
+  <li>Autorizo la aplicación de anestesia local si el procedimiento lo requiere.</li>
+  <li>Me comprometo a acompañar al menor en todas las citas requeridas.</li>
+</ul>
+<h4>Información de identificación del tutor:</h4>
+<ul>
+  <li>Nombre del tutor y relación con el menor: indicado en la firma de este documento.</li>
+  <li>El tutor deberá presentar identificación oficial al momento de firmar físicamente.</li>
+</ul>
+<p>Este consentimiento será archivado en el expediente clínico del menor conforme a la NOM-004-SSA3-2012.</p>`,
+  },
+  {
+    id:'privacidad', icon:'🔒', name:'Aviso de privacidad', badge:'OBLIGATORIO', badgeColor:'#EF4444',
+    shortDesc:'LFPDPPP — protección de datos personales',
+    text:`
+<h4>Aviso de Privacidad Simplificado</h4>
+<p>Conforme a la <strong>Ley Federal de Protección de Datos Personales en Posesión de Particulares (LFPDPPP)</strong> y su Reglamento.</p>
+<h4>Responsable del tratamiento de datos:</h4>
+<p>El consultorio dental identificado en este sistema, con domicilio en el indicado en el expediente.</p>
+<h4>Datos personales recabados:</h4>
+<ul>
+  <li>Datos de identificación: nombre, fecha de nacimiento, CURP, domicilio, teléfono, correo electrónico.</li>
+  <li>Datos de salud (datos sensibles): historial médico, diagnósticos, tratamientos, radiografías, fotografías clínicas.</li>
+</ul>
+<h4>Finalidades del tratamiento:</h4>
+<ul>
+  <li>Primarias: prestación de servicios de salud dental, elaboración de expediente clínico (obligatorio por NOM-004-SSA3-2012), facturación electrónica.</li>
+  <li>Secundarias: envío de recordatorios de cita, comunicados del consultorio (puede negarse sin afectar la atención).</li>
+</ul>
+<h4>Transferencias de datos:</h4>
+<p>Sus datos no serán transferidos a terceros sin su consentimiento, salvo en los casos previstos por la ley (autoridades sanitarias, IMSS/ISSSTE si aplica).</p>
+<h4>Derechos ARCO:</h4>
+<p>Puede ejercer sus derechos de Acceso, Rectificación, Cancelación y Oposición mediante solicitud escrita al responsable del consultorio.</p>
+<p>Para consultar el aviso de privacidad integral, solicítelo en recepción.</p>`,
+  },
+  {
+    id:'protesis', icon:'🦷', name:'Prótesis dental', badge:'RECOMENDADO', badgeColor:'#F59E0B',
+    shortDesc:'Prótesis fija, removible o total',
+    text:`
+<h4>Consentimiento Informado para Prótesis Dental</h4>
+<p>Autorizo la elaboración y colocación de la prótesis dental indicada en mi plan de tratamiento.</p>
+<h4>He sido informado sobre:</h4>
+<ul>
+  <li>Tipo de prótesis: fija (corona/puente), removible parcial, o removible total, según indique el plan.</li>
+  <li>Proceso de preparación dental necesario (tallado de dientes pilares si aplica).</li>
+  <li>Tiempo de adaptación: puede requerir 2-8 semanas para adaptarse completamente.</li>
+  <li>Necesidad de ajustes posteriores a la colocación.</li>
+</ul>
+<h4>Limitaciones y consideraciones:</h4>
+<ul>
+  <li>Las prótesis requieren higiene específica y mantenimiento periódico.</li>
+  <li>La vida útil promedio es de 5-15 años según el tipo y mantenimiento.</li>
+  <li>Puede requerirse rebase o remplazo por cambios en los tejidos de soporte.</li>
+  <li>Los colores y materiales son aproximados; pueden existir variaciones mínimas.</li>
+</ul>
+<h4>Compromisos:</h4>
+<ul>
+  <li>Asistir a todas las citas de prueba y ajuste programadas.</li>
+  <li>Seguir las instrucciones de higiene y mantenimiento específicas.</li>
+</ul>`,
+  },
+  {
+    id:'cirugia', icon:'🏥', name:'Cirugía oral menor', badge:'OBLIGATORIO', badgeColor:'#EF4444',
+    shortDesc:'Frenilectomía, quiste, alveoloplastia, etc.',
+    text:`
+<h4>Consentimiento Informado para Cirugía Oral Menor</h4>
+<p>Autorizo el procedimiento de cirugía oral menor indicado en mi expediente clínico, conforme a la <strong>NOM-004-SSA3-2012</strong> y la <strong>Ley General de Salud</strong>.</p>
+<h4>He sido informado sobre el procedimiento específico:</h4>
+<ul>
+  <li>Descripción del procedimiento quirúrgico y objetivos terapéuticos.</li>
+  <li>Tipo de anestesia (local) y su duración aproximada.</li>
+  <li>Duración estimada del procedimiento y del período de recuperación.</li>
+</ul>
+<h4>Riesgos y complicaciones:</h4>
+<ul>
+  <li>Inflamación, equimosis (moretón) y dolor postoperatorio.</li>
+  <li>Sangrado postquirúrgico (controlado con las indicaciones postoperatorias).</li>
+  <li>Infección de la herida quirúrgica (se prescribirán antibióticos si es necesario).</li>
+  <li>Dehiscencia (apertura) de la sutura.</li>
+  <li>Cicatrización anormal (queloides, cicatriz hipertrófica, rara en cavidad oral).</li>
+  <li>Recidiva de la lesión en casos específicos (quistes, fibromas).</li>
+</ul>
+<h4>Cuidados postoperatorios:</h4>
+<ul>
+  <li>Seguir estrictamente las indicaciones escritas que se entregarán al finalizar.</li>
+  <li>Acudir al retiro de puntos en la fecha indicada.</li>
+  <li>Consultar de urgencia ante sangrado abundante, fiebre o dolor intenso.</li>
+</ul>`,
+  },
+];
+
+// ── STATE ─────────────────────────────────────────────────────
+let selectedPxId = null;
+let selectedPxName = '';
+let activeTypeId  = null;
+let signedMap     = {};  // { typeId: { fecha, nombre, tutor?, usuario } }
+let clinicaData   = {};
+
+// ── INIT ─────────────────────────────────────────────────────
+initSession('consentimientos').then(async session => {
+  if (!session) {
+    document.body.innerHTML = '<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><a href="login.html" style="background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Iniciar sesión</a></div></div>';
+    return;
+  }
+  clinicaData = session.clinica;
+
+  const pxList = await fsGetAll('pacientes', r => r.limit(300));
+  pxList.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'','es'));
+  const sel = document.getElementById('selectPaciente');
+  sel.innerHTML = '<option value="">— Seleccionar paciente —</option>' +
+    pxList.map(p => `<option value="${p.id}">${esc(p.nombre)||p.id}</option>`).join('');
+
+  const pxParam = new URLSearchParams(location.search).get('px');
+  if (pxParam) { sel.value = pxParam; loadConsentimientos(pxParam); }
+
+  sel.addEventListener('change', () => {
+    if (sel.value) loadConsentimientos(sel.value);
+  });
+
+  // Tutor field toggle
+  document.getElementById('firmaRelacion').addEventListener('change', function() {
+    document.getElementById('tutorField').style.display =
+      this.value === 'paciente' ? 'none' : 'block';
+  });
+});
+
+// ── LOAD ─────────────────────────────────────────────────────
+async function loadConsentimientos(pxId) {
+  selectedPxId = pxId;
+  const sel = document.getElementById('selectPaciente');
+  selectedPxName = sel.options[sel.selectedIndex]?.text || '';
+
+  try {
+    const snap = await clinicaCol('consentimientos').doc(pxId).get();
+    signedMap = snap.exists ? (snap.data().firmados || {}) : {};
+  } catch(e) {
+    console.error('[loadConsentimientos]', e.message);
+    signedMap = {};
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('mainLayout').style.display = 'grid';
+
+  renderTypeList();
+  updateSignedCount();
+
+  // Auto-select first unsigned required
+  const firstUnsigned = CONSENT_TYPES.find(t =>
+    t.badge === 'OBLIGATORIO' && !signedMap[t.id]
+  );
+  if (firstUnsigned) selectType(firstUnsigned.id);
+  else if (CONSENT_TYPES.length) selectType(CONSENT_TYPES[0].id);
+
+  showToast(`Consentimientos: ${selectedPxName}`, 'info');
+}
+
+// ── RENDER TYPE LIST ──────────────────────────────────────────
+function renderTypeList() {
+  const list = document.getElementById('typeList');
+  list.innerHTML = CONSENT_TYPES.map(t => {
+    const signed = signedMap[t.id];
+    return `<div class="type-item ${activeTypeId===t.id?'active':''}" onclick="selectType('${t.id}')" id="ti-${t.id}">
+      <div class="type-icon">${t.icon}</div>
+      <div class="type-info">
+        <div class="type-name">${t.name}</div>
+        <div class="type-count">${signed ? '✅ Firmado ' + fmtDate(signed.fecha) : t.shortDesc}</div>
+      </div>
+      <div class="type-badge" style="background:${signed?'rgba(16,185,129,.15)':t.badgeColor+'18'};color:${signed?'#10B981':t.badgeColor}">
+        ${signed ? 'FIRMADO' : t.badge}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateSignedCount() {
+  const total  = CONSENT_TYPES.length;
+  const signed = CONSENT_TYPES.filter(t => signedMap[t.id]).length;
+  const req    = CONSENT_TYPES.filter(t => t.badge==='OBLIGATORIO').length;
+  const reqSigned = CONSENT_TYPES.filter(t => t.badge==='OBLIGATORIO' && signedMap[t.id]).length;
+  document.getElementById('signedCount').textContent =
+    `${signed}/${total} firmados · ${reqSigned}/${req} obligatorios`;
+}
+
+// ── SELECT TYPE ───────────────────────────────────────────────
+function selectType(id) {
+  activeTypeId = id;
+  const type   = CONSENT_TYPES.find(t => t.id === id);
+  if (!type) return;
+  const signed = signedMap[id];
+
+  // Update list highlight
+  document.querySelectorAll('.type-item').forEach(el => el.classList.remove('active'));
+  const ti = document.getElementById(`ti-${id}`);
+  if (ti) ti.classList.add('active');
+
+  // Render right panel
+  const panel = document.getElementById('rightPanel');
+  panel.innerHTML = `
+    <div class="con-card">
+      <div class="form-header">
+        <div>
+          <div class="form-title">${type.icon} ${type.name}</div>
+          <div class="form-subtitle">${type.shortDesc} · <span style="color:${type.badgeColor};font-weight:600">${type.badge}</span></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0">
+          ${signed ? `<button class="btn btn-ghost btn-sm" onclick="printConsent()">🖨️ Imprimir</button>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="abrirModalFirma('${id}')">
+            ${signed ? '🔄 Re-firmar' : '✍️ Firmar consentimiento'}
+          </button>
+        </div>
+      </div>
+      <div class="form-body">
+
+        ${signed ? `
+          <div class="signed-banner">
+            <div style="font-size:1.2rem">✅</div>
+            <div>
+              <div style="font-size:.78rem;font-weight:600;color:#10B981">Consentimiento firmado</div>
+              <div style="font-size:.68rem;color:var(--text-muted)">
+                ${fmtDate(signed.fecha)} · ${esc(signed.nombre)}
+                ${signed.tutor ? ' · Tutor: ' + esc(signed.tutor) : ''}
+                · Registrado por: ${esc(signed.usuario||'—')}
+              </div>
+            </div>
+          </div>` : `
+          <div class="pending-banner">
+            <div style="font-size:1.1rem">⏳</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">
+              Pendiente de firma. Haz clic en <strong style="color:var(--text)">"Firmar consentimiento"</strong> para registrar.
+            </div>
+          </div>`}
+
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Texto del consentimiento</div>
+        <div class="consent-text">${type.text}</div>
+
+        <!-- Print area: signature lines -->
+        <div class="print-sign-area">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px">
+            <div>
+              <div style="border-top:1px solid #000;padding-top:8px;font-size:11px">
+                Nombre y firma del paciente / tutor
+              </div>
+            </div>
+            <div>
+              <div style="border-top:1px solid #000;padding-top:8px;font-size:11px">
+                Nombre y firma del profesional de la salud
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px">
+            <div>
+              <div style="border-top:1px solid #000;padding-top:8px;font-size:11px">Fecha</div>
+            </div>
+            <div>
+              <div style="border-top:1px solid #000;padding-top:8px;font-size:11px">Cédula profesional</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;font-size:10px;color:#666">
+            Consultorio: ${esc(clinicaData.nombre||'')} · Paciente: ${esc(selectedPxName)}
+            · Fecha de impresión: ${new Date().toLocaleDateString('es-MX')}
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function abrirModalFirma(id) {
+  if (!selectedPxId) { showToast('Selecciona un paciente primero','error'); return; }
+  const type = CONSENT_TYPES.find(t => t.id===id);
+  document.getElementById('modalConsentName').textContent = `${type.icon} ${type.name}`;
+  document.getElementById('firmaNombre').value = selectedPxName || '';
+  document.getElementById('firmaFecha').value  = todayISO();
+  document.getElementById('firmaRelacion').value = 'paciente';
+  document.getElementById('tutorField').style.display = 'none';
+  document.getElementById('firmaTutor').value = '';
+  openModal('modalFirma');
+  // Store active consent id
+  document.getElementById('modalFirma').dataset.consentId = id;
+}
+
+async function registrarFirma() {
+  const id      = document.getElementById('modalFirma').dataset.consentId;
+  const nombre  = document.getElementById('firmaNombre').value.trim();
+  const relacion= document.getElementById('firmaRelacion').value;
+  const tutor   = document.getElementById('firmaTutor').value.trim();
+  const fecha   = document.getElementById('firmaFecha').value;
+
+  if (!nombre) { showToast('Escribe el nombre del paciente','error'); return; }
+  if (relacion !== 'paciente' && !tutor) {
+    showToast('Escribe el nombre del tutor/representante','error'); return;
+  }
+
+  const entry = {
+    fecha, nombre, relacion,
+    usuario: SESSION.user.nombre || SESSION.user.email,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if (relacion !== 'paciente') entry.tutor = tutor;
+
+  try {
+    signedMap[id] = entry;
+    await clinicaCol('consentimientos').doc(selectedPxId).set(
+      { firmados: signedMap, pacienteId: selectedPxId,
+        actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+    if (typeof audit === 'function') audit('SIGN_CONSENT', { tipo: id, px: selectedPxId });
+    closeModal('modalFirma');
+    renderTypeList();
+    updateSignedCount();
+    selectType(id);
+    showToast(`Consentimiento "${CONSENT_TYPES.find(t=>t.id===id)?.name}" registrado`, 'success');
+  } catch(e) { handleError(e,'consentimientos'); }
+}
+
+// ── PRINT ─────────────────────────────────────────────────────
+function printConsent() {
+  if (!activeTypeId) { showToast('Selecciona un consentimiento','error'); return; }
+  window.print();
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso+'T12:00').toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' }); }
+  catch { return iso; }
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { scope:'/dental-system/' })
+      .then(r => setInterval(()=>r.update(),600000))
+      .catch(e => console.warn('[PWA]',e.message));
+  });
+}
+</script>
+</body>
+</html>
