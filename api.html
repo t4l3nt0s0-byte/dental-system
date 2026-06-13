@@ -360,7 +360,6 @@ async function verLogsKey(keyId, nombre) {
   try {
     const snap = await clinicaCol('apiLogs')
       .where('keyId','==',keyId)
-      .orderBy('ts','desc')
       .limit(50)
       .get()
       .catch(async () =>

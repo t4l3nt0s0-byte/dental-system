@@ -154,24 +154,34 @@ async function loadAudit(reset = false) {
     const dias   = parseInt(document.getElementById('filtroRango').value) || 30;
     const desde  = new Date();
     desde.setDate(desde.getDate() - dias);
+    // Sin orderBy — evita índice compuesto, ordenamos client-side
     const snap = await clinicaCol('auditoria')
       .where('ts','>=', firebase.firestore.Timestamp.fromDate(desde))
-      .orderBy('ts','desc')
       .limit(500)
       .get();
 
-    allLogs = snap.docs.map(d => ({id:d.id,...d.data()}));
+    // Ordenar client-side: más reciente primero
+    allLogs = snap.docs
+      .map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => {
+        const ta = a.ts?.toDate?.()?.getTime() || 0;
+        const tb = b.ts?.toDate?.()?.getTime() || 0;
+        return tb - ta;
+      });
     buildChips();
     updateStats();
     renderTable();
   } catch(e) {
-    // Fallback: load without date filter if index missing
+    // Fallback: sin filtro de fecha
     try {
-      snap = await clinicaCol('auditoria')
-        .orderBy('ts','desc')
-        .limit(500)
-        .get();
-      allLogs = snap.docs.map(d => ({id:d.id,...d.data()}));
+      const snap = await clinicaCol('auditoria').limit(500).get();
+      allLogs = snap.docs
+        .map(d => ({id:d.id,...d.data()}))
+        .sort((a,b) => {
+          const ta = a.ts?.toDate?.()?.getTime() || 0;
+          const tb = b.ts?.toDate?.()?.getTime() || 0;
+          return tb - ta;
+        });
       buildChips();
       updateStats();
       renderTable();

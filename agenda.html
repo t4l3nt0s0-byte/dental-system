@@ -209,7 +209,7 @@ initSession('any').then(async session => {
 
 async function loadCitas() {
   // Cargar citas del mes actual + próximo mes (no toda la colección)
-  // Esto reduce lecturas de Firestore de miles a ~200 docs
+  // Sin orderBy — evita índice compuesto en Firestore, ordenamos client-side
   try {
     const now    = new Date();
     const from   = new Date(now.getFullYear(), now.getMonth()-1, 1)
@@ -219,11 +219,12 @@ async function loadCitas() {
     const snap   = await clinicaCol('citas')
       .where('fecha','>=',from)
       .where('fecha','<=',to)
-      .orderBy('fecha','asc')
       .get();
-    allCitas = snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Ordenar client-side — igual de rápido, sin costo de índice
+    allCitas = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
   } catch(e) {
-    // Fallback si no hay índice compuesto
+    // Fallback si la consulta falla
     allCitas = await DS.citas.getAll().catch(()=>[]);
   }
 }

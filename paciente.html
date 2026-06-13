@@ -133,10 +133,10 @@ const wrap     = document.getElementById('portalWrap');
         const [clinicaSnap, pxSnap, citasSnap, abonosSnap, tratSnap, rxSnap] = await Promise.all([
       base.get(),
       clinicaCol('pacientes').doc(pxId).get(),
-      clinicaCol('citas').where('expId','==',pxId).orderBy('fecha','desc').limit(20).get(),
-      clinicaCol('abonos').where('expId','==',pxId).orderBy('creadoEn','desc').limit(50).get().catch(()=>({docs:[]})),
+      clinicaCol('citas').where('expId','==',pxId).limit(20).get(),
+      clinicaCol('abonos').where('expId','==',pxId).limit(50).get().catch(()=>({docs:[]})),
       clinicaCol('tratamientos').where('expId','==',pxId).get().catch(()=>({docs:[]})),
-      clinicaCol('rx').where('expId','==',pxId).orderBy('creadoEn','desc').limit(5).get().catch(()=>({docs:[]})),
+      clinicaCol('rx').where('expId','==',pxId).limit(5).get().catch(()=>({docs:[]})),
     ]);
 
     if (!pxSnap.exists || !clinicaSnap.exists) { showError('Paciente no encontrado','No se encontraron tus datos. Contacta a tu consultorio.'); return; }

@@ -568,7 +568,7 @@ function imprimirRecibo_OLD_UNUSED(){
       .recibo-footer strong{color:#555}
       @media print{@page{margin:8mm}body{padding:0}.recibo{border:none;border-radius:0}}
     </style>
-  </head><body>${preview}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  </head><body>${preview}<script>window.onload=()=>window.print()<${'/'}script></body></html>`);
   pw.document.close();
 }
 </script>

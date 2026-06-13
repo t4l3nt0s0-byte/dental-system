@@ -308,7 +308,7 @@ var DS = {
       desde.setDate(desde.getDate() - (dias || 30));
       var snap = await col('auditoria')
         .where('ts','>=', global.firebase.firestore.Timestamp.fromDate(desde))
-        .orderBy('ts','desc').limit(limitN || 200).get();
+        .limit(limitN || 200).get();
       return toDocs(snap);
     },
     log: async function(accion, datos) {
