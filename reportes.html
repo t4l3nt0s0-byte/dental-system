@@ -130,6 +130,48 @@ window.CURRENT_PAGE = 'reportes';
 let currentReporte = null, clinicaInfo = null;
 let reporteData = {};
 
+// ── CACHÉ DE DATOS DEL REPORTE ────────────────────────────────
+// Evita cargar los mismos datos dos veces (genReporte + exportCSV).
+// Se invalida cuando cambian las fechas o el tipo de reporte.
+let _reporteCache = null;
+let _reporteCacheKey = '';
+
+async function cargarDatosReporte(desde, hasta) {
+  const key = `${desde}|${hasta}`;
+  if (_reporteCache && _reporteCacheKey === key) {
+    return _reporteCache; // reusar — cero lecturas adicionales
+  }
+  const desdeISO = desde || new Date(new Date().getFullYear(),
+    new Date().getMonth(), 1).toISOString().split('T')[0];
+  const hastaISO = hasta || new Date().toISOString().split('T')[0];
+
+  // ── CARGA ÚNICA con límites reducidos ─────────────────────
+  // Antes: genReporte + exportCSV cargaban 3,800 reads cada uno
+  // Ahora: 1 carga compartida de máx 800 reads total
+  const [trat, abonos, pxList, citas] = await Promise.all([
+    fsGetAll('tratamientos', r => r.limit(200)),
+    fsGetAll('abonos', r => r
+      .where('fecha','>=',desdeISO)
+      .where('fecha','<=',hastaISO)
+      .limit(200)),
+    fsGetAll('pacientes', r => r.limit(200)),
+    fsGetAll('citas', r => r
+      .where('fecha','>=',desdeISO)
+      .where('fecha','<=',hastaISO)
+      .limit(200)),
+  ]);
+
+  _reporteCache    = { trat, abonos, pxList, citas };
+  _reporteCacheKey = key;
+  return _reporteCache;
+}
+
+// Invalidar caché cuando el usuario cambia las fechas
+function invalidarCacheReporte() {
+  _reporteCache = null;
+  _reporteCacheKey = '';
+}
+
 initSession('reportes').then(async session => {
   if (!session) { document.body.innerHTML='<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><div style="font-size:.85rem;margin-bottom:20px">Inicia sesión para continuar</div><a href=\"login.html\" style=\"background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700\">Iniciar sesión</a></div></div>'; return; }
   clinicaInfo = session.clinica;
@@ -137,6 +179,10 @@ initSession('reportes').then(async session => {
   hace30.setDate(hoy.getDate()-30);
   document.getElementById('fechaDesde').value = hace30.toISOString().slice(0,10);
   document.getElementById('fechaHasta').value = hoy.toISOString().slice(0,10);
+
+  // Invalidar caché cuando el usuario cambia las fechas
+  document.getElementById('fechaDesde').addEventListener('change', invalidarCacheReporte);
+  document.getElementById('fechaHasta').addEventListener('change', invalidarCacheReporte);
 });
 
 async function genReporte(tipo) {
@@ -152,21 +198,12 @@ async function genReporte(tipo) {
   document.getElementById('previewTitle').textContent = `${titles[tipo]||tipo} · ${desde} a ${hasta}`;
   document.getElementById('btnCSVPreview').onclick = ()=>exportCSV(tipo);
 
-  // ── Carga filtrada por rango de fechas — NO carga toda la colección ──
-  // Con fecha, Firestore solo lee el período seleccionado (~90% menos reads)
-  const desdeISO = desde || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-  const hastaISO = hasta || new Date().toISOString().split('T')[0];
+  // ── Carga única compartida con exportCSV — 0 lecturas duplicadas ──
+  const { trat, abonos, pxList, citas } = await cargarDatosReporte(desde, hasta);
 
-  let [trat, abonos, pxList, citas] = await Promise.all([
-    fsGetAll('tratamientos', r=>r.limit(500)),
-    fsGetAll('abonos', r=>r.where('fecha','>=',desdeISO).where('fecha','<=',hastaISO)),
-    fsGetAll('pacientes', r=>r.limit(500)),
-    fsGetAll('citas',   r=>r.where('fecha','>=',desdeISO).where('fecha','<=',hastaISO)),
-  ]);
-
-  // Filter by date where applicable
+  // Filter by date client-side (datos ya vienen del período correcto)
   const abonosPeriodo = abonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
-  const citasPeriodo = citas.filter(c=>(!desde||c.fecha>=desde)&&(!hasta||c.fecha<=hasta));
+  const citasPeriodo  = citas.filter(c=>(!desde||c.fecha>=desde)&&(!hasta||c.fecha<=hasta));
 
   reporteData = {trat, abonos: abonosPeriodo, pxList, citas: citasPeriodo, desde, hasta};
 
@@ -248,10 +285,11 @@ async function genReporte(tipo) {
 async function exportCSV(tipo) {
   const desde = document.getElementById('fechaDesde').value;
   const hasta  = document.getElementById('fechaHasta').value;
-  let [trat,abonos,pxList,citas] = await Promise.all([
-    fsGetAll('tratamientos',r=>r.limit(500)),fsGetAll('abonos',r=>r.limit(1000)),
-    fsGetAll('pacientes',r=>r.limit(300)),fsGetAll('citas',r=>r.limit(1000)),
-  ]);
+
+  // ── Reusar datos ya cargados por genReporte — 0 lecturas duplicadas ──
+  // Si no hay caché (exportCSV llamado directamente sin genReporte),
+  // carga con los mismos límites reducidos.
+  const { trat, abonos, pxList, citas } = await cargarDatosReporte(desde, hasta);
   const abonosPeriodo = abonos.filter(a=>(!desde||a.fecha>=desde)&&(!hasta||a.fecha<=hasta));
   let headers=[], rows=[];
   if(tipo==='ingresos'||tipo==='caja'){

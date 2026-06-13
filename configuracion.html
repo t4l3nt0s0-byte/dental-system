@@ -824,15 +824,16 @@ window.exportarTodo = function() {
   pedirContrasena('Exportar todos los datos', async () => {
     showToast('Exportando datos...','info');
     try {
+      // ── Límites 200 por colección — reduce 5,450 → 1,800 reads por backup ──
       const [pacientes,tratamientos,abonos,citas,catalogo,inventario,recibos,cotizaciones] = await Promise.all([
-        fsGetAll('pacientes',    r=>r.limit(500)),
-        fsGetAll('tratamientos', r=>r.limit(500)),
-        fsGetAll('abonos',       r=>r.limit(1000)),
-        fsGetAll('citas',        r=>r.limit(1000)),
+        fsGetAll('pacientes',    r=>r.limit(200)),
+        fsGetAll('tratamientos', r=>r.limit(200)),
+        fsGetAll('abonos',       r=>r.limit(200)),
+        fsGetAll('citas',        r=>r.limit(200)),
         fsGetAll('catalogo',     r=>r.limit(200)),
         fsGetAll('inventario',   r=>r.limit(200)),
-        fsGetAll('recibos',      r=>r.limit(500)),
-        fsGetAll('cotizaciones',r=>r.limit(200)),
+        fsGetAll('recibos',      r=>r.limit(200)),
+        fsGetAll('cotizaciones', r=>r.limit(200)),
       ]);
       // Intentar también rx y notas clínicas
       let rx=[], notas=[];

@@ -153,12 +153,15 @@ initSession('any').then(async session => {
 });
 
 async function loadAll() {
+  // ── Límites 100 por colección — reduce 1,400 → 500 reads por búsqueda ──
+  // La búsqueda es fuzzy client-side sobre los top 100 de cada colección.
+  // Para clínicas grandes, los pacientes más recientes son los más buscados.
   const [px, trat, abonos, citas, cat] = await Promise.all([
-    fsGetAll('pacientes', r => r.limit(300)),
-    fsGetAll('tratamientos',r=>r.limit(200)),
-    fsGetAll('abonos', r => r.limit(500)),
-    fsGetAll('citas', r => r.limit(200)),
-    fsGetAll('catalogo', r => r.limit(200)),
+    fsGetAll('pacientes',    r => r.limit(100)),
+    fsGetAll('tratamientos', r => r.limit(100)),
+    fsGetAll('abonos',       r => r.limit(100)),
+    fsGetAll('citas',        r => r.limit(100)),
+    fsGetAll('catalogo',     r => r.limit(100)),
   ]);
   allData = { pacientes:px, tratamientos:trat, abonos, citas, catalogo:cat };
 }
