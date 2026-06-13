@@ -160,6 +160,9 @@ html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}
       <button class="btn btn-ghost btn-sm no-print" id="btnCargarUltima" onclick="cargarUltimaReceta()" style="display:none">
         📂 Última receta
       </button>
+      <button class="btn btn-ghost btn-sm no-print" id="btnVerHistorial" onclick="abrirHistorial()" style="display:none">
+        📋 Historial
+      </button>
       <button class="btn btn-primary no-print" onclick="generarReceta()">👁 Vista previa e imprimir</button>
     </div>
   </div>
@@ -733,51 +736,56 @@ async function guardarRecetaFirebase(){
 
   if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
   try{
-    const base = clinicaCol('rx');
-    if(_rxGuardadaId){
-      await base.doc(_rxGuardadaId).update({...rxData,
-        actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()});
-      showToast('Receta actualizada en el historial','success');
-    } else {
-      const ref = await base.add({...rxData,
-        creadoEn:     firebase.firestore.FieldValue.serverTimestamp(),
-        actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
-      _rxGuardadaId = ref.id;
-      document.getElementById('btnCargarUltima').style.display='inline-flex';
-      showToast('Receta guardada en el historial del paciente','success');
-    }
-    if(btn){ btn.textContent='Guardada'; btn.style.color='var(--teal,#00C2A8)'; btn.disabled=false; }
+    const ts = firebase.firestore.FieldValue.serverTimestamp();
+    // ── OPCIÓN C: escritura dual en paralelo ─────────────────────
+    // 1. rx-actual/{pxId}   → siempre 1 doc por paciente (lectura O(1))
+    // 2. rx/{autoId}        → append-only, 1 doc por receta (historial completo)
+    // NOM-004-SSA3-2012: las recetas son parte del expediente (conservar 5 años)
+    await Promise.all([
+      // Doc de acceso rápido (sobreescribe siempre el anterior)
+      clinicaCol('rx-actual').doc(px.id).set({
+        ...rxData,
+        creadoEn:     ts,
+        actualizadoEn:ts,
+      }),
+      // Historial permanente append-only (nunca se modifica)
+      clinicaCol('rx').add({
+        ...rxData,
+        creadoEn:     ts,
+        actualizadoEn:ts,
+      }),
+    ]);
+
+    _rxGuardadaId = px.id; // marker: this patient now has rx-actual
+    document.getElementById('btnCargarUltima').style.display='inline-flex';
+    document.getElementById('btnVerHistorial').style.display='inline-flex';
+    if(typeof audit==='function') audit('SAVE_RECETA',{px:px.id,meds:meds.length});
+    showToast('Receta guardada en el historial del paciente','success');
+    if(btn){ btn.textContent='Guardada ✓'; btn.style.color='var(--teal,#00C2A8)'; btn.disabled=false; }
   }catch(e){
     showToast('Error al guardar: '+e.message,'error');
     if(btn){ btn.disabled=false; btn.textContent='Guardar en historial'; }
   }
 }
 
-// ══ CARGAR ÚLTIMA RECETA DEL PACIENTE ════════════════════════
+// ══ CARGAR ÚLTIMA RECETA — O(1): lee rx-actual/{pxId} ════════════
+// FIX: antes cargaba TODAS las recetas y las ordenaba en cliente.
+// Ahora lee exactamente 1 documento: el rx-actual del paciente.
 async function cargarUltimaReceta(){
   const pxId = document.getElementById('r-paciente').value;
   if(!pxId){ showToast('Selecciona un paciente primero','error'); return; }
   const btn = document.getElementById('btnCargarUltima');
   if(btn){ btn.disabled=true; btn.textContent='Cargando...'; }
   try{
-    // Sin orderBy — evita requerir índice compuesto en Firestore
-    const snap = await clinicaCol('rx')
-                         .where('expId','==',pxId)
-                         .get();
-    if(snap.empty){
+    // ── 1 lectura exacta — sin query, sin sort, sin index ────────
+    const snap = await clinicaCol('rx-actual').doc(pxId).get();
+    if(!snap.exists){
       showToast('Este paciente no tiene recetas previas','error');
-      if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
+      if(btn){ btn.disabled=false; btn.textContent='📂 Última receta'; }
       return;
     }
-    // Ordenar en cliente: más reciente primero
-    const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
-    docs.sort((a,b)=>{
-      const ta=a.creadoEn?.toDate?.()?.getTime()||new Date(a.fecha||'2000-01-01').getTime();
-      const tb=b.creadoEn?.toDate?.()?.getTime()||new Date(b.fecha||'2000-01-01').getTime();
-      return tb-ta;
-    });
-    const rx = docs[0];
-    _rxGuardadaId = null;
+    const rx = { id: snap.id, ...snap.data() };
+    _rxGuardadaId = pxId;
 
     // Helpers
     const setVal=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; };
@@ -831,27 +839,36 @@ async function cargarUltimaReceta(){
 
     document.getElementById('r-fecha').value=todayISO();
     const rxFecha=rx.fecha?new Date(rx.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}):'anterior';
-    showToast('Receta del '+rxFecha+' cargada correctamente','success');
-    if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
+    showToast('Receta del '+rxFecha+' cargada · 1 lectura Firestore','success');
+    if(btn){ btn.disabled=false; btn.textContent='📂 Última receta'; }
   }catch(e){
     console.error('cargarUltimaReceta:',e);
     showToast('Error: '+e.message,'error');
-    if(btn){ btn.disabled=false; btn.textContent='Cargar última receta'; }
+    if(btn){ btn.disabled=false; btn.textContent='📂 Última receta'; }
   }
 }
 
-// ══ VERIFICAR SI EL PACIENTE TIENE HISTORIAL ═════════════════
+// ══ VERIFICAR HISTORIAL — lee rx-actual (1 doc) ══════════════
 async function verificarHistorialPx(pxId){
   _rxGuardadaId = null;
-  const btn = document.getElementById('btnCargarUltima');
-  if(!btn) return;
-  if(!pxId){ btn.style.display='none'; return; }
+  const btnC = document.getElementById('btnCargarUltima');
+  const btnH = document.getElementById('btnVerHistorial');
+  if(!pxId){
+    if(btnC) btnC.style.display='none';
+    if(btnH) btnH.style.display='none';
+    return;
+  }
   try{
-    const snap = await clinicaCol('rx')
-                         .where('expId','==',pxId)
-                         .limit(1).get();
-    btn.style.display = snap.empty ? 'none' : 'inline-flex';
-  }catch(e){ btn.style.display='none'; }
+    // 1 lectura — rx-actual/{pxId}
+    const snap = await clinicaCol('rx-actual').doc(pxId).get();
+    const hasRx = snap.exists;
+    if(btnC) btnC.style.display = hasRx ? 'inline-flex' : 'none';
+    if(btnH) btnH.style.display = hasRx ? 'inline-flex' : 'none';
+    if(hasRx) _rxGuardadaId = pxId;
+  }catch(e){
+    if(btnC) btnC.style.display='none';
+    if(btnH) btnH.style.display='none';
+  }
 }
 
 
@@ -873,8 +890,209 @@ function limpiarReceta(){
   if(btnG){ btnG.disabled=false; btnG.textContent='Guardar en historial'; btnG.style.color=''; }
   const btnC = document.getElementById('btnCargarUltima');
   if(btnC) btnC.style.display='none';
+  const btnH = document.getElementById('btnVerHistorial');
+  if(btnH) btnH.style.display='none';
+}
+
+// ══ HISTORIAL PAGINADO — 5 por página, sin orderBy ═══════════════
+// Lee rx (historial completo) con paginación cursor-based.
+// 5-6 lecturas por página — sin index compuesto.
+let _histCursor   = null;  // startAfter cursor for next page
+let _histPrevStack= [];    // stack of cursors for "previous" pages
+let _histPxId     = null;
+let _histPage     = 1;
+const HIST_PAGE_SIZE = 5;
+
+async function abrirHistorial(){
+  const pxId = document.getElementById('r-paciente').value;
+  if(!pxId){ showToast('Selecciona un paciente primero','error'); return; }
+
+  _histPxId      = pxId;
+  _histCursor    = null;
+  _histPrevStack = [];
+  _histPage      = 1;
+
+  const px = ALL_PXLIST.find(p=>p.id===pxId);
+  document.getElementById('historialPxNombre').textContent =
+    'Paciente: ' + (px?.nombre || pxId);
+
+  await cargarPaginaHistorial();
+  openModal('modalHistorial');
+}
+
+async function cargarPaginaHistorial(){
+  const lista = document.getElementById('historialLista');
+  lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:.8rem">Cargando...</div>';
+
+  try{
+    // Paginación cursor-based sin orderBy — evita índice compuesto
+    // Usamos limit(PAGE_SIZE+1) para saber si hay página siguiente
+    let ref = clinicaCol('rx')
+      .where('expId','==',_histPxId)
+      .limit(HIST_PAGE_SIZE + 1);
+
+    if(_histCursor) ref = ref.startAfter(_histCursor);
+
+    const snap = await ref.get();
+    const hasMore = snap.docs.length > HIST_PAGE_SIZE;
+    const docs = snap.docs.slice(0, HIST_PAGE_SIZE).map(d=>({id:d.id,...d.data()}));
+
+    // Sort client-side (we already limited the set)
+    docs.sort((a,b)=>{
+      const ta = a.creadoEn?.toDate?.()?.getTime() || new Date(a.fecha||'2000-01-01').getTime();
+      const tb = b.creadoEn?.toDate?.()?.getTime() || new Date(b.fecha||'2000-01-01').getTime();
+      return tb - ta;
+    });
+
+    if(!docs.length){
+      lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:.8rem">Sin recetas en esta página.</div>';
+      return;
+    }
+
+    lista.innerHTML = docs.map((rx,i) => {
+      const fecha = rx.fecha
+        ? new Date(rx.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+        : '—';
+      const meds  = (rx.medicamentos||[]).map(m=>m.nombre).filter(Boolean);
+      const ts    = rx.creadoEn?.toDate?.()?.toLocaleDateString('es-MX') || rx.fecha || '—';
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <div style="font-size:.78rem;font-weight:600;color:var(--text)">📅 ${fecha}</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:3px 8px"
+                onclick="cargarRxDesdeHistorial('${rx.id}')">
+                Cargar esta receta
+              </button>
+            </div>
+          </div>
+          <div style="font-size:.72rem;color:var(--text-muted)">
+            👨‍⚕️ ${esc(rx.doctor||'—')} &nbsp;·&nbsp; ${meds.length} medicamento${meds.length!==1?'s':''}
+          </div>
+          ${meds.length ? `<div style="font-size:.68rem;color:var(--text-dim);margin-top:3px">
+            ${meds.slice(0,3).map(m=>`<span style="background:var(--surface2);border-radius:3px;padding:1px 5px;margin-right:3px">${esc(m)}</span>`).join('')}${meds.length>3?`<span style="color:var(--text-dim)">+${meds.length-3} más</span>`:''}
+          </div>` : ''}
+          ${rx.diagnostico ? `<div style="font-size:.67rem;color:var(--teal);margin-top:2px;font-style:italic">${esc(rx.diagnostico)}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    // Pagination controls
+    const btnPrev  = document.getElementById('btnHistPrev');
+    const btnNext  = document.getElementById('btnHistNext');
+    const pageLabel= document.getElementById('histPaginaLabel');
+
+    btnPrev.style.display  = _histPage > 1       ? 'inline-flex' : 'none';
+    btnNext.style.display  = hasMore             ? 'inline-flex' : 'none';
+    pageLabel.textContent  = `Página ${_histPage}`;
+
+    // Store last doc as cursor for next page
+    _histCursor = snap.docs[HIST_PAGE_SIZE - 1] || null;
+
+  } catch(e) {
+    lista.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);font-size:.8rem">Error: ${e.message}</div>`;
+  }
+}
+
+async function histPagina(dir){
+  if(dir === 1){
+    // Next page — push current cursor onto stack
+    _histPrevStack.push(_histCursor);
+    _histPage++;
+    await cargarPaginaHistorial();
+  } else {
+    // Prev page — pop stack
+    _histPrevStack.pop();
+    _histCursor = _histPrevStack[_histPrevStack.length - 1] || null;
+    _histPage = Math.max(1, _histPage - 1);
+    await cargarPaginaHistorial();
+  }
+}
+
+// Load a specific rx from historial into the form
+async function cargarRxDesdeHistorial(rxId){
+  try{
+    const snap = await clinicaCol('rx').doc(rxId).get();
+    if(!snap.exists){ showToast('Receta no encontrada','error'); return; }
+    const rx = { id:snap.id, ...snap.data() };
+
+    const setVal=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; };
+    const setSelect=(id,v)=>{ const s=document.getElementById(id); if(s&&v){ const o=Array.from(s.options).find(o=>o.value===v||o.text===v); if(o) s.value=o.value; } };
+
+    setVal('r-diagnostico', rx.diagnostico);
+    setVal('r-indicaciones',rx.indicaciones);
+    setVal('r-peso',        rx.peso);
+    setSelect('r-validez',  rx.validez);
+
+    if(rx.doctor){
+      const sd=document.getElementById('r-doctor');
+      if(sd){
+        const od=Array.from(sd.options).find(o=>o.value===rx.doctor||o.text.toLowerCase().includes((rx.doctor||'').toLowerCase().split(' ')[0]));
+        if(od){ sd.value=od.value; onDoctorChange(); }
+      }
+    }
+
+    document.getElementById('medBody').innerHTML='';
+    medCount=0;
+    const medsRx=rx.medicamentos||[];
+    if(medsRx.length){
+      medsRx.forEach((med,i)=>{
+        addMed();
+        const n=medCount;
+        setTimeout(()=>{
+          const selNom=document.getElementById('med-nombre-'+n);
+          if(selNom){
+            const optM=Array.from(selNom.options).find(o=>o.value===med.nombre);
+            if(optM) selNom.value=med.nombre;
+            else if(med.nombre){
+              selNom.value='__otro';
+              const libre=document.getElementById('med-nombre-libre-'+n);
+              if(libre){ libre.style.display='block'; libre.value=med.nombre; }
+            }
+          }
+          setVal('med-dosis-'+n, med.dosis);
+          setVal('med-pres-'+n,  med.presentacion);
+          setVal('med-ind-'+n,   med.indicaciones);
+          setSelect('med-forma-'+n, med.forma);
+          setSelect('med-freq-'+n,  med.frecuencia);
+          setSelect('med-dur-'+n,   med.duracion);
+        },80*(i+1));
+      });
+    } else { addMed(); }
+
+    document.getElementById('r-fecha').value = todayISO();
+    closeModal('modalHistorial');
+    _rxGuardadaId = null; // force new save (not update)
+    const btnG = document.getElementById('btnGuardarRx');
+    if(btnG){ btnG.disabled=false; btnG.textContent='Guardar en historial'; btnG.style.color=''; }
+
+    const rxFecha = rx.fecha
+      ? new Date(rx.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})
+      : 'anterior';
+    showToast('Receta del '+rxFecha+' cargada para edición','success');
+  }catch(e){
+    showToast('Error al cargar: '+e.message,'error');
+  }
 }
 </script>
+<!-- ══ HISTORIAL MODAL ══════════════════════════════════════ -->
+<div class="modal-overlay" id="modalHistorial">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title">📋 Historial de recetas</div>
+      <button class="modal-close" onclick="closeModal('modalHistorial')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="historialPxNombre" style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px"></div>
+      <div id="historialLista" style="min-height:80px"></div>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:14px">
+        <button class="btn btn-ghost btn-sm" id="btnHistPrev" onclick="histPagina(-1)" style="display:none">← Anterior</button>
+        <span id="histPaginaLabel" style="font-size:.75rem;color:var(--text-dim);align-self:center"></span>
+        <button class="btn btn-ghost btn-sm" id="btnHistNext" onclick="histPagina(1)" style="display:none">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Service Worker Registration ────────────────────────────
 if ('serviceWorker' in navigator) {

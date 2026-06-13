@@ -901,6 +901,7 @@ var COL_MAP = {
   'odontogramas':    'odontograms',
   'mapas-dentales':  'mapas-dentales',
   'rx':              'prescriptions',
+  'rx-actual':       'rx-actual',
   'notas-clinicas':  'clinicalNotes',
   'cortes':          'cashClosings',
   // Org-level (datos compartidos entre sucursales)
