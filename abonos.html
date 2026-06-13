@@ -113,6 +113,12 @@ html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}
 <script>
 window.CURRENT_PAGE = 'abonos';
 let allAbonos = [], allPacientes = [], allTrat = [], editId = null;
+// ── PAGINACIÓN cursor-based ────────────────────────────────────
+const ABONOS_PAGE_SIZE = 25;
+let _abonosCursor  = null;
+let _abonosPrevs   = [];
+let _abonosPage    = 1;
+let _hasMoreAbonos = false;
 
 initSession('any').then(async session => {
   if (!session) {
@@ -133,17 +139,50 @@ initSession('any').then(async session => {
   document.getElementById('f-fecha').value = todayISO();
 });
 
-async function loadAbonos() {
+async function loadAbonos(reset = false) {
+  if (reset) { _abonosCursor = null; _abonosPrevs = []; _abonosPage = 1; }
   try {
-    allAbonos = await fsGetAll('abonos', r => r.limit(500));
+    const tbody = document.getElementById('abonoBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 8px"></div>Cargando...</td></tr>';
+
+    let ref = clinicaCol('abonos').limit(ABONOS_PAGE_SIZE + 1);
+    if (_abonosCursor) ref = ref.startAfter(_abonosCursor);
+    const snap = await ref.get().catch(() => ({ docs: [] }));
+
+    _hasMoreAbonos = snap.docs.length > ABONOS_PAGE_SIZE;
+    const docs = snap.docs.slice(0, ABONOS_PAGE_SIZE).map(d => ({ id: d.id, ...d.data() }));
+    // Sort: más recientes primero
+    docs.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    allAbonos = docs;
+    _abonosCursor = snap.docs[ABONOS_PAGE_SIZE - 1] || null;
+
     renderTable();
     renderSummary();
+    renderAbonosPagBar();
   } catch(e) {
     console.error('[loadAbonos]', e.message);
     const tbody = document.getElementById('abonoBody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted)">No se pudieron cargar los pagos. Recarga la página.</td></tr>';
   }
 }
+
+function renderAbonosPagBar() {
+  let bar = document.getElementById('abonosPagBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'abonosPagBar';
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 0;';
+    const tableWrap = document.querySelector('.table-wrap') || document.getElementById('abonoBody')?.closest('div');
+    if (tableWrap) tableWrap.after(bar);
+  }
+  bar.innerHTML = `
+    ${_abonosPage > 1 ? `<button class="btn btn-ghost btn-sm" onclick="abonosPrevPage()">← Anterior</button>` : ''}
+    <span style="font-size:.75rem;color:var(--text-dim)">Página ${_abonosPage} · ${allAbonos.length} registros</span>
+    ${_hasMoreAbonos ? `<button class="btn btn-ghost btn-sm" onclick="abonosNextPage()">Siguiente →</button>` : ''}
+  `;
+}
+async function abonosNextPage() { _abonosPrevs.push(_abonosCursor); _abonosPage++; await loadAbonos(); }
+async function abonosPrevPage() { _abonosCursor = _abonosPrevs.pop() || null; _abonosPage = Math.max(1, _abonosPage - 1); await loadAbonos(); }
 async function loadPacientes() {
   allPacientes = await fsGetAll('pacientes', r => r.limit(300));
   // Sort client-side — avoids Firestore composite index requirement
@@ -348,7 +387,7 @@ async function saveAbono() {
     }
     showToast(editId ? 'Pago actualizado':'Pago registrado', 'success');
     closeModal('modalAbono');
-    await loadAbonos();
+    await loadAbonos(true);
   } catch(e) { handleError(e, 'abonos'); }
   btn.disabled = false; btn.textContent = '💾 Registrar pago';
 }
@@ -370,7 +409,7 @@ async function deleteAbono(id) {
     await DS.abonos.delete(id);
     showToast('Pago eliminado','success');
     if(typeof audit==='function') audit('DELETE_ABONO',{id:id||''});
-    await loadAbonos();
+    await loadAbonos(true);
   } catch(e) { handleError(e, 'abonos'); }
 }
 

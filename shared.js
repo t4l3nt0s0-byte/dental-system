@@ -765,8 +765,8 @@ window.runDailyBackup = async function() {
     // Recopilar datos críticos del día
     var [pacSnap, citSnap, docSnap] = await Promise.all([
       clinicaCol('pacientes').limit(500).get(),
-      clinicaCol('citas').where('fecha','==',today).get(),
-      clinicaCol('doctores').get(),
+      clinicaCol('citas').where('fecha','==',today).limit(200).get(),
+      clinicaCol('doctores').limit(30).get(),
     ]);
 
     var summary = {

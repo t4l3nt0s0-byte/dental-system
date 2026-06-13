@@ -108,17 +108,48 @@ document.addEventListener('keydown', e => {
 initSession('any').then(async session => {
   if (!session) { document.body.innerHTML='<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><div style="font-size:.85rem;margin-bottom:20px">Inicia sesión para continuar</div><a href=\"login.html\" style=\"background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700\">Iniciar sesión</a></div></div>'; return; }
   renderRecentSearches();
-  await loadAll();
-  document.getElementById('mainSearch').addEventListener('input', onSearch);
+  // ── LAZY LOAD: no cargamos datos hasta que el usuario escriba ──
+  // Antes: cargaba 1,400 docs al abrir la página (antes de escribir nada)
+  // Ahora: carga solo cuando el usuario escribe 3+ caracteres
+  // Ahorro: ~1,400 lecturas Firestore por apertura innecesaria
+  let dataLoaded = false;
+
+  async function ensureDataLoaded() {
+    if (dataLoaded) return;
+    dataLoaded = true;
+    document.getElementById('resultsArea').innerHTML =
+      `<div class="empty-state"><div class="empty-icon" style="animation:spin 1s linear infinite">⏳</div><div class="empty-title">Cargando datos...</div></div>`;
+    await loadAll();
+  }
+
+  document.getElementById('mainSearch').addEventListener('input', async e => {
+    const q = e.target.value.trim();
+    if (!q) {
+      document.getElementById('resultsArea').innerHTML =
+        `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Escribe para buscar</div></div>`;
+      return;
+    }
+    if (q.length < 3) {
+      document.getElementById('resultsArea').innerHTML =
+        `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Escribe al menos 3 caracteres</div></div>`;
+      return;
+    }
+    await ensureDataLoaded();
+    onSearch();
+  });
   document.getElementById('mainSearch').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       const q = e.target.value.trim();
       if (q) addRecentSearch(q);
     }
   });
-  // Check URL param
+  // Check URL param — load data immediately if q is in URL
   const q = new URLSearchParams(location.search).get('q');
-  if (q) { document.getElementById('mainSearch').value = q; doSearch(q); }
+  if (q) {
+    document.getElementById('mainSearch').value = q;
+    await ensureDataLoaded();
+    doSearch(q);
+  }
 });
 
 async function loadAll() {

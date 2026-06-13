@@ -104,6 +104,12 @@ html,body{background:#060D14;color:#E8EAF0;margin:0;padding:0}
 <script>
 window.CURRENT_PAGE = 'tratamientos';
 let allTrat = [], allPacientes = [], allCatalogo = [], editId = null;
+// ── PAGINACIÓN cursor-based ────────────────────────────────────
+const PAGE_SIZE   = 25;
+let _tratCursor   = null;   // startAfter cursor for next page
+let _prevCursors  = [];     // stack for "previous" pages
+let _tratPage     = 1;
+let _hasMoreTrat  = false;
 
 initSession('any').then(async session => {
   if (!session) { document.body.innerHTML='<div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center"><div style="text-align:center;color:#9BA3B0"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Sesión no encontrada</div><div style="font-size:.85rem;margin-bottom:20px">Inicia sesión para continuar</div><a href=\"login.html\" style=\"background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700\">Iniciar sesión</a></div></div>'; return; }
@@ -124,10 +130,54 @@ initSession('any').then(async session => {
   document.getElementById('f-finicio').value = todayISO();
 });
 
-async function loadTrat() {
-  allTrat = await fsGetAll('tratamientos',r=>r.limit(500));
+async function loadTrat(reset = false) {
+  if (reset) { _tratCursor = null; _prevCursors = []; _tratPage = 1; }
+  const tbody = document.getElementById('tratBody');
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:20px">
+    <div class="spinner" style="margin:0 auto 8px"></div>Cargando...</td></tr>`;
+
+  let ref = clinicaCol('tratamientos').limit(PAGE_SIZE + 1);
+  if (_tratCursor) ref = ref.startAfter(_tratCursor);
+  const snap = await ref.get().catch(() => ({ docs: [] }));
+
+  _hasMoreTrat = snap.docs.length > PAGE_SIZE;
+  const docs = snap.docs.slice(0, PAGE_SIZE).map(d => ({ id: d.id, ...d.data() }));
+  // Sort client-side: más recientes primero
+  docs.sort((a, b) => (b.fechaInicio || '').localeCompare(a.fechaInicio || ''));
+  allTrat = docs;
+  // Store last doc for next page cursor
+  _tratCursor = snap.docs[PAGE_SIZE - 1] || null;
+
   renderTable();
   renderSummary();
+  renderPagControls();
+}
+
+function renderPagControls() {
+  // Inject or update pagination bar below the table
+  let bar = document.getElementById('tratPagBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'tratPagBar';
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 0;';
+    document.querySelector('.table-wrap').after(bar);
+  }
+  bar.innerHTML = `
+    ${_tratPage > 1 ? `<button class="btn btn-ghost btn-sm" onclick="tratPrevPage()">← Anterior</button>` : ''}
+    <span style="font-size:.75rem;color:var(--text-dim)">Página ${_tratPage} · ${allTrat.length} registros</span>
+    ${_hasMoreTrat ? `<button class="btn btn-ghost btn-sm" onclick="tratNextPage()">Siguiente →</button>` : ''}
+  `;
+}
+
+async function tratNextPage() {
+  _prevCursors.push(_tratCursor);
+  _tratPage++;
+  await loadTrat();
+}
+async function tratPrevPage() {
+  _tratCursor = _prevCursors.pop() || null;
+  _tratPage = Math.max(1, _tratPage - 1);
+  await loadTrat();
 }
 async function loadPacientes() {
   allPacientes = await fsGetAll('pacientes', r => r.limit(300));
@@ -302,7 +352,7 @@ async function saveTrat() {
     }
     showToast(editId ? 'Tratamiento actualizado' : 'Tratamiento registrado', 'success');
     closeModal('modalTrat');
-    await loadTrat();
+    await loadTrat(true); // reset pagination after save
   } catch(e) { handleError(e, 'tratamientos'); }
   btn.disabled = false; btn.textContent = '💾 Guardar tratamiento';
 }
@@ -316,7 +366,7 @@ async function deleteTrat(id) {
     await fsDelete('tratamientos', id);
     showToast('Tratamiento eliminado','success');
     audit('DELETE_TRATAMIENTO',{id:id||''});
-    await loadTrat();
+    await loadTrat(true);
   } catch(e) { handleError(e, 'tratamientos'); }
 }
 
