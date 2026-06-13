@@ -207,10 +207,10 @@ async function loadClinicaData(clinica) {
   const id = clinica.id;
   try {
         const [citasSnap, abonosSnap, pxSnap, docSnap] = await Promise.all([
-      clinicaCol('citas').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
-      clinicaCol('abonos').where('fecha','==',TODAY).get().catch(()=>({docs:[]})),
-      clinicaCol('pacientes').get().catch(()=>({docs:[]})),
-      clinicaCol('doctores').get().catch(()=>({docs:[]})),
+      clinicaCol('citas').where('fecha','==',TODAY).limit(100).get().catch(()=>({docs:[]})),
+      clinicaCol('abonos').where('fecha','==',TODAY).limit(200).get().catch(()=>({docs:[]})),
+      clinicaCol('pacientes').limit(300).get().catch(()=>({docs:[]})),
+      clinicaCol('doctores').limit(50).get().catch(()=>({docs:[]})),
     ]);
     const ingresosHoy = abonosSnap.docs.reduce((s,d)=>s+(d.data().monto||0),0);
     const citasHoy    = citasSnap.docs.length;

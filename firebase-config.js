@@ -82,7 +82,7 @@ function requireAuth(allowedFeature) {
     if (!session) { window.location.href = 'login.html'; return null; }
     const plan = PLANES[session.clinica.plan] || PLANES.basico;
     if (allowedFeature && !plan.features.includes(allowedFeature) && session.user.rol !== 'admin') {
-      window.location.href = 'upgrade.html';
+      window.location.href = 'planes.html';
       return null;
     }
     return session;

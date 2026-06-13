@@ -226,7 +226,7 @@ initSession('any').then(async session => {
 async function loadApiKeys() {
   const el = document.getElementById('apiKeysList');
   try {
-    const snap = await clinicaCol('apiKeys').get();
+    const snap = await clinicaCol('apiKeys').limit(50).get();
     if (snap.empty) {
       el.innerHTML = `<div class="api-key-card" style="text-align:center;color:var(--text-muted);font-size:.82rem">
         <div style="font-size:1.5rem;margin-bottom:8px">🔑</div>

@@ -135,7 +135,7 @@ const wrap     = document.getElementById('portalWrap');
       clinicaCol('pacientes').doc(pxId).get(),
       clinicaCol('citas').where('expId','==',pxId).limit(20).get(),
       clinicaCol('abonos').where('expId','==',pxId).limit(50).get().catch(()=>({docs:[]})),
-      clinicaCol('tratamientos').where('expId','==',pxId).get().catch(()=>({docs:[]})),
+      clinicaCol('tratamientos').where('expId','==',pxId).limit(50).get().catch(()=>({docs:[]})),
       clinicaCol('rx').where('expId','==',pxId).limit(5).get().catch(()=>({docs:[]})),
     ]);
 

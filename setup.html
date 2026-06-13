@@ -283,6 +283,30 @@ const completed  = { doctor: false, cita: false, user: false };
 // ── INIT ──────────────────────────────────────────────────────
 initSession('any').then(session => {
   if (!session) { window.location.href = 'login.html'; return; }
+
+  // ── SUPERADMIN GATE ────────────────────────────────────────────
+  // setup.html crea datos semilla en Firestore.
+  // Solo accesible para: owner en modo desarrollo, o superadmin.
+  // En producción esto evita que clientes reales borren/sobrescriban datos.
+  const rol = session.user.rol || '';
+  const isDevMode = window.location.hostname === 'localhost' ||
+                    window.location.hostname === '127.0.0.1';
+  const isSuperAdmin = session.user.superadmin === true;
+  const isOwnerOnDev = rol === 'owner' && isDevMode;
+
+  if (!isSuperAdmin && !isOwnerOnDev) {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;background:#060D14;display:flex;align-items:center;justify-content:center;font-family:sans-serif">
+        <div style="text-align:center;color:#9BA3B0;padding:40px">
+          <div style="font-size:2.5rem;margin-bottom:16px">🔒</div>
+          <div style="font-size:1rem;color:#E8EAF0;margin-bottom:8px">Acceso restringido</div>
+          <div style="font-size:.82rem;margin-bottom:20px">Esta herramienta solo está disponible para administradores del sistema.</div>
+          <a href="index.html" style="background:#00C2A8;color:#060D14;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700">Volver al Dashboard</a>
+        </div>
+      </div>`;
+    return;
+  }
+
   const name = session.clinica.nombre || session.user.nombre || '';
   if (name) document.getElementById('welcomeName').textContent = `¡Bienvenido a ${name}!`;
   // Set today as default date for cita

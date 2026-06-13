@@ -420,6 +420,9 @@
             </div>
             <div class="doc-body">
               <div id="ratingForm">
+                <div id="ratingAuthWarn" style="display:none;text-align:center;padding:12px;background:rgba(74,158,255,.08);border:1px solid rgba(74,158,255,.2);border-radius:8px;margin-bottom:12px;font-size:.8rem;color:var(--blue)">
+                  🔒 <a href="login.html" style="color:var(--teal);font-weight:600">Inicia sesión</a> para dejar tu calificación.
+                </div>
                 <p style="text-align:center;font-size:.9rem;margin-bottom:6px">¿Qué tan satisfecho estás con Hersantych Dental?</p>
                 <div class="stars-wrap" id="starsWrap">
                   <span class="star" data-val="1" onclick="setStar(1)">⭐</span>
@@ -516,7 +519,12 @@ window.CURRENT_PAGE = 'legal';
 let currentUser = null, currentClinica = null;
 
 initSession('any').then(session => {
-  if (!session) return;
+  if (!session) {
+    // Show auth warning in rating section
+    const warn = document.getElementById('ratingAuthWarn');
+    if (warn) warn.style.display = 'block';
+    return;
+  }
   currentUser  = session.user;
   currentClinica = session.clinica;
   // Pre-llenar contacto
@@ -547,6 +555,15 @@ window.setStar = function(val) {
 
 window.enviarCalificacion = async function() {
   if (!starVal) { showToast('Selecciona una calificación primero','error'); return; }
+
+  // ── AUTH GATE — evita writes de bots y crawlers ───────────────
+  // legal.html es pública pero las calificaciones requieren sesión activa
+  if (!currentUser || !currentClinica) {
+    showToast('Inicia sesión para enviar una calificación','error');
+    setTimeout(() => window.location.href = 'login.html', 1500);
+    return;
+  }
+
   const btn = document.getElementById('btnCalif');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
